@@ -12,6 +12,8 @@ import '../../utils/attendance_math.dart';
 import '../semester/semester_model.dart';
 import '../semester/semester_provider.dart';
 import '../settings/time_format_provider.dart';
+import '../settings/swipe_action_provider.dart';
+import '../settings/swipeable_card.dart';
 import '../subject/subject_provider.dart';
 import '../subject/subject_model.dart';
 import '../attendance/attendance_model.dart';
@@ -1022,38 +1024,11 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
                           slotKey: slotKey,
                         );
 
-                        // Check if we reached the end of the card deck
-                        final isLastCardInDeck = index >= displayClasses.length - 1;
-
-                        // Check if all classes in the day are now marked
-                        int markedTotal = 0;
-                        for (final s in displayClasses) {
-                          final sk = s.schedule.first.slotKey;
-                          final rec = (s.id == subject.id && sk == slotKey)
-                              ? newStatus
-                              : attendanceProvider.getAttendanceForSubjectOnDate(s.id, widget.targetDate, slotKey: sk)?.status;
-                          if (rec != null) {
-                            markedTotal++;
-                          }
-                        }
-                        final bool allMarkedNow = markedTotal >= displayClasses.length;
-
-                        if (isLastCardInDeck || allMarkedNow) {
-                          // The card deck has finished! Smoothly transition to summary view
-                          Future.delayed(const Duration(milliseconds: 240), () {
-                            if (mounted) {
-                              setState(() {
-                                _viewMode = ScheduleViewMode.receipt;
-                              });
-                            }
+                        // Keep the user in the card deck! Never kick them to summary on swipe.
+                        if (mounted) {
+                          setState(() {
+                            _activeCardIndex = (index + 1) % displayClasses.length;
                           });
-                        } else {
-                          // Advance smoothly to next card in the deck
-                          if (mounted) {
-                            setState(() {
-                              _activeCardIndex = index + 1;
-                            });
-                          }
                         }
                       },
                       onIndexChanged: (newIdx) {
@@ -1068,10 +1043,6 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
                       },
                     ),
             ),
-
-            // Spacing to keep deck comfortable above the bottom dock
-            if (_viewMode == ScheduleViewMode.deck)
-              SizedBox(height: rs.scale(64)),
           ],
         ),
 
@@ -1110,6 +1081,8 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
                     isExpanded: true,
                     isDarkMode: isDarkMode,
                     rs: rs,
+                    semesterEnded: semesterEnded,
+                    isFutureDate: isFutureDate,
                     onToggleExpand: () {
                       HapticFeedback.selectionClick();
                       setState(() {
@@ -1163,6 +1136,8 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
                     isExpanded: false,
                     isDarkMode: isDarkMode,
                     rs: rs,
+                    semesterEnded: semesterEnded,
+                    isFutureDate: isFutureDate,
                     onToggleExpand: () {
                       HapticFeedback.selectionClick();
                       setState(() {
@@ -1711,7 +1686,8 @@ class _StackedCardDeckState extends State<StackedCardDeck>
     final centerCardHeight = (widget.rs.height(355)).clamp(320.0, 390.0);
     final peekOffset = centerCardWidth * 0.54;
 
-    return Center(
+    return Align(
+      alignment: const Alignment(0.0, -0.16),
       child: SizedBox(
         width: screenWidth,
         height: centerCardHeight + widget.rs.height(24),
@@ -2422,6 +2398,117 @@ class _StackedCardDeckState extends State<StackedCardDeck>
   }
 }
 
+// --- Schedule Item Swipe Helpers (Left/Right swipe to mark Present/Absent) ---
+Widget _buildScheduleSwipeBackground({
+  required SwipeAction action,
+  required Alignment alignment,
+  required ResponsiveScale rs,
+  required bool isUnmarking,
+}) {
+  final IconData icon;
+
+  if (isUnmarking) {
+    icon = Icons.undo_rounded;
+  } else {
+    switch (action) {
+      case SwipeAction.present:
+        icon = Icons.check_rounded;
+        break;
+      case SwipeAction.absent:
+        icon = Icons.close_rounded;
+        break;
+    }
+  }
+
+  final isPresent = !isUnmarking && action == SwipeAction.present;
+
+  return Container(
+    decoration: BoxDecoration(
+      color: isUnmarking
+          ? const Color(0xFF27272A)
+          : (isPresent
+              ? const Color(0xFF10B981).withValues(alpha: 0.25)
+              : const Color(0xFFEF4444).withValues(alpha: 0.25)),
+      borderRadius: BorderRadius.circular(rs.scale(18)),
+      border: Border.all(
+        color: isUnmarking
+            ? Colors.white12
+            : (isPresent
+                ? const Color(0xFF10B981).withValues(alpha: 0.45)
+                : const Color(0xFFEF4444).withValues(alpha: 0.45)),
+        width: 0.8,
+      ),
+    ),
+    padding: EdgeInsets.symmetric(horizontal: rs.width(20)),
+    alignment: alignment,
+    child: Icon(
+      icon,
+      color: isUnmarking
+          ? Colors.white
+          : (isPresent ? const Color(0xFF10B981) : const Color(0xFFEF4444)),
+      size: rs.scale(20),
+    ),
+  );
+}
+
+Future<void> _handleScheduleSwipeAction({
+  required BuildContext context,
+  required SwipeAction action,
+  required bool isUnmarking,
+  required Subject subject,
+  required String? slotKey,
+  required DateTime targetDate,
+  required SubjectProvider subjectProvider,
+  required bool isLocked,
+  required bool semesterEnded,
+  required bool isFutureDate,
+}) async {
+  if (isLocked || semesterEnded || isFutureDate) {
+    return;
+  }
+  HapticFeedback.mediumImpact();
+  final String message;
+  if (isUnmarking) {
+    await subjectProvider.unmarkAttendance(
+      subject.id,
+      targetDate,
+      slotKey: slotKey,
+    );
+    message = 'Reset for ${subject.acronym ?? subject.name}';
+  } else {
+    switch (action) {
+      case SwipeAction.present:
+        await subjectProvider.markAttendance(
+          subject.id,
+          targetDate,
+          AttendanceStatus.attended,
+          slotKey: slotKey,
+        );
+        message = '${subject.acronym ?? subject.name} marked Present';
+        break;
+      case SwipeAction.absent:
+        await subjectProvider.markAttendance(
+          subject.id,
+          targetDate,
+          AttendanceStatus.absent,
+          slotKey: slotKey,
+        );
+        message = '${subject.acronym ?? subject.name} marked Absent';
+        break;
+    }
+  }
+
+  if (context.mounted) {
+    ScaffoldMessenger.of(context).showReplacingSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(milliseconds: 1400),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Accordion Peek Window (Peek through entire day & summon any card - Image 3)
 // ---------------------------------------------------------------------------
@@ -2437,6 +2524,8 @@ class AccordionPeekWindow extends StatelessWidget {
   final bool isExpanded;
   final bool isDarkMode;
   final ResponsiveScale rs;
+  final bool semesterEnded;
+  final bool isFutureDate;
   final VoidCallback onToggleExpand;
   final ValueChanged<int> onSummonPeriod;
   final VoidCallback onMarkDayHoliday;
@@ -2455,6 +2544,8 @@ class AccordionPeekWindow extends StatelessWidget {
     required this.isExpanded,
     required this.isDarkMode,
     required this.rs,
+    required this.semesterEnded,
+    required this.isFutureDate,
     required this.onToggleExpand,
     required this.onSummonPeriod,
     required this.onMarkDayHoliday,
@@ -2519,6 +2610,7 @@ class AccordionPeekWindow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final swipeProvider = Provider.of<SwipeActionProvider>(context);
     int attendedCount = 0;
     int absentCount = 0;
     int cancelledCount = 0;
@@ -2786,6 +2878,15 @@ class AccordionPeekWindow extends StatelessWidget {
                     final isAbsent = attendance?.status == AttendanceStatus.absent || attendance?.status == AttendanceStatus.plannedAbsent;
                     final isHoliday = attendance?.status == AttendanceStatus.cancelled;
 
+                    final rightSwipeAction = swipeProvider.rightAction;
+                    final leftSwipeAction = swipeProvider.leftAction;
+                    final isLocked = CalendarUtils.isLockedByManualOverride(subject, targetDate);
+
+                    final isUnmarkingRight = (isAttended && rightSwipeAction == SwipeAction.present) ||
+                        (isAbsent && rightSwipeAction == SwipeAction.absent);
+                    final isUnmarkingLeft = (isAttended && leftSwipeAction == SwipeAction.present) ||
+                        (isAbsent && leftSwipeAction == SwipeAction.absent);
+
                     final startMin = slot.startTime.hour * 60 + slot.startTime.minute;
                     final endMin = slot.endTime.hour * 60 + slot.endTime.minute;
                     final diff = endMin - startMin;
@@ -2808,7 +2909,49 @@ class AccordionPeekWindow extends StatelessWidget {
                         ? subject.displayAcronym.substring(0, 1).toUpperCase()
                         : (subject.name.isNotEmpty ? subject.name.substring(0, 1).toUpperCase() : '•');
 
-                    return Material(
+                    return Padding(
+                      padding: EdgeInsets.symmetric(vertical: rs.height(2)),
+                      child: SwipeableCard(
+                        key: ValueKey('peek_swipe_${subject.id}_$slotKey'),
+                        rs: rs,
+                        borderRadius: BorderRadius.circular(rs.scale(18)),
+                        swipeRightBackground: _buildScheduleSwipeBackground(
+                          action: rightSwipeAction,
+                          alignment: Alignment.centerLeft,
+                          rs: rs,
+                          isUnmarking: isUnmarkingRight,
+                        ),
+                        swipeLeftBackground: _buildScheduleSwipeBackground(
+                          action: leftSwipeAction,
+                          alignment: Alignment.centerRight,
+                          rs: rs,
+                          isUnmarking: isUnmarkingLeft,
+                        ),
+                        onSwipeRight: () => _handleScheduleSwipeAction(
+                          context: context,
+                          action: rightSwipeAction,
+                          isUnmarking: isUnmarkingRight,
+                          subject: subject,
+                          slotKey: slotKey,
+                          targetDate: targetDate,
+                          subjectProvider: subjectProvider,
+                          isLocked: isLocked,
+                          semesterEnded: semesterEnded,
+                          isFutureDate: isFutureDate,
+                        ),
+                        onSwipeLeft: () => _handleScheduleSwipeAction(
+                          context: context,
+                          action: leftSwipeAction,
+                          isUnmarking: isUnmarkingLeft,
+                          subject: subject,
+                          slotKey: slotKey,
+                          targetDate: targetDate,
+                          subjectProvider: subjectProvider,
+                          isLocked: isLocked,
+                          semesterEnded: semesterEnded,
+                          isFutureDate: isFutureDate,
+                        ),
+                        child: Material(
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: () => onSummonPeriod(idx),
@@ -2998,8 +3141,10 @@ class AccordionPeekWindow extends StatelessWidget {
                           ),
                         ),
                       ),
-                    );
-                  },
+                    ),
+                  ),
+                );
+              },
                 ),
               ),
             ],
@@ -3110,6 +3255,7 @@ class DayOverSummaryView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final swipeProvider = Provider.of<SwipeActionProvider>(context);
     final bool allDone = markedCount == displayClasses.length;
 
     return ListView(
@@ -3407,14 +3553,67 @@ class DayOverSummaryView extends StatelessWidget {
               statusIcon = Icons.radio_button_unchecked_rounded;
             }
 
-            return Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => onModifyItem(subject, slot, slotKey, attendance),
+            final rightSwipeAction = swipeProvider.rightAction;
+            final leftSwipeAction = swipeProvider.leftAction;
+            final isAttended = status == AttendanceStatus.attended;
+            final isAbsent = status == AttendanceStatus.absent || status == AttendanceStatus.plannedAbsent;
+            final isLocked = CalendarUtils.isLockedByManualOverride(subject, targetDate);
+
+            final isUnmarkingRight = (isAttended && rightSwipeAction == SwipeAction.present) ||
+                (isAbsent && rightSwipeAction == SwipeAction.absent);
+            final isUnmarkingLeft = (isAttended && leftSwipeAction == SwipeAction.present) ||
+                (isAbsent && leftSwipeAction == SwipeAction.absent);
+
+            return Padding(
+              padding: EdgeInsets.symmetric(vertical: rs.height(2)),
+              child: SwipeableCard(
+                key: ValueKey('summary_swipe_${subject.id}_$slotKey'),
+                rs: rs,
                 borderRadius: BorderRadius.circular(rs.scale(18)),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: rs.height(2)),
-                  child: Row(
+                swipeRightBackground: _buildScheduleSwipeBackground(
+                  action: rightSwipeAction,
+                  alignment: Alignment.centerLeft,
+                  rs: rs,
+                  isUnmarking: isUnmarkingRight,
+                ),
+                swipeLeftBackground: _buildScheduleSwipeBackground(
+                  action: leftSwipeAction,
+                  alignment: Alignment.centerRight,
+                  rs: rs,
+                  isUnmarking: isUnmarkingLeft,
+                ),
+                onSwipeRight: () => _handleScheduleSwipeAction(
+                  context: context,
+                  action: rightSwipeAction,
+                  isUnmarking: isUnmarkingRight,
+                  subject: subject,
+                  slotKey: slotKey,
+                  targetDate: targetDate,
+                  subjectProvider: subjectProvider,
+                  isLocked: isLocked,
+                  semesterEnded: semesterEnded,
+                  isFutureDate: isFutureDate,
+                ),
+                onSwipeLeft: () => _handleScheduleSwipeAction(
+                  context: context,
+                  action: leftSwipeAction,
+                  isUnmarking: isUnmarkingLeft,
+                  subject: subject,
+                  slotKey: slotKey,
+                  targetDate: targetDate,
+                  subjectProvider: subjectProvider,
+                  isLocked: isLocked,
+                  semesterEnded: semesterEnded,
+                  isFutureDate: isFutureDate,
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => onModifyItem(subject, slot, slotKey, attendance),
+                    borderRadius: BorderRadius.circular(rs.scale(18)),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: rs.height(2)),
+                      child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       // Left: Circular Timeline Node (matching screenshot circle 'B')
@@ -3556,8 +3755,10 @@ class DayOverSummaryView extends StatelessWidget {
                   ),
                 ),
               ),
-            );
-          },
+            ),
+          ),
+        );
+      },
         ),
 
         SizedBox(height: rs.height(20)),
