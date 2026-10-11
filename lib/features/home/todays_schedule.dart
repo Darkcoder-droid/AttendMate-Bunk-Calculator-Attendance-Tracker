@@ -252,14 +252,15 @@ class TodayScheduleState extends State<TodaySchedule> {
             ),
           ),
           SizedBox(height: rs.height(4)),
-          // Current Week Day Badges
+          // Current Week Day Badges (Matching Screenshot)
           Padding(
             padding: EdgeInsets.symmetric(horizontal: rs.width(10)),
             child: Row(
               children: List.generate(_dates.length, (index) {
                 final date = _dates[index];
                 final isSelected = index == _currentIndex;
-                final isTodayDate = CalendarUtils.isSameDay(date, _today);
+                final subjectProvider = Provider.of<SubjectProvider>(context, listen: false);
+                final hasClasses = subjectProvider.getClassesForDate(date).isNotEmpty;
                 const weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
                 final weekdayLetter = weekdays[date.weekday - 1];
 
@@ -276,27 +277,16 @@ class TodayScheduleState extends State<TodaySchedule> {
                           curve: Curves.easeOutCubic,
                         );
                       },
-                      borderRadius: BorderRadius.circular(rs.scale(16)),
+                      borderRadius: BorderRadius.circular(rs.scale(22)),
                       child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        padding: EdgeInsets.symmetric(vertical: rs.height(5)),
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
+                        padding: EdgeInsets.symmetric(vertical: rs.height(6)),
                         decoration: BoxDecoration(
                           color: isSelected
                               ? (isDarkMode ? Colors.white : Colors.black)
-                              : (isTodayDate
-                                  ? (isDarkMode
-                                      ? Colors.white.withValues(alpha: 0.08)
-                                      : Colors.black.withValues(alpha: 0.05))
-                                  : Colors.transparent),
-                          borderRadius: BorderRadius.circular(rs.scale(16)),
-                          border: !isSelected && isTodayDate
-                              ? Border.all(
-                                  color: isDarkMode
-                                      ? Colors.white.withValues(alpha: 0.35)
-                                      : Colors.black.withValues(alpha: 0.25),
-                                  width: 0.8,
-                                )
-                              : null,
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(rs.scale(22)),
                         ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -304,24 +294,36 @@ class TodayScheduleState extends State<TodaySchedule> {
                             Text(
                               weekdayLetter,
                               style: GoogleFonts.inter(
-                                fontSize: rs.font(10),
+                                fontSize: rs.font(11),
                                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                                 color: isSelected
                                     ? (isDarkMode ? Colors.black : Colors.white)
                                     : (isDarkMode
-                                        ? Colors.white.withValues(alpha: 0.4)
-                                        : Colors.black.withValues(alpha: 0.4)),
+                                        ? Colors.white.withValues(alpha: 0.50)
+                                        : Colors.black45),
                               ),
                             ),
-                            SizedBox(height: rs.height(2)),
+                            SizedBox(height: rs.height(3)),
                             Text(
                               '${date.day}',
                               style: GoogleFonts.inter(
-                                fontSize: rs.font(14),
+                                fontSize: rs.font(14.5),
                                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                                 color: isSelected
                                     ? (isDarkMode ? Colors.black : Colors.white)
                                     : (isDarkMode ? Colors.white : Colors.black87),
+                              ),
+                            ),
+                            SizedBox(height: rs.height(3)),
+                            // Subtle class dot indicator (screenshot style)
+                            Container(
+                              width: 3.5,
+                              height: 3.5,
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? (isDarkMode ? Colors.black : Colors.white)
+                                    : (hasClasses ? (isDarkMode ? Colors.white38 : Colors.black26) : Colors.transparent),
+                                shape: BoxShape.circle,
                               ),
                             ),
                           ],
@@ -1020,11 +1022,38 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
                           slotKey: slotKey,
                         );
 
-                        // Advance smoothly to next card in the deck — keep user on deck!
-                        if (mounted) {
-                          setState(() {
-                            _activeCardIndex = (_activeCardIndex + 1) % displayClasses.length;
+                        // Check if we reached the end of the card deck
+                        final isLastCardInDeck = index >= displayClasses.length - 1;
+
+                        // Check if all classes in the day are now marked
+                        int markedTotal = 0;
+                        for (final s in displayClasses) {
+                          final sk = s.schedule.first.slotKey;
+                          final rec = (s.id == subject.id && sk == slotKey)
+                              ? newStatus
+                              : attendanceProvider.getAttendanceForSubjectOnDate(s.id, widget.targetDate, slotKey: sk)?.status;
+                          if (rec != null) {
+                            markedTotal++;
+                          }
+                        }
+                        final bool allMarkedNow = markedTotal >= displayClasses.length;
+
+                        if (isLastCardInDeck || allMarkedNow) {
+                          // The card deck has finished! Smoothly transition to summary view
+                          Future.delayed(const Duration(milliseconds: 240), () {
+                            if (mounted) {
+                              setState(() {
+                                _viewMode = ScheduleViewMode.receipt;
+                              });
+                            }
                           });
+                        } else {
+                          // Advance smoothly to next card in the deck
+                          if (mounted) {
+                            setState(() {
+                              _activeCardIndex = index + 1;
+                            });
+                          }
                         }
                       },
                       onIndexChanged: (newIdx) {
@@ -1040,30 +1069,114 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
                     ),
             ),
 
-            // 4. Bottom Accordion Peek Window (Clear of Floating Nav Bar)
+            // Spacing to keep deck comfortable above the bottom dock
             if (_viewMode == ScheduleViewMode.deck)
-              Padding(
-                padding: EdgeInsets.only(bottom: rs.scale(104)),
-                child: AccordionPeekWindow(
-                  displayClasses: displayClasses,
-                  activeCardIndex: _activeCardIndex,
-                  attendanceProvider: attendanceProvider,
-                  timeFormatProvider: timeFormatProvider,
-                  targetDate: widget.targetDate,
-                  locationById: widget.locationById,
-                  isExpanded: _isAccordionExpanded,
-                  isDarkMode: isDarkMode,
-                  rs: rs,
-                  onToggleExpand: () {
-                    setState(() {
-                      _isAccordionExpanded = !_isAccordionExpanded;
-                    });
-                  },
-                  onSummonPeriod: _summonCard,
-                ),
-              ),
+              SizedBox(height: rs.scale(64)),
           ],
         ),
+
+        // Dimming Backdrop when Peek Drawer is Expanded
+        if (_viewMode == ScheduleViewMode.deck && _isAccordionExpanded)
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() {
+                  _isAccordionExpanded = false;
+                });
+              },
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.58),
+              ),
+            ),
+          ),
+
+        // Floating Structured Peek Drawer (Positioned in Stack above bottom dock)
+        if (_viewMode == ScheduleViewMode.deck)
+          _isAccordionExpanded
+              ? Positioned(
+                  left: rs.width(8),
+                  right: rs.width(8),
+                  top: rs.scale(8),
+                  bottom: rs.scale(84),
+                  child: AccordionPeekWindow(
+                    displayClasses: displayClasses,
+                    activeCardIndex: _activeCardIndex,
+                    attendanceProvider: attendanceProvider,
+                    subjectProvider: subjectProvider,
+                    timeFormatProvider: timeFormatProvider,
+                    targetDate: widget.targetDate,
+                    locationById: widget.locationById,
+                    isExpanded: true,
+                    isDarkMode: isDarkMode,
+                    rs: rs,
+                    onToggleExpand: () {
+                      HapticFeedback.selectionClick();
+                      setState(() {
+                        _isAccordionExpanded = false;
+                      });
+                    },
+                    onSummonPeriod: (idx) {
+                      _summonCard(idx);
+                    },
+                    onMarkDayHoliday: () => _showConfirmationDialog(
+                      context: context,
+                      title: 'Mark as Holiday',
+                      content: isToday
+                          ? 'Are you sure you want to mark today as a holiday? All classes will be cancelled and will not affect attendance criteria.'
+                          : 'Are you sure you want to mark this day as a holiday? All classes will be cancelled and will not affect attendance criteria.',
+                      onConfirm: () => subjectProvider.markDayAsHoliday(widget.targetDate),
+                      successMessage: 'Holiday action completed.',
+                    ),
+                    onMarkDayAbsent: () => _showConfirmationDialog(
+                      context: context,
+                      title: isToday ? 'Skip Today' : 'Skip Day',
+                      content: isToday
+                          ? 'Are you sure you want to skip all classes today? This will mark all scheduled classes as absent.'
+                          : 'Are you sure you want to skip all classes on this day? This will mark all scheduled classes as absent.',
+                      onConfirm: () => subjectProvider.markDayAsAbsent(widget.targetDate),
+                      successMessage: 'Skip Day action completed.',
+                    ),
+                    onMarkDayPresent: () => _showConfirmationDialog(
+                      context: context,
+                      title: isToday ? 'Mark as Present' : 'Mark Day as Present',
+                      content: isToday
+                          ? 'Are you sure you want to mark today as present? All classes will be marked as attended.'
+                          : 'Are you sure you want to mark all classes on this day as attended?',
+                      onConfirm: () => subjectProvider.markDayAsPresent(widget.targetDate),
+                      successMessage: 'Mark as Present action completed.',
+                    ),
+                  ),
+                )
+              : Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: rs.scale(88),
+                  child: AccordionPeekWindow(
+                    displayClasses: displayClasses,
+                    activeCardIndex: _activeCardIndex,
+                    attendanceProvider: attendanceProvider,
+                    subjectProvider: subjectProvider,
+                    timeFormatProvider: timeFormatProvider,
+                    targetDate: widget.targetDate,
+                    locationById: widget.locationById,
+                    isExpanded: false,
+                    isDarkMode: isDarkMode,
+                    rs: rs,
+                    onToggleExpand: () {
+                      HapticFeedback.selectionClick();
+                      setState(() {
+                        _isAccordionExpanded = true;
+                      });
+                    },
+                    onSummonPeriod: (idx) {
+                      _summonCard(idx);
+                    },
+                    onMarkDayHoliday: () {},
+                    onMarkDayAbsent: () {},
+                    onMarkDayPresent: () {},
+                  ),
+                ),
       ],
     );
   }
@@ -1483,7 +1596,7 @@ class _StackedCardDeckState extends State<StackedCardDeck>
 
     _flyAnimController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 260),
+      duration: const Duration(milliseconds: 230),
     );
     _flyOffsetAnim = Tween<Offset>(begin: Offset.zero, end: Offset.zero).animate(
       CurvedAnimation(parent: _flyAnimController, curve: Curves.easeOutCubic),
@@ -1494,11 +1607,11 @@ class _StackedCardDeckState extends State<StackedCardDeck>
 
     _indexAnimController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 320),
+      duration: const Duration(milliseconds: 260),
     );
     _indexAnimation = CurvedAnimation(
       parent: _indexAnimController,
-      curve: Curves.easeOutCubic,
+      curve: Curves.fastOutSlowIn,
     );
   }
 
@@ -1536,12 +1649,12 @@ class _StackedCardDeckState extends State<StackedCardDeck>
     switch (status) {
       case AttendanceStatus.attended:
         targetFly = Offset(screenWidth * 1.35, _dragOffset.dy);
-        targetRot = 0.26;
+        targetRot = 0.22;
         break;
       case AttendanceStatus.absent:
       case AttendanceStatus.plannedAbsent:
         targetFly = Offset(-screenWidth * 1.35, _dragOffset.dy);
-        targetRot = -0.26;
+        targetRot = -0.22;
         break;
       case AttendanceStatus.cancelled:
         targetFly = Offset(_dragOffset.dx, -screenHeight * 1.15);
@@ -1552,10 +1665,10 @@ class _StackedCardDeckState extends State<StackedCardDeck>
     HapticFeedback.mediumImpact();
 
     _flyOffsetAnim = Tween<Offset>(begin: _dragOffset, end: targetFly).animate(
-      CurvedAnimation(parent: _flyAnimController, curve: Curves.easeInCubic),
+      CurvedAnimation(parent: _flyAnimController, curve: Curves.easeOutCubic),
     );
     _rotationAnim = Tween<double>(begin: (_dragOffset.dx / 300) * 0.18, end: targetRot).animate(
-      CurvedAnimation(parent: _flyAnimController, curve: Curves.easeInCubic),
+      CurvedAnimation(parent: _flyAnimController, curve: Curves.easeOutCubic),
     );
 
     _flyAnimController.forward(from: 0.0).then((_) {
@@ -1571,10 +1684,10 @@ class _StackedCardDeckState extends State<StackedCardDeck>
 
   void _resetPosition() {
     _flyOffsetAnim = Tween<Offset>(begin: _dragOffset, end: Offset.zero).animate(
-      CurvedAnimation(parent: _flyAnimController, curve: Curves.easeOutBack),
+      CurvedAnimation(parent: _flyAnimController, curve: Curves.easeOutCubic),
     );
     _rotationAnim = Tween<double>(begin: (_dragOffset.dx / 300) * 0.18, end: 0.0).animate(
-      CurvedAnimation(parent: _flyAnimController, curve: Curves.easeOutBack),
+      CurvedAnimation(parent: _flyAnimController, curve: Curves.easeOutCubic),
     );
     _flyAnimController.forward(from: 0.0).then((_) {
       if (mounted) {
@@ -2317,6 +2430,7 @@ class AccordionPeekWindow extends StatelessWidget {
   final List<Subject> displayClasses;
   final int activeCardIndex;
   final AttendanceProvider attendanceProvider;
+  final SubjectProvider subjectProvider;
   final TimeFormatProvider timeFormatProvider;
   final DateTime targetDate;
   final Map<String, LocationConfig> locationById;
@@ -2325,12 +2439,16 @@ class AccordionPeekWindow extends StatelessWidget {
   final ResponsiveScale rs;
   final VoidCallback onToggleExpand;
   final ValueChanged<int> onSummonPeriod;
+  final VoidCallback onMarkDayHoliday;
+  final VoidCallback onMarkDayAbsent;
+  final VoidCallback onMarkDayPresent;
 
   const AccordionPeekWindow({
     super.key,
     required this.displayClasses,
     required this.activeCardIndex,
     required this.attendanceProvider,
+    required this.subjectProvider,
     required this.timeFormatProvider,
     required this.targetDate,
     required this.locationById,
@@ -2339,348 +2457,551 @@ class AccordionPeekWindow extends StatelessWidget {
     required this.rs,
     required this.onToggleExpand,
     required this.onSummonPeriod,
+    required this.onMarkDayHoliday,
+    required this.onMarkDayAbsent,
+    required this.onMarkDayPresent,
   });
+
+  Widget _buildDayActionCapsule({
+    required IconData icon,
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+    required ResponsiveScale rs,
+    required bool isDarkMode,
+  }) {
+    return InkWell(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      borderRadius: BorderRadius.circular(rs.scale(16)),
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: rs.height(8)),
+        decoration: BoxDecoration(
+          color: isActive
+              ? (isDarkMode ? Colors.white : Colors.black)
+              : (isDarkMode ? const Color(0xFF1C1C1E) : Colors.black.withValues(alpha: 0.05)),
+          borderRadius: BorderRadius.circular(rs.scale(16)),
+          border: Border.all(
+            color: isActive
+                ? (isDarkMode ? Colors.white : Colors.black)
+                : (isDarkMode ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08)),
+            width: 0.8,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: rs.scale(13),
+              color: isActive
+                  ? (isDarkMode ? Colors.black : Colors.white)
+                  : (isDarkMode ? Colors.white70 : Colors.black87),
+            ),
+            SizedBox(width: rs.width(5)),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: rs.font(11.5),
+                fontWeight: FontWeight.w700,
+                color: isActive
+                    ? (isDarkMode ? Colors.black : Colors.white)
+                    : (isDarkMode ? Colors.white : Colors.black87),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(rs.scale(22)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 240),
-          curve: Curves.easeOutCubic,
-          margin: rs.insetsSymmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: isDarkMode
-                ? const Color(0xFF141416).withValues(alpha: 0.90)
-                : Colors.white.withValues(alpha: 0.92),
-            borderRadius: BorderRadius.circular(rs.scale(22)),
-            border: Border.all(
+    int attendedCount = 0;
+    int absentCount = 0;
+    int cancelledCount = 0;
+    for (final s in displayClasses) {
+      final slotKey = s.schedule.first.slotKey;
+      final rec = attendanceProvider.getAttendanceForSubjectOnDate(s.id, targetDate, slotKey: slotKey);
+      if (rec != null) {
+        if (rec.status == AttendanceStatus.attended) {
+          attendedCount++;
+        } else if (rec.status == AttendanceStatus.absent || rec.status == AttendanceStatus.plannedAbsent) {
+          absentCount++;
+        } else if (rec.status == AttendanceStatus.cancelled) {
+          cancelledCount++;
+        }
+      }
+    }
+    final bool allAttended = displayClasses.isNotEmpty && attendedCount == displayClasses.length;
+    final bool allAbsent = displayClasses.isNotEmpty && absentCount == displayClasses.length;
+    final bool allCancelled = displayClasses.isNotEmpty && cancelledCount == displayClasses.length;
+
+    if (!isExpanded) {
+      // Collapsed Peek Handle Pill (Rests gracefully above bottom dock)
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(rs.scale(22)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: Container(
+            margin: rs.insetsSymmetric(horizontal: 16),
+            decoration: BoxDecoration(
               color: isDarkMode
-                  ? Colors.white.withValues(alpha: 0.14)
-                  : Colors.black.withValues(alpha: 0.10),
-              width: 0.8,
+                  ? const Color(0xFF141416).withValues(alpha: 0.92)
+                  : Colors.white.withValues(alpha: 0.94),
+              borderRadius: BorderRadius.circular(rs.scale(22)),
+              border: Border.all(
+                color: isDarkMode
+                    ? Colors.white.withValues(alpha: 0.16)
+                    : Colors.black.withValues(alpha: 0.10),
+                width: 0.8,
+              ),
             ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header Tab / Peek Handle (Image 3 style)
-              InkWell(
-                onTap: onToggleExpand,
-                borderRadius: BorderRadius.circular(rs.scale(22)),
-                child: Padding(
-                  padding: rs.insetsSymmetric(horizontal: 16, vertical: 10),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(5),
-                        decoration: BoxDecoration(
-                          color: isDarkMode ? Colors.white12 : Colors.black12,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          isExpanded ? Icons.keyboard_arrow_down_rounded : Icons.keyboard_arrow_up_rounded,
-                          size: rs.scale(15),
+            child: InkWell(
+              onTap: onToggleExpand,
+              borderRadius: BorderRadius.circular(rs.scale(22)),
+              child: Padding(
+                padding: rs.insetsSymmetric(horizontal: 16, vertical: 10),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        color: isDarkMode ? Colors.white12 : Colors.black12,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.keyboard_arrow_up_rounded,
+                        size: rs.scale(15),
+                        color: isDarkMode ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    SizedBox(width: rs.width(10)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'DAY TIMETABLE',
+                            style: GoogleFonts.inter(
+                              fontSize: rs.font(11),
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.8,
+                              color: isDarkMode ? Colors.white70 : Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            '${displayClasses.length} classes scheduled today • Tap to view',
+                            style: GoogleFonts.inter(
+                              fontSize: rs.font(10.5),
+                              color: isDarkMode ? Colors.white54 : Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: rs.insetsSymmetric(horizontal: 8, vertical: 3.5),
+                      decoration: BoxDecoration(
+                        color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(rs.scale(12)),
+                      ),
+                      child: Text(
+                        '${activeCardIndex + 1}/${displayClasses.length}',
+                        style: GoogleFonts.inter(
+                          fontSize: rs.font(10.5),
+                          fontWeight: FontWeight.w700,
                           color: isDarkMode ? Colors.white : Colors.black87,
                         ),
                       ),
-                      SizedBox(width: rs.width(10)),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              isExpanded ? 'DAY TIMETABLE' : 'PEEK ALL PERIODS',
-                              style: GoogleFonts.inter(
-                                fontSize: rs.font(11),
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.8,
-                                color: isDarkMode ? Colors.white70 : Colors.black87,
-                              ),
-                            ),
-                            if (!isExpanded)
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Expanded Structured iOS Style Sheet (Matching attached screenshot)
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(rs.scale(24)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? const Color(0xFF141416).withValues(alpha: 0.96)
+                : Colors.white.withValues(alpha: 0.98),
+            borderRadius: BorderRadius.circular(rs.scale(24)),
+            border: Border.all(
+              color: isDarkMode
+                  ? Colors.white.withValues(alpha: 0.16)
+                  : Colors.black.withValues(alpha: 0.10),
+              width: 0.8,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDarkMode ? 0.6 : 0.2),
+                blurRadius: 32,
+                offset: const Offset(0, -6),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              // Header Tab & Drag Handle
+              InkWell(
+                onTap: onToggleExpand,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(rs.scale(24))),
+                child: Padding(
+                  padding: rs.insetsSymmetric(horizontal: 16, vertical: 10),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDarkMode ? Colors.white24 : Colors.black26,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      SizedBox(height: rs.height(8)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.calendar_today_rounded, size: rs.scale(14), color: isDarkMode ? Colors.white70 : Colors.black87),
+                              SizedBox(width: rs.width(8)),
                               Text(
-                                '${displayClasses.length} classes scheduled today • Tap to summon',
+                                'DAY TIMETABLE',
                                 style: GoogleFonts.inter(
-                                  fontSize: rs.font(10.5),
+                                  fontSize: rs.font(12),
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.8,
+                                  color: isDarkMode ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                              SizedBox(width: rs.width(6)),
+                              Text(
+                                '(${displayClasses.length})',
+                                style: GoogleFonts.inter(
+                                  fontSize: rs.font(11),
                                   color: isDarkMode ? Colors.white54 : Colors.black54,
                                 ),
                               ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: rs.insetsSymmetric(horizontal: 8, vertical: 3.5),
-                        decoration: BoxDecoration(
-                          color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(rs.scale(12)),
-                        ),
-                        child: Text(
-                          '${activeCardIndex + 1}/${displayClasses.length}',
-                          style: GoogleFonts.inter(
-                            fontSize: rs.font(10.5),
-                            fontWeight: FontWeight.w700,
-                            color: isDarkMode ? Colors.white : Colors.black87,
+                            ],
                           ),
-                        ),
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: isDarkMode ? Colors.white12 : Colors.black12,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: rs.scale(16),
+                              color: isDarkMode ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
               ),
 
-              // Expanded Accordion List (Styled after previous attendance view cards)
-              if (isExpanded)
-                ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: rs.height(290)),
-                  child: ListView.separated(
-                    padding: rs.insetsSymmetric(horizontal: 14, vertical: 8),
-                    shrinkWrap: true,
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: displayClasses.length,
-                    separatorBuilder: (context, index) => SizedBox(height: rs.height(7)),
-                    itemBuilder: (context, idx) {
-                      final subject = displayClasses[idx];
-                      final slot = subject.schedule.first;
-                      final slotKey = slot.slotKey;
-                      final isCurrent = idx == activeCardIndex;
+              // Quick Day Batch Actions (Structured Screenshot Style)
+              Padding(
+                padding: EdgeInsets.fromLTRB(rs.width(14), rs.height(2), rs.width(14), rs.height(10)),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildDayActionCapsule(
+                        icon: Icons.pause_rounded,
+                        label: 'Holiday',
+                        isActive: allCancelled,
+                        onTap: onMarkDayHoliday,
+                        rs: rs,
+                        isDarkMode: isDarkMode,
+                      ),
+                    ),
+                    SizedBox(width: rs.width(8)),
+                    Expanded(
+                      child: _buildDayActionCapsule(
+                        icon: Icons.remove_rounded,
+                        label: 'Skip Day',
+                        isActive: allAbsent,
+                        onTap: onMarkDayAbsent,
+                        rs: rs,
+                        isDarkMode: isDarkMode,
+                      ),
+                    ),
+                    SizedBox(width: rs.width(8)),
+                    Expanded(
+                      child: _buildDayActionCapsule(
+                        icon: Icons.check_rounded,
+                        label: 'Present',
+                        isActive: allAttended,
+                        onTap: onMarkDayPresent,
+                        rs: rs,
+                        isDarkMode: isDarkMode,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
-                      final attendance = attendanceProvider.getAttendanceForSubjectOnDate(
-                        subject.id,
-                        targetDate,
-                        slotKey: slotKey,
-                      );
+              Divider(
+                height: 1,
+                thickness: 0.6,
+                color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+              ),
 
-                      // Effective room and block location
-                      final effectiveLocId = subject.getEffectiveLocationId(slot);
-                      final locConfig = effectiveLocId != null ? locationById[effectiveLocId] : null;
-                      final room = subject.getEffectiveRoom(slot) ?? locConfig?.name;
-                      final block = subject.getEffectiveBlock(slot) ?? locConfig?.block;
-                      final hasRoom = room != null && room.isNotEmpty;
+              // Scrollable Structured Timeline List (Matching Screenshot)
+              Expanded(
+                child: ListView.separated(
+                  padding: rs.insetsSymmetric(horizontal: 14, vertical: 10),
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: displayClasses.length,
+                  separatorBuilder: (context, index) => SizedBox(height: rs.height(8)),
+                  itemBuilder: (context, idx) {
+                    final subject = displayClasses[idx];
+                    final slot = subject.schedule.first;
+                    final slotKey = slot.slotKey;
+                    final isCurrent = idx == activeCardIndex;
 
-                      // Duration calculation
-                      final startMinutes = slot.startTime.hour * 60 + slot.startTime.minute;
-                      final endMinutes = slot.endTime.hour * 60 + slot.endTime.minute;
-                      final diffMinutes = endMinutes - startMinutes;
-                      String durationStr = '';
-                      if (diffMinutes > 0) {
-                        if (diffMinutes % 60 == 0) {
-                          durationStr = ' (${diffMinutes ~/ 60}h)';
-                        } else if (diffMinutes > 60) {
-                          durationStr = ' (${diffMinutes ~/ 60}h ${diffMinutes % 60}m)';
-                        } else {
-                          durationStr = ' (${diffMinutes}m)';
-                        }
-                      }
+                    final attendance = attendanceProvider.getAttendanceForSubjectOnDate(
+                      subject.id,
+                      targetDate,
+                      slotKey: slotKey,
+                    );
 
-                      // Status pill styling from previous attendance view
-                      final AttendanceStatus? status = attendance?.status;
-                      final bool isAttended = status == AttendanceStatus.attended;
-                      final bool isAbsent = status == AttendanceStatus.absent || status == AttendanceStatus.plannedAbsent;
-                      final bool isHoliday = status == AttendanceStatus.cancelled;
+                    final isAttended = attendance?.status == AttendanceStatus.attended;
+                    final isAbsent = attendance?.status == AttendanceStatus.absent || attendance?.status == AttendanceStatus.plannedAbsent;
+                    final isHoliday = attendance?.status == AttendanceStatus.cancelled;
 
-                      final IconData statusIcon;
-                      final String statusLabel;
-                      final Color statusBg;
-                      final Color statusFg;
-                      final Color statusBorder;
-
-                      if (isAttended) {
-                        statusIcon = Icons.check_rounded;
-                        statusLabel = 'Present';
-                        statusBg = isDarkMode ? Colors.white : Colors.black;
-                        statusFg = isDarkMode ? Colors.black : Colors.white;
-                        statusBorder = isDarkMode ? Colors.white : Colors.black;
-                      } else if (isAbsent) {
-                        statusIcon = Icons.close_rounded;
-                        statusLabel = 'Absent';
-                        statusBg = const Color(0xFFEF4444).withValues(alpha: 0.16);
-                        statusFg = const Color(0xFFEF4444);
-                        statusBorder = const Color(0xFFEF4444).withValues(alpha: 0.35);
-                      } else if (isHoliday) {
-                        statusIcon = Icons.pause_rounded;
-                        statusLabel = 'Cancelled';
-                        statusBg = const Color(0xFFF59E0B).withValues(alpha: 0.16);
-                        statusFg = const Color(0xFFF59E0B);
-                        statusBorder = const Color(0xFFF59E0B).withValues(alpha: 0.35);
+                    final startMin = slot.startTime.hour * 60 + slot.startTime.minute;
+                    final endMin = slot.endTime.hour * 60 + slot.endTime.minute;
+                    final diff = endMin - startMin;
+                    String durationStr = '';
+                    if (diff > 0) {
+                      if (diff % 60 == 0) {
+                        durationStr = '${diff ~/ 60}h';
+                      } else if (diff > 60) {
+                        durationStr = '${diff ~/ 60}h ${diff % 60}m';
                       } else {
-                        statusIcon = Icons.radio_button_unchecked_rounded;
-                        statusLabel = 'Awaiting';
-                        statusBg = isDarkMode ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03);
-                        statusFg = isDarkMode ? Colors.white.withValues(alpha: 0.55) : Colors.black.withValues(alpha: 0.55);
-                        statusBorder = isDarkMode ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.08);
+                        durationStr = '${diff}m';
                       }
+                    }
 
-                      return Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            onSummonPeriod(idx);
-                          },
-                          borderRadius: BorderRadius.circular(rs.scale(14)),
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: rs.width(12),
-                              vertical: rs.height(9.5),
-                            ),
-                            decoration: BoxDecoration(
-                              color: isCurrent
-                                  ? (isDarkMode
-                                      ? Colors.white.withValues(alpha: 0.09)
-                                      : Colors.black.withValues(alpha: 0.06))
-                                  : (isDarkMode
-                                      ? Colors.white.withValues(alpha: 0.04)
-                                      : Colors.white.withValues(alpha: 0.65)),
-                              borderRadius: BorderRadius.circular(rs.scale(14)),
-                              border: Border.all(
-                                color: isCurrent
-                                    ? subject.color.withValues(alpha: 0.65)
-                                    : (isDarkMode
-                                        ? Colors.white.withValues(alpha: 0.10)
-                                        : Colors.black.withValues(alpha: 0.08)),
-                                width: isCurrent ? 1.4 : 0.8,
-                              ),
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                // Acronym node badge
-                                Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: subject.color.withValues(alpha: 0.18),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Text(
-                                    subject.displayAcronym,
-                                    style: GoogleFonts.inter(
-                                      fontSize: rs.font(9.5),
-                                      fontWeight: FontWeight.w800,
-                                      color: subject.color,
-                                    ),
+                    final effectiveLocId = subject.getEffectiveLocationId(slot);
+                    final locConfig = effectiveLocId != null ? locationById[effectiveLocId] : null;
+                    final room = subject.getEffectiveRoom(slot) ?? locConfig?.name;
+
+                    final monogram = subject.displayAcronym.isNotEmpty
+                        ? subject.displayAcronym.substring(0, 1).toUpperCase()
+                        : (subject.name.isNotEmpty ? subject.name.substring(0, 1).toUpperCase() : '•');
+
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => onSummonPeriod(idx),
+                        borderRadius: BorderRadius.circular(rs.scale(18)),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: rs.height(2)),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // Left: Circular Timeline Node (matching screenshot circle 'B')
+                              Container(
+                                width: rs.scale(36),
+                                height: rs.scale(36),
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.black.withValues(alpha: 0.08),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isCurrent
+                                        ? (isDarkMode ? Colors.white60 : Colors.black54)
+                                        : (isDarkMode ? Colors.white12 : Colors.black12),
+                                    width: isCurrent ? 1.5 : 0.8,
                                   ),
                                 ),
-                                SizedBox(width: rs.width(10)),
+                                child: Text(
+                                  monogram,
+                                  style: GoogleFonts.inter(
+                                    fontSize: rs.font(12.5),
+                                    fontWeight: FontWeight.w800,
+                                    color: isDarkMode ? Colors.white : Colors.black87,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: rs.width(10)),
 
-                                // Subject title, time with duration, and room/block
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
+                              // Right: Obsidian Card (matching screenshot)
+                              Expanded(
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: rs.width(14),
+                                    vertical: rs.height(11),
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isDarkMode
+                                        ? const Color(0xFF1C1C1E)
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.circular(rs.scale(18)),
+                                    border: Border.all(
+                                      color: isCurrent
+                                          ? (isDarkMode ? Colors.white38 : Colors.black38)
+                                          : (isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06)),
+                                      width: isCurrent ? 1.2 : 0.8,
+                                    ),
+                                  ),
+                                  child: Row(
                                     children: [
-                                      Row(
-                                        children: [
-                                          Flexible(
-                                            child: Text(
+                                      // Title and time range • duration
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
                                               subject.name,
                                               style: GoogleFonts.inter(
-                                                fontSize: rs.font(13.5),
-                                                fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w600,
+                                                fontSize: rs.font(15),
+                                                fontWeight: FontWeight.w700,
                                                 color: isDarkMode ? Colors.white : Colors.black87,
                                               ),
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                             ),
-                                          ),
-                                          if (isCurrent) ...[
-                                            SizedBox(width: rs.width(6)),
-                                            Container(
-                                              padding: rs.insetsSymmetric(horizontal: 5, vertical: 1.5),
-                                              decoration: BoxDecoration(
-                                                color: subject.color.withValues(alpha: 0.2),
-                                                borderRadius: BorderRadius.circular(rs.scale(6)),
-                                              ),
-                                              child: Text(
-                                                'IN DECK',
-                                                style: GoogleFonts.inter(
-                                                  fontSize: rs.font(8.5),
-                                                  fontWeight: FontWeight.w800,
-                                                  letterSpacing: 0.5,
-                                                  color: subject.color,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                      SizedBox(height: rs.height(2.5)),
-                                      Row(
-                                        children: [
-                                          Flexible(
-                                            child: Text(
-                                              '${slot.formatTimeRange(timeFormatProvider.timeFormat)}$durationStr',
+                                            SizedBox(height: rs.height(3)),
+                                            Text(
+                                              '${slot.formatTimeRange(timeFormatProvider.timeFormat)}${durationStr.isNotEmpty ? " • $durationStr" : ""}${room != null && room.isNotEmpty ? " • Room $room" : ""}',
                                               style: GoogleFonts.inter(
-                                                fontSize: rs.font(11),
-                                                color: isDarkMode ? Colors.white60 : Colors.black54,
+                                                fontSize: rs.font(11.5),
                                                 fontWeight: FontWeight.w500,
+                                                color: isDarkMode ? Colors.white54 : Colors.black54,
                                               ),
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                             ),
-                                          ),
-                                          if (hasRoom) ...[
-                                            SizedBox(width: rs.width(6)),
-                                            Flexible(
-                                              child: Text(
-                                                'Room $room${block != null && block.isNotEmpty ? " ($block)" : ""}',
-                                                style: GoogleFonts.inter(
-                                                  fontSize: rs.font(10.5),
-                                                  color: isDarkMode ? Colors.white54 : Colors.black45,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
                                           ],
-                                        ],
+                                        ),
                                       ),
-                                    ],
-                                  ),
-                                ),
-                                SizedBox(width: rs.width(8)),
+                                      SizedBox(width: rs.width(8)),
 
-                                // Status toggle pill (Present, Absent, Cancelled, Awaiting)
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: rs.width(8),
-                                    vertical: rs.height(4.5),
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: statusBg,
-                                    borderRadius: BorderRadius.circular(rs.scale(14)),
-                                    border: Border.all(
-                                      color: statusBorder,
-                                      width: 0.8,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(statusIcon, size: rs.scale(11), color: statusFg),
-                                      SizedBox(width: rs.width(4)),
-                                      Text(
-                                        statusLabel,
-                                        style: GoogleFonts.inter(
-                                          color: statusFg,
-                                          fontSize: rs.font(10.5),
-                                          fontWeight: isAttended ? FontWeight.w700 : FontWeight.w500,
-                                          letterSpacing: 0.1,
+                                      // Status capsule: [ ✓ Present ]
+                                      InkWell(
+                                        onTap: () {
+                                          HapticFeedback.selectionClick();
+                                          if (isAttended) {
+                                            subjectProvider.unmarkAttendance(subject.id, targetDate, slotKey: slotKey);
+                                          } else {
+                                            subjectProvider.markAttendance(subject.id, targetDate, AttendanceStatus.attended, slotKey: slotKey);
+                                          }
+                                        },
+                                        borderRadius: BorderRadius.circular(rs.scale(16)),
+                                        child: Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: rs.width(10),
+                                            vertical: rs.height(6),
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: isAttended
+                                                ? (isDarkMode ? Colors.white : Colors.black)
+                                                : (isAbsent
+                                                    ? const Color(0xFFEF4444).withValues(alpha: 0.18)
+                                                    : (isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05))),
+                                            borderRadius: BorderRadius.circular(rs.scale(16)),
+                                            border: Border.all(
+                                              color: isAttended
+                                                  ? (isDarkMode ? Colors.white : Colors.black)
+                                                  : (isAbsent
+                                                      ? const Color(0xFFEF4444).withValues(alpha: 0.4)
+                                                      : (isDarkMode ? Colors.white12 : Colors.black12)),
+                                              width: 0.8,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                isAttended
+                                                    ? Icons.check_rounded
+                                                    : (isAbsent ? Icons.close_rounded : Icons.radio_button_unchecked_rounded),
+                                                size: rs.scale(13),
+                                                color: isAttended
+                                                    ? (isDarkMode ? Colors.black : Colors.white)
+                                                    : (isAbsent ? const Color(0xFFEF4444) : (isDarkMode ? Colors.white60 : Colors.black54)),
+                                              ),
+                                              SizedBox(width: rs.width(4)),
+                                              Text(
+                                                isAttended ? 'Present' : (isAbsent ? 'Absent' : 'Mark'),
+                                                style: GoogleFonts.inter(
+                                                  fontSize: rs.font(11.5),
+                                                  fontWeight: FontWeight.w700,
+                                                  color: isAttended
+                                                      ? (isDarkMode ? Colors.black : Colors.white)
+                                                      : (isAbsent ? const Color(0xFFEF4444) : (isDarkMode ? Colors.white70 : Colors.black87)),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(width: rs.width(6)),
+
+                                      // Pause / Cancelled circle icon: [ ⏸ ]
+                                      InkWell(
+                                        onTap: () {
+                                          HapticFeedback.selectionClick();
+                                          if (isHoliday) {
+                                            subjectProvider.unmarkAttendance(subject.id, targetDate, slotKey: slotKey);
+                                          } else {
+                                            subjectProvider.markAttendance(subject.id, targetDate, AttendanceStatus.cancelled, slotKey: slotKey);
+                                          }
+                                        },
+                                        borderRadius: BorderRadius.circular(rs.scale(16)),
+                                        child: Container(
+                                          width: rs.scale(28),
+                                          height: rs.scale(28),
+                                          alignment: Alignment.center,
+                                          decoration: BoxDecoration(
+                                            color: isHoliday
+                                                ? const Color(0xFFF59E0B).withValues(alpha: 0.20)
+                                                : (isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: isHoliday ? const Color(0xFFF59E0B) : (isDarkMode ? Colors.white12 : Colors.black12),
+                                              width: 0.8,
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            Icons.pause_rounded,
+                                            size: rs.scale(14),
+                                            color: isHoliday ? const Color(0xFFF59E0B) : (isDarkMode ? Colors.white54 : Colors.black45),
+                                          ),
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  },
                 ),
+              ),
             ],
           ),
         ),
@@ -3046,21 +3367,39 @@ class DayOverSummaryView extends StatelessWidget {
             final room = subject.getEffectiveRoom(slot) ?? locConfig?.name;
             final hasRoom = room != null && room.isNotEmpty;
 
+            final startMin = slot.startTime.hour * 60 + slot.startTime.minute;
+            final endMin = slot.endTime.hour * 60 + slot.endTime.minute;
+            final diff = endMin - startMin;
+            String durationStr = '';
+            if (diff > 0) {
+              if (diff % 60 == 0) {
+                durationStr = '${diff ~/ 60}h';
+              } else if (diff > 60) {
+                durationStr = '${diff ~/ 60}h ${diff % 60}m';
+              } else {
+                durationStr = '${diff}m';
+              }
+            }
+
+            final monogram = subject.displayAcronym.isNotEmpty
+                ? subject.displayAcronym.substring(0, 1).toUpperCase()
+                : (subject.name.isNotEmpty ? subject.name.substring(0, 1).toUpperCase() : '•');
+
             final Color statusColor;
             final String statusLabel;
             final IconData statusIcon;
 
             if (status == AttendanceStatus.attended) {
               statusColor = const Color(0xFF10B981);
-              statusLabel = 'Attended';
+              statusLabel = 'Present';
               statusIcon = Icons.check_rounded;
             } else if (status == AttendanceStatus.absent || status == AttendanceStatus.plannedAbsent) {
               statusColor = const Color(0xFFEF4444);
-              statusLabel = 'Missed';
+              statusLabel = 'Absent';
               statusIcon = Icons.close_rounded;
             } else if (status == AttendanceStatus.cancelled) {
               statusColor = const Color(0xFFF59E0B);
-              statusLabel = 'Cancelled';
+              statusLabel = 'Holiday';
               statusIcon = Icons.pause_rounded;
             } else {
               statusColor = isDarkMode ? Colors.white54 : Colors.black45;
@@ -3073,102 +3412,147 @@ class DayOverSummaryView extends StatelessWidget {
               child: InkWell(
                 onTap: () => onModifyItem(subject, slot, slotKey, attendance),
                 borderRadius: BorderRadius.circular(rs.scale(18)),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(rs.scale(18)),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                    child: Container(
-                      padding: rs.insetsSymmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: isDarkMode
-                            ? const Color(0xFF141416).withValues(alpha: 0.75)
-                            : Colors.white.withValues(alpha: 0.82),
-                        borderRadius: BorderRadius.circular(rs.scale(18)),
-                        border: Border.all(
-                          color: isDarkMode
-                              ? Colors.white.withValues(alpha: 0.12)
-                              : Colors.black.withValues(alpha: 0.08),
-                          width: 0.8,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: rs.height(2)),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Left: Circular Timeline Node (matching screenshot circle 'B')
+                      Container(
+                        width: rs.scale(36),
+                        height: rs.scale(36),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.black.withValues(alpha: 0.08),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDarkMode ? Colors.white12 : Colors.black12,
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Text(
+                          monogram,
+                          style: GoogleFonts.inter(
+                            fontSize: rs.font(12.5),
+                            fontWeight: FontWeight.w800,
+                            color: isDarkMode ? Colors.white : Colors.black87,
+                          ),
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          // Acronym Node
-                          Container(
-                            padding: const EdgeInsets.all(7),
-                            decoration: BoxDecoration(
-                              color: subject.color.withValues(alpha: 0.18),
-                              shape: BoxShape.circle,
+                      SizedBox(width: rs.width(10)),
+
+                      // Right: Obsidian Card
+                      Expanded(
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: rs.width(14),
+                            vertical: rs.height(11),
+                          ),
+                          decoration: BoxDecoration(
+                            color: isDarkMode
+                                ? const Color(0xFF1C1C1E)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(rs.scale(18)),
+                            border: Border.all(
+                              color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+                              width: 0.8,
                             ),
-                            child: Text(
-                              subject.displayAcronym,
-                              style: GoogleFonts.inter(
-                                fontSize: rs.font(10.5),
-                                fontWeight: FontWeight.w800,
-                                color: subject.color,
+                          ),
+                          child: Row(
+                            children: [
+                              // Title and time range • duration
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      subject.name,
+                                      style: GoogleFonts.inter(
+                                        fontSize: rs.font(15),
+                                        fontWeight: FontWeight.w700,
+                                        color: isDarkMode ? Colors.white : Colors.black87,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    SizedBox(height: rs.height(3)),
+                                    Text(
+                                      '${slot.formatTimeRange(timeFormatProvider.timeFormat)}${durationStr.isNotEmpty ? " • $durationStr" : ""}${hasRoom ? " • Room $room" : ""}',
+                                      style: GoogleFonts.inter(
+                                        fontSize: rs.font(11.5),
+                                        fontWeight: FontWeight.w500,
+                                        color: isDarkMode ? Colors.white54 : Colors.black54,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ),
-                          SizedBox(width: rs.width(12)),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  subject.name,
-                                  style: GoogleFonts.inter(
-                                    fontSize: rs.font(14),
-                                    fontWeight: FontWeight.w700,
-                                    color: isDarkMode ? Colors.white : Colors.black87,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                              SizedBox(width: rs.width(8)),
+
+                              // Status Capsule (Structured Screenshot Style)
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: rs.width(10),
+                                  vertical: rs.height(6),
                                 ),
-                                SizedBox(height: rs.height(2)),
-                                Text(
-                                  '${slot.formatTimeRange(timeFormatProvider.timeFormat)}${hasRoom ? " • Room $room" : ""}',
-                                  style: GoogleFonts.inter(
-                                    fontSize: rs.font(11.5),
-                                    color: isDarkMode ? Colors.white60 : Colors.black54,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(width: rs.width(8)),
-                          // Status Badge
-                          Container(
-                            padding: rs.insetsSymmetric(horizontal: 9, vertical: 4.5),
-                            decoration: BoxDecoration(
-                              color: statusColor.withValues(alpha: isDarkMode ? 0.18 : 0.12),
-                              borderRadius: BorderRadius.circular(rs.scale(12)),
-                              border: Border.all(color: statusColor.withValues(alpha: 0.35), width: 0.8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(statusIcon, size: rs.scale(12), color: statusColor),
-                                SizedBox(width: rs.width(4)),
-                                Text(
-                                  statusLabel,
-                                  style: GoogleFonts.inter(
-                                    fontSize: rs.font(11),
-                                    fontWeight: FontWeight.w700,
-                                    color: statusColor,
+                                decoration: BoxDecoration(
+                                  color: status == AttendanceStatus.attended
+                                      ? (isDarkMode ? Colors.white : Colors.black)
+                                      : ((status == AttendanceStatus.absent || status == AttendanceStatus.plannedAbsent)
+                                          ? const Color(0xFFEF4444).withValues(alpha: 0.18)
+                                          : (status == AttendanceStatus.cancelled
+                                              ? const Color(0xFFF59E0B).withValues(alpha: 0.20)
+                                              : (isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05)))),
+                                  borderRadius: BorderRadius.circular(rs.scale(16)),
+                                  border: Border.all(
+                                    color: status == AttendanceStatus.attended
+                                        ? (isDarkMode ? Colors.white : Colors.black)
+                                        : ((status == AttendanceStatus.absent || status == AttendanceStatus.plannedAbsent)
+                                            ? const Color(0xFFEF4444).withValues(alpha: 0.4)
+                                            : (status == AttendanceStatus.cancelled
+                                                ? const Color(0xFFF59E0B).withValues(alpha: 0.5)
+                                                : (isDarkMode ? Colors.white12 : Colors.black12))),
+                                    width: 0.8,
                                   ),
                                 ),
-                              ],
-                            ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      statusIcon,
+                                      size: rs.scale(13),
+                                      color: status == AttendanceStatus.attended
+                                          ? (isDarkMode ? Colors.black : Colors.white)
+                                          : statusColor,
+                                    ),
+                                    SizedBox(width: rs.width(4)),
+                                    Text(
+                                      statusLabel,
+                                      style: GoogleFonts.inter(
+                                        fontSize: rs.font(11.5),
+                                        fontWeight: FontWeight.w700,
+                                        color: status == AttendanceStatus.attended
+                                            ? (isDarkMode ? Colors.black : Colors.white)
+                                            : statusColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(width: rs.width(4)),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                size: rs.scale(16),
+                                color: isDarkMode ? Colors.white38 : Colors.black26,
+                              ),
+                            ],
                           ),
-                          SizedBox(width: rs.width(6)),
-                          Icon(
-                            Icons.chevron_right_rounded,
-                            size: rs.scale(16),
-                            color: isDarkMode ? Colors.white38 : Colors.black26,
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ),
