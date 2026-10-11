@@ -959,6 +959,7 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
                       onRevisitDeck: () {
                         setState(() {
                           _viewMode = ScheduleViewMode.deck;
+                          _activeCardIndex = 0;
                         });
                       },
                       onModifyItem: (subject, slot, slotKey, attendance) {
@@ -1024,11 +1025,22 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
                           slotKey: slotKey,
                         );
 
-                        // Keep the user in the card deck! Never kick them to summary on swipe.
-                        if (mounted) {
-                          setState(() {
-                            _activeCardIndex = (index + 1) % displayClasses.length;
+                        // Only show automatic summary after the person has swiped through the LAST card!
+                        final isLastCardInDeck = index >= displayClasses.length - 1;
+                        if (isLastCardInDeck) {
+                          Future.delayed(const Duration(milliseconds: 260), () {
+                            if (mounted) {
+                              setState(() {
+                                _viewMode = ScheduleViewMode.receipt;
+                              });
+                            }
                           });
+                        } else {
+                          if (mounted) {
+                            setState(() {
+                              _activeCardIndex = index + 1;
+                            });
+                          }
                         }
                       },
                       onIndexChanged: (newIdx) {
@@ -1686,158 +1698,174 @@ class _StackedCardDeckState extends State<StackedCardDeck>
     final centerCardHeight = (widget.rs.height(355)).clamp(320.0, 390.0);
     final peekOffset = centerCardWidth * 0.54;
 
-    return Align(
-      alignment: const Alignment(0.0, -0.16),
-      child: SizedBox(
-        width: screenWidth,
-        height: centerCardHeight + widget.rs.height(24),
-        child: AnimatedBuilder(
-          animation: Listenable.merge([_flyAnimController, _indexAnimController]),
-          builder: (context, _) {
-            final currentAnimatedIndex = _currentAnimatedIndex;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final totalHeight = constraints.maxHeight;
+        // The bottom timetable peek drawer occupies 88 (position) + 48 (pill height) = 136 scale
+        final bottomOcclusion = widget.rs.scale(136);
+        final visibleHeight = (totalHeight - bottomOcclusion).clamp(0.0, totalHeight);
+        final cardBoxHeight = centerCardHeight + widget.rs.height(24);
+        // Place the card precisely in the vertical center of the visible open area!
+        final topOffset = ((visibleHeight - cardBoxHeight) / 2).clamp(0.0, totalHeight - cardBoxHeight);
 
-            // Collect visible card indices
-            final visibleIndices = <int>[];
-            for (int i = 0; i < count; i++) {
-              if ((i - currentAnimatedIndex).abs() <= 3.5) {
-                visibleIndices.add(i);
-              }
-            }
+        return Stack(
+          alignment: Alignment.topCenter,
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(
+              top: topOffset,
+              width: screenWidth,
+              height: cardBoxHeight,
+              child: AnimatedBuilder(
+                animation: Listenable.merge([_flyAnimController, _indexAnimController]),
+                builder: (context, _) {
+                  final currentAnimatedIndex = _currentAnimatedIndex;
 
-            // Sort so furthest from currentAnimatedIndex is rendered first (bottom of stack)
-            visibleIndices.sort((a, b) {
-              final distA = (a - currentAnimatedIndex).abs();
-              final distB = (b - currentAnimatedIndex).abs();
-              return distB.compareTo(distA);
-            });
+                  // Collect visible card indices
+                  final visibleIndices = <int>[];
+                  for (int i = 0; i < count; i++) {
+                    if ((i - currentAnimatedIndex).abs() <= 3.5) {
+                      visibleIndices.add(i);
+                    }
+                  }
 
-            return Stack(
-              alignment: Alignment.center,
-              clipBehavior: Clip.none,
-              children: visibleIndices.map((i) {
-                final subject = widget.displayClasses[i];
-                final slot = subject.schedule.first;
-                final slotKey = slot.slotKey;
-                final attendance = widget.attendanceProvider.getAttendanceForSubjectOnDate(
-                  subject.id,
-                  widget.targetDate,
-                  slotKey: slotKey,
-                );
-                final isLocked = CalendarUtils.isLockedByManualOverride(subject, widget.targetDate);
+                  // Sort so furthest from currentAnimatedIndex is rendered first (bottom of stack)
+                  visibleIndices.sort((a, b) {
+                    final distA = (a - currentAnimatedIndex).abs();
+                    final distB = (b - currentAnimatedIndex).abs();
+                    return distB.compareTo(distA);
+                  });
 
-                final d = i - currentAnimatedIndex;
-                final isCurrentActive = (i == activeIndex);
+                  return Stack(
+                    alignment: Alignment.center,
+                    clipBehavior: Clip.none,
+                    children: visibleIndices.map((i) {
+                      final subject = widget.displayClasses[i];
+                      final slot = subject.schedule.first;
+                      final slotKey = slot.slotKey;
+                      final attendance = widget.attendanceProvider.getAttendanceForSubjectOnDate(
+                        subject.id,
+                        widget.targetDate,
+                        slotKey: slotKey,
+                      );
+                      final isLocked = CalendarUtils.isLockedByManualOverride(subject, widget.targetDate);
 
-                final clampedD = d.clamp(-3.0, 3.0);
-                final double baseDx = clampedD * peekOffset;
-                final double baseDy = (clampedD.abs() * 7.5).clamp(0.0, 22.0);
-                final double baseRot = (clampedD * 0.09).clamp(-0.24, 0.24);
-                final double baseScale = (1.0 - (clampedD.abs() * 0.075)).clamp(0.72, 1.0);
-                final double baseOpacity = (1.0 - (clampedD.abs() * 0.18)).clamp(0.25, 1.0);
+                      final d = i - currentAnimatedIndex;
+                      final isCurrentActive = (i == activeIndex);
 
-                Offset cardOffset = Offset(baseDx, baseDy);
-                double cardRot = baseRot;
-                double cardScale = baseScale;
-                double cardOpacity = baseOpacity;
+                      final clampedD = d.clamp(-3.0, 3.0);
+                      final double baseDx = clampedD * peekOffset;
+                      final double baseDy = (clampedD.abs() * 7.5).clamp(0.0, 22.0);
+                      final double baseRot = (clampedD * 0.09).clamp(-0.24, 0.24);
+                      final double baseScale = (1.0 - (clampedD.abs() * 0.075)).clamp(0.72, 1.0);
+                      final double baseOpacity = (1.0 - (clampedD.abs() * 0.18)).clamp(0.25, 1.0);
 
-                if (isCurrentActive) {
-                  final flyOffset = _flyAnimController.isAnimating ? _flyOffsetAnim.value : _dragOffset;
-                  final flyRot = _flyAnimController.isAnimating
-                      ? _rotationAnim.value
-                      : (flyOffset.dx / 320) * 0.18;
-                  cardOffset = Offset(baseDx + flyOffset.dx, baseDy + flyOffset.dy);
-                  cardRot = baseRot + flyRot;
-                  cardOpacity = 1.0;
-                }
+                      Offset cardOffset = Offset(baseDx, baseDy);
+                      double cardRot = baseRot;
+                      double cardScale = baseScale;
+                      double cardOpacity = baseOpacity;
 
-                // If not active, render as tapable peeking card face
-                if (!isCurrentActive) {
-                  final bool isLeftWing = d < 0;
-                  return Transform.translate(
-                    offset: cardOffset,
-                    child: Transform.rotate(
-                      angle: cardRot,
-                      child: Transform.scale(
-                        scale: cardScale,
-                        child: Opacity(
-                          opacity: cardOpacity,
-                          child: GestureDetector(
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              widget.onIndexChanged(i);
-                            },
-                            child: _buildPeekingCardFace(
-                              subject: subject,
-                              slot: slot,
-                              width: centerCardWidth,
-                              height: centerCardHeight,
-                              isLeft: isLeftWing,
+                      if (isCurrentActive) {
+                        final flyOffset = _flyAnimController.isAnimating ? _flyOffsetAnim.value : _dragOffset;
+                        final flyRot = _flyAnimController.isAnimating
+                            ? _rotationAnim.value
+                            : (flyOffset.dx / 320) * 0.18;
+                        cardOffset = Offset(baseDx + flyOffset.dx, baseDy + flyOffset.dy);
+                        cardRot = baseRot + flyRot;
+                        cardOpacity = 1.0;
+                      }
+
+                      // If not active, render as tapable peeking card face
+                      if (!isCurrentActive) {
+                        final bool isLeftWing = d < 0;
+                        return Transform.translate(
+                          offset: cardOffset,
+                          child: Transform.rotate(
+                            angle: cardRot,
+                            child: Transform.scale(
+                              scale: cardScale,
+                              child: Opacity(
+                                opacity: cardOpacity,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    HapticFeedback.selectionClick();
+                                    widget.onIndexChanged(i);
+                                  },
+                                  child: _buildPeekingCardFace(
+                                    subject: subject,
+                                    slot: slot,
+                                    width: centerCardWidth,
+                                    height: centerCardHeight,
+                                    isLeft: isLeftWing,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+
+                      // Active Card with pan gesture detector
+                      return Transform.translate(
+                        offset: cardOffset,
+                        child: Transform.rotate(
+                          angle: cardRot,
+                          child: Transform.scale(
+                            scale: cardScale,
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onPanStart: (details) {
+                                if (widget.semesterEnded || isLocked) return;
+                                _flyAnimController.stop();
+                              },
+                              onPanUpdate: (details) {
+                                if (widget.semesterEnded || isLocked) return;
+                                setState(() {
+                                  _dragOffset += details.delta;
+                                });
+                              },
+                              onPanEnd: (details) {
+                                if (widget.semesterEnded || isLocked) return;
+                                final velocity = details.velocity.pixelsPerSecond;
+
+                                // Swipe right (Attended): dx > 50 or fast flick velocity.dx > 220
+                                if (_dragOffset.dx > 50 || (velocity.dx > 220 && _dragOffset.dx > 15)) {
+                                  _triggerAction(AttendanceStatus.attended);
+                                }
+                                // Swipe left (Missed): dx < -50 or fast flick velocity.dx < -220
+                                if (_dragOffset.dx < -50 || (velocity.dx < -220 && _dragOffset.dx < -15)) {
+                                  _triggerAction(AttendanceStatus.absent);
+                                }
+                                // Swipe up (Cancelled): dy < -45 or fast flick velocity.dy < -220
+                                if (_dragOffset.dy < -45 || (velocity.dy < -220 && _dragOffset.dy < -15)) {
+                                  _triggerAction(AttendanceStatus.cancelled);
+                                } else {
+                                  _resetPosition();
+                                }
+                              },
+                              child: _buildActiveCardFace(
+                                subject: subject,
+                                slot: slot,
+                                attendance: attendance,
+                                isLocked: isLocked,
+                                dragOffset: cardOffset - Offset(baseDx, baseDy),
+                                width: centerCardWidth,
+                                height: centerCardHeight,
+                                periodNumber: activeIndex + 1,
+                                totalPeriods: count,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
+                      );
+                    }).toList(),
                   );
-                }
-
-                // Active Card with pan gesture detector
-                return Transform.translate(
-                  offset: cardOffset,
-                  child: Transform.rotate(
-                    angle: cardRot,
-                    child: Transform.scale(
-                      scale: cardScale,
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onPanStart: (details) {
-                          if (widget.semesterEnded || isLocked) return;
-                          _flyAnimController.stop();
-                        },
-                        onPanUpdate: (details) {
-                          if (widget.semesterEnded || isLocked) return;
-                          setState(() {
-                            _dragOffset += details.delta;
-                          });
-                        },
-                        onPanEnd: (details) {
-                          if (widget.semesterEnded || isLocked) return;
-                          final velocity = details.velocity.pixelsPerSecond;
-
-                          // Swipe right (Attended): dx > 50 or fast flick velocity.dx > 220
-                          if (_dragOffset.dx > 50 || (velocity.dx > 220 && _dragOffset.dx > 15)) {
-                            _triggerAction(AttendanceStatus.attended);
-                          }
-                          // Swipe left (Missed): dx < -50 or fast flick velocity.dx < -220
-                          else if (_dragOffset.dx < -50 || (velocity.dx < -220 && _dragOffset.dx < -15)) {
-                            _triggerAction(AttendanceStatus.absent);
-                          }
-                          // Swipe up (Cancelled): dy < -45 or fast flick velocity.dy < -220
-                          else if (_dragOffset.dy < -45 || (velocity.dy < -220 && _dragOffset.dy < -15)) {
-                            _triggerAction(AttendanceStatus.cancelled);
-                          } else {
-                            _resetPosition();
-                          }
-                        },
-                        child: _buildActiveCardFace(
-                          subject: subject,
-                          slot: slot,
-                          attendance: attendance,
-                          isLocked: isLocked,
-                          dragOffset: cardOffset - Offset(baseDx, baseDy),
-                          width: centerCardWidth,
-                          height: centerCardHeight,
-                          periodNumber: activeIndex + 1,
-                          totalPeriods: count,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            );
-          },
-        ),
-      ),
+                },
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
