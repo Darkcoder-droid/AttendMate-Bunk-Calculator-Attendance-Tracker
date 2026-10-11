@@ -1,23 +1,29 @@
 import 'package:flutter/material.dart';
 import '../../utils/responsive_scale.dart';
 
+typedef SwipeableCardBuilder = Widget Function(BuildContext context, double dragOffset);
+
 class SwipeableCard extends StatefulWidget {
-  final Widget child;
+  final Widget? child;
+  final SwipeableCardBuilder? childBuilder;
   final VoidCallback onSwipeRight;
   final VoidCallback onSwipeLeft;
   final Widget swipeRightBackground;
   final Widget swipeLeftBackground;
   final ResponsiveScale rs;
+  final BorderRadius? borderRadius;
 
   const SwipeableCard({
     super.key,
-    required this.child,
+    this.child,
+    this.childBuilder,
     required this.onSwipeRight,
     required this.onSwipeLeft,
     required this.swipeRightBackground,
     required this.swipeLeftBackground,
     required this.rs,
-  });
+    this.borderRadius,
+  }) : assert(child != null || childBuilder != null, 'Either child or childBuilder must be provided');
 
   @override
   State<SwipeableCard> createState() => _SwipeableCardState();
@@ -116,7 +122,7 @@ class _SwipeableCardState extends State<SwipeableCard> with SingleTickerProvider
             if (currentOffset != 0)
               Positioned.fill(
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(widget.rs.scale(12)),
+                  borderRadius: widget.borderRadius ?? BorderRadius.circular(widget.rs.scale(14)),
                   child: Stack(
                     children: [
                       if (_controller.isAnimating && _animatingBackground != null)
@@ -138,7 +144,9 @@ class _SwipeableCardState extends State<SwipeableCard> with SingleTickerProvider
               behavior: HitTestBehavior.opaque,
               child: Transform.translate(
                 offset: Offset(currentOffset, 0.0),
-                child: widget.child,
+                child: widget.childBuilder != null
+                    ? widget.childBuilder!(context, currentOffset)
+                    : widget.child!,
               ),
             ),
           ],

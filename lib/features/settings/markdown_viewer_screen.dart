@@ -3,6 +3,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 
 import '../../utils/markdown_link_helper.dart';
+import '../../widgets/day_cycle_background.dart';
 
 class MarkdownViewerScreen extends StatefulWidget {
   final String title;
@@ -29,40 +30,46 @@ class _MarkdownViewerScreenState extends State<MarkdownViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: FutureBuilder<String>(
-        future: _markdownFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return DayCycleBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          title: Text(widget.title),
+        ),
+        body: FutureBuilder<String>(
+          future: _markdownFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (snapshot.hasError || !snapshot.hasData) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text(
-                  'Failed to load document content.',
-                  textAlign: TextAlign.center,
+            if (snapshot.hasError || !snapshot.hasData) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text(
+                    'Failed to load document content.',
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-              ),
-            );
-          }
+              );
+            }
 
-          return Markdown(
-            data: snapshot.data!,
-            selectable: true,
-            softLineBreak: true,
-            padding: const EdgeInsets.all(16),
-            styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)),
-            onTapLink: (text, href, title) {
-              MarkdownLinkHelper.openLink(context, href);
-            },
-          );
-        },
+            return Markdown(
+              data: snapshot.data!,
+              selectable: true,
+              softLineBreak: true,
+              padding: const EdgeInsets.all(16),
+              styleSheet: MarkdownLinkHelper.buildStyleSheet(context),
+              onTapLink: (text, href, title) {
+                MarkdownLinkHelper.openLink(context, href);
+              },
+            );
+          },
+        ),
       ),
     );
   }

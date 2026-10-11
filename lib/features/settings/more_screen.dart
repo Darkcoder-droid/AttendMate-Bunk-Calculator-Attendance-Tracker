@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
+import 'dart:ui';
+
+import 'ambient_theme_provider.dart';
 
 import 'package:workmanager/workmanager.dart';
 import '../../services/backup_service.dart';
@@ -659,567 +663,850 @@ class _MoreScreenState extends State<MoreScreen> {
     tutorialController.registerKey('key_setup_guide', _setupGuideKey);
 
     final timeFormatProvider = Provider.of<TimeFormatProvider>(context);
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final chevronIcon = Icon(
+      Icons.chevron_right_rounded,
+      size: 18,
+      color: isDarkMode ? const Color(0xFF636366) : const Color(0xFF8E8E93),
+    );
+
+    final ambientProvider = Provider.of<AmbientThemeProvider>(context);
 
     return ListView(
-      padding: const EdgeInsets.only(bottom: 96),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 140),
       children: [
-        _buildSectionHeader('Customization & Gestures', colorScheme),
-        ListTile(
-          leading: const Icon(Icons.schedule_outlined),
-          title: const Text('Use 24-hour format'),
-          subtitle: Text(
-            timeFormatProvider.is24Hour ? 'Currently: 24-hour' : 'Currently: 12-hour (AM/PM)',
-          ),
-          trailing: Switch(
-            value: timeFormatProvider.is24Hour,
-            onChanged: (value) {
-              if (value) {
-                timeFormatProvider.set24HourFormat();
-              } else {
-                timeFormatProvider.set12HourFormat();
-              }
-            },
-          ),
-          onTap: () {
-            if (timeFormatProvider.is24Hour) {
-              timeFormatProvider.set12HourFormat();
-            } else {
-              timeFormatProvider.set24HourFormat();
-            }
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.timer_outlined),
-          title: const Text('Time picker style'),
-          subtitle: Text('Currently: ${timeFormatProvider.clockStyleDisplayName}'),
-          onTap: () {
-            final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-            showDialog<void>(
-              context: context,
-              barrierColor: isDarkMode ? Colors.white.withValues(alpha: 0.12) : null,
-              builder: (ctx) {
-                return AlertDialog(
-                  title: const Text('Select Time Picker Style'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      RadioGroup<ClockStyle>(
-                        groupValue: timeFormatProvider.clockStyle,
-                        onChanged: (val) {
-                          if (val != null) {
-                            timeFormatProvider.setClockStyle(val);
-                            Navigator.pop(ctx);
-                          }
-                        },
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            RadioListTile<ClockStyle>(
-                              title: Text('Material Dialog'),
-                              value: ClockStyle.material,
-                            ),
-                            RadioListTile<ClockStyle>(
-                              title: Text('Scroll Wheel'),
-                              value: ClockStyle.scroll,
-                            ),
-                          ],
+        _buildSectionHeader('Customization & Gestures', isDarkMode),
+        _buildGroupCard(
+          isDarkMode: isDarkMode,
+          children: [
+            ListTile(
+              leading: _buildLeadingIcon(ambientProvider.icon, isDarkMode),
+              title: Text(
+                'Ambient Lighting & AMOLED',
+                style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+              ),
+              subtitle: Text(
+                'Currently: ${ambientProvider.shortLabel}',
+                style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      ambientProvider.cycleNextMode();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: isDarkMode
+                            ? Colors.white.withValues(alpha: 0.10)
+                            : Colors.black.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDarkMode
+                              ? Colors.white.withValues(alpha: 0.14)
+                              : Colors.black.withValues(alpha: 0.08),
+                          width: 0.8,
                         ),
                       ),
-                    ],
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(ambientProvider.icon, size: 14, color: isDarkMode ? Colors.white : Colors.black),
+                          const SizedBox(width: 5),
+                          Text(
+                            ambientProvider.shortLabel,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: isDarkMode ? Colors.white : Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                );
+                  const SizedBox(width: 6),
+                  chevronIcon,
+                ],
+              ),
+              onTap: () => _showAmbientThemeModal(context, ambientProvider, isDarkMode),
+            ),
+            _buildTileDivider(isDarkMode),
+            ListTile(
+              leading: _buildLeadingIcon(Icons.schedule_outlined, isDarkMode),
+              title: Text(
+                'Use 24-hour format',
+                style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+              ),
+              subtitle: Text(
+                timeFormatProvider.is24Hour ? 'Currently: 24-hour' : 'Currently: 12-hour (AM/PM)',
+                style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+              ),
+              trailing: Switch(
+                value: timeFormatProvider.is24Hour,
+                onChanged: (value) {
+                  if (value) {
+                    timeFormatProvider.set24HourFormat();
+                  } else {
+                    timeFormatProvider.set12HourFormat();
+                  }
+                },
+              ),
+              onTap: () {
+                if (timeFormatProvider.is24Hour) {
+                  timeFormatProvider.set12HourFormat();
+                } else {
+                  timeFormatProvider.set24HourFormat();
+                }
               },
-            );
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.swipe_outlined),
-          title: const Text('Swipe Actions'),
-          subtitle: const Text('Customize swipe gestures for your daily classes'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SwipeActionsSettingsScreen()),
-            );
-          },
-        ),
-
-        const Divider(),
-        _buildSectionHeader('Features & Integrations', colorScheme),
-        KeyedSubtree(
-          key: _locationManagerKey,
-          child: ListTile(
-            leading: const Icon(Icons.pin_drop_outlined),
-            title: const Text('Locations & Geofencing'),
-            subtitle: const Text('Manage classroom coordinates and auto-attendance'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const LocationManagerScreen()),
-              );
-            },
-          ),
-        ),
-        ListTile(
-          leading: const Icon(Icons.hub_outlined),
-          title: const Text('Google Integrations'),
-          subtitle: const Text('Account connection, Drive cloud backup, & Calendar sync'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const GoogleIntegrationsScreen()),
-            );
-          },
-        ),
-        KeyedSubtree(
-          key: _calendarSyncKey,
-          child: ListTile(
-            enabled: !(kDebugMode && !_devModeCalendarSyncEnabled),
-            leading: const Icon(Icons.sync),
-            title: const Text('Calendar Sync'),
-            subtitle: const Text('Sync your timetable with Google or Device Calendar'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: (kDebugMode && !_devModeCalendarSyncEnabled)
-                ? null
-                : () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const CalendarSyncSelectionScreen()),
+            ),
+            _buildTileDivider(isDarkMode),
+            ListTile(
+              leading: _buildLeadingIcon(Icons.timer_outlined, isDarkMode),
+              title: Text(
+                'Time picker style',
+                style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+              ),
+              subtitle: Text(
+                'Currently: ${timeFormatProvider.clockStyleDisplayName}',
+                style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+              ),
+              trailing: chevronIcon,
+              onTap: () {
+                showDialog<void>(
+                  context: context,
+                  barrierColor: isDarkMode ? Colors.white.withValues(alpha: 0.12) : null,
+                  builder: (ctx) {
+                    return AlertDialog(
+                      title: const Text('Select Time Picker Style'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          RadioGroup<ClockStyle>(
+                            groupValue: timeFormatProvider.clockStyle,
+                            onChanged: (val) {
+                              if (val != null) {
+                                timeFormatProvider.setClockStyle(val);
+                                Navigator.pop(ctx);
+                              }
+                            },
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                RadioListTile<ClockStyle>(
+                                  title: Text('Material Dialog'),
+                                  value: ClockStyle.material,
+                                ),
+                                RadioListTile<ClockStyle>(
+                                  title: Text('Scroll Wheel'),
+                                  value: ClockStyle.scroll,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     );
                   },
-          ),
-        ),
-        KeyedSubtree(
-          key: _semesterBackupKey,
-          child: ListTile(
-            leading: const Icon(Icons.backup_outlined),
-            title: const Text('Semester Backup'),
-            subtitle: const Text('Backup & restore attendance data (3 rolling backups kept)'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SemesterBackupScreen()),
-              );
-            },
-          ),
-        ),
-        ListTile(
-          leading: const Icon(Icons.cloud_sync_outlined),
-          title: const Text('Classroom Timetable & Sharing'),
-          subtitle: const Text('Live sync via Google Drive & one-time semester share'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const LiveTimetableSyncScreen()),
-            );
-          },
-        ),
-
-        const Divider(),
-        _buildSectionHeader('Help & Support', colorScheme),
-        KeyedSubtree(
-          key: _interactiveTourKey,
-          child: ListTile(
-            leading: const Icon(Icons.explore_outlined),
-            title: const Text('Interactive App Tour'),
-            subtitle: const Text('Take the guided feature walkthrough'),
-            trailing: const Icon(Icons.play_arrow_rounded),
-            onTap: () {
-              Provider.of<TutorialController>(context, listen: false).startTutorial(force: true);
-            },
-          ),
-        ),
-        KeyedSubtree(
-          key: _setupGuideKey,
-          child: ListTile(
-            leading: const Icon(Icons.menu_book_outlined),
-            title: const Text('Setup Guide'),
-            subtitle: const Text('Learn how to import schedules, set up geofencing, sync calendars, and more'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SetupGuideScreen()),
-              );
-            },
-          ),
-        ),
-        FutureBuilder<PackageInfo>(
-          future: _packageInfoFuture,
-          builder: (context, snapshot) {
-            final version = snapshot.data?.version;
-
-            return ListTile(
-              leading: const Icon(Icons.new_releases_outlined),
-              title: const Text('What\'s New'),
-              subtitle: Text(
-                version == null
-                    ? 'See updates in your installed version'
-                    : 'See updates in v$version',
+                );
+              },
+            ),
+            _buildTileDivider(isDarkMode),
+            ListTile(
+              leading: _buildLeadingIcon(Icons.swipe_outlined, isDarkMode),
+              title: Text(
+                'Swipe Actions',
+                style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
               ),
-              trailing: const Icon(Icons.chevron_right),
+              subtitle: Text(
+                'Customize swipe gestures for your daily classes',
+                style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+              ),
+              trailing: chevronIcon,
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const WhatsNewScreen()),
+                  MaterialPageRoute(builder: (context) => const SwipeActionsSettingsScreen()),
                 );
               },
-            );
-          },
+            ),
+          ],
         ),
-        ListTile(
-          leading: const Icon(Icons.forum_outlined),
-          title: const Text('GitHub Discussions'),
-          subtitle: const Text('Connect with the community, announcements, & Q&A'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const GitHubDiscussionsScreen()),
-            );
-          },
+
+        _buildSectionHeader('Features & Integrations', isDarkMode),
+        _buildGroupCard(
+          isDarkMode: isDarkMode,
+          children: [
+            KeyedSubtree(
+              key: _locationManagerKey,
+              child: ListTile(
+                leading: _buildLeadingIcon(Icons.pin_drop_outlined, isDarkMode),
+                title: Text(
+                  'Locations & Geofencing',
+                  style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+                ),
+                subtitle: Text(
+                  'Manage classroom coordinates and auto-attendance',
+                  style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+                ),
+                trailing: chevronIcon,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LocationManagerScreen()),
+                  );
+                },
+              ),
+            ),
+            _buildTileDivider(isDarkMode),
+            ListTile(
+              leading: _buildLeadingIcon(Icons.hub_outlined, isDarkMode),
+              title: Text(
+                'Google Integrations',
+                style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+              ),
+              subtitle: Text(
+                'Account connection, Drive cloud backup, & Calendar sync',
+                style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+              ),
+              trailing: chevronIcon,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const GoogleIntegrationsScreen()),
+                );
+              },
+            ),
+            _buildTileDivider(isDarkMode),
+            KeyedSubtree(
+              key: _calendarSyncKey,
+              child: ListTile(
+                enabled: !(kDebugMode && !_devModeCalendarSyncEnabled),
+                leading: _buildLeadingIcon(Icons.sync, isDarkMode),
+                title: Text(
+                  'Calendar Sync',
+                  style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+                ),
+                subtitle: Text(
+                  'Sync your timetable with Google or Device Calendar',
+                  style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+                ),
+                trailing: chevronIcon,
+                onTap: (kDebugMode && !_devModeCalendarSyncEnabled)
+                    ? null
+                    : () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const CalendarSyncSelectionScreen()),
+                        );
+                      },
+              ),
+            ),
+            _buildTileDivider(isDarkMode),
+            KeyedSubtree(
+              key: _semesterBackupKey,
+              child: ListTile(
+                leading: _buildLeadingIcon(Icons.backup_outlined, isDarkMode),
+                title: Text(
+                  'Semester Backup',
+                  style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+                ),
+                subtitle: Text(
+                  'Backup & restore attendance data (3 rolling backups kept)',
+                  style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+                ),
+                trailing: chevronIcon,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SemesterBackupScreen()),
+                  );
+                },
+              ),
+            ),
+            _buildTileDivider(isDarkMode),
+            ListTile(
+              leading: _buildLeadingIcon(Icons.cloud_sync_outlined, isDarkMode),
+              title: Text(
+                'Classroom Timetable & Sharing',
+                style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+              ),
+              subtitle: Text(
+                'Live sync via Google Drive & one-time semester share',
+                style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+              ),
+              trailing: chevronIcon,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LiveTimetableSyncScreen()),
+                );
+              },
+            ),
+          ],
         ),
-        ListTile(
-          leading: const Icon(Icons.shield_outlined),
-          title: const Text('Keep Android Open'),
-          subtitle: const Text('Sideloading restrictions alert, petition, & FreeDroidWarn'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const KeepAndroidOpenScreen()),
-            );
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.favorite_border_outlined),
-          title: const Text('Support me'),
-          subtitle: const Text('Star repo or share AttendMate with others'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-            showDialog(
-              context: context,
-              barrierColor: isDarkMode
-                  ? Colors.white.withValues(alpha: 0.12)
-                  : null,
-              builder: (dialogContext) {
-                return AlertDialog(
-                  title: const Text('Support AttendMate'),
-                  content: const Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'AttendMate is 100% free and open-source. Help support the project by starring the repository or sharing the app with classmates and friends!',
-                        style: TextStyle(fontSize: 14, height: 1.4),
-                      ),
-                    ],
+
+        _buildSectionHeader('Help & Support', isDarkMode),
+        _buildGroupCard(
+          isDarkMode: isDarkMode,
+          children: [
+            KeyedSubtree(
+              key: _interactiveTourKey,
+              child: ListTile(
+                leading: _buildLeadingIcon(Icons.explore_outlined, isDarkMode),
+                title: Text(
+                  'Interactive App Tour',
+                  style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+                ),
+                subtitle: Text(
+                  'Take the guided feature walkthrough',
+                  style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+                ),
+                trailing: const Icon(Icons.play_arrow_rounded, size: 20),
+                onTap: () {
+                  Provider.of<TutorialController>(context, listen: false).startTutorial(force: true);
+                },
+              ),
+            ),
+            _buildTileDivider(isDarkMode),
+            KeyedSubtree(
+              key: _setupGuideKey,
+              child: ListTile(
+                leading: _buildLeadingIcon(Icons.menu_book_outlined, isDarkMode),
+                title: Text(
+                  'Setup Guide',
+                  style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+                ),
+                subtitle: Text(
+                  'Learn how to import schedules, set up geofencing, sync calendars, and more',
+                  style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+                ),
+                trailing: chevronIcon,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SetupGuideScreen()),
+                  );
+                },
+              ),
+            ),
+            _buildTileDivider(isDarkMode),
+            FutureBuilder<PackageInfo>(
+              future: _packageInfoFuture,
+              builder: (context, snapshot) {
+                final version = snapshot.data?.version;
+
+                return ListTile(
+                  leading: _buildLeadingIcon(Icons.new_releases_outlined, isDarkMode),
+                  title: Text(
+                    'What\'s New',
+                    style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
                   ),
-                  actions: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: FilledButton.icon(
-                            icon: const Icon(Icons.star_rounded, size: 20),
-                            label: const Text('Star My Repo'),
-                            onPressed: () async {
-                              Navigator.of(dialogContext).pop();
-                              final result = await UrlLauncherUtils.launchExternalUrl(
-                                _repoUrl,
-                                context: context,
-                              );
-                              if (!context.mounted) return;
-                              if (result == LaunchResult.failed) {
-                                ScaffoldMessenger.of(context).showReplacingSnackBar(
-                                  const SnackBar(content: Text('Could not open the repository page.')),
-                                );
-                              }
-                            },
+                  subtitle: Text(
+                    version == null
+                        ? 'See updates in your installed version'
+                        : 'See updates in v$version',
+                    style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+                  ),
+                  trailing: chevronIcon,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const WhatsNewScreen()),
+                    );
+                  },
+                );
+              },
+            ),
+            _buildTileDivider(isDarkMode),
+            ListTile(
+              leading: _buildLeadingIcon(Icons.forum_outlined, isDarkMode),
+              title: Text(
+                'GitHub Discussions',
+                style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+              ),
+              subtitle: Text(
+                'Connect with the community, announcements, & Q&A',
+                style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+              ),
+              trailing: chevronIcon,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const GitHubDiscussionsScreen()),
+                );
+              },
+            ),
+            _buildTileDivider(isDarkMode),
+            ListTile(
+              leading: _buildLeadingIcon(Icons.shield_outlined, isDarkMode),
+              title: Text(
+                'Keep Android Open',
+                style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+              ),
+              subtitle: Text(
+                'Sideloading restrictions alert, petition, & FreeDroidWarn',
+                style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+              ),
+              trailing: chevronIcon,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const KeepAndroidOpenScreen()),
+                );
+              },
+            ),
+            _buildTileDivider(isDarkMode),
+            ListTile(
+              leading: _buildLeadingIcon(Icons.favorite_border_outlined, isDarkMode),
+              title: Text(
+                'Support me',
+                style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+              ),
+              subtitle: Text(
+                'Star repo or share AttendMate with others',
+                style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+              ),
+              trailing: chevronIcon,
+              onTap: () {
+                showDialog(
+                  context: context,
+                  barrierColor: isDarkMode ? Colors.white.withValues(alpha: 0.12) : null,
+                  builder: (dialogContext) {
+                    return AlertDialog(
+                      title: const Text('Support AttendMate'),
+                      content: const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'AttendMate is 100% free and open-source. Help support the project by starring the repository or sharing the app with classmates and friends!',
+                            style: TextStyle(fontSize: 14, height: 1.4),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton.filledTonal(
-                          icon: const Icon(Icons.share_rounded, size: 20),
-                          tooltip: 'Share App',
-                          onPressed: () {
-                            Navigator.of(dialogContext).pop();
-                            SemesterShareService().shareAppWithOthers(context);
-                          },
+                        ],
+                      ),
+                      actions: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FilledButton.icon(
+                                icon: const Icon(Icons.star_rounded, size: 20),
+                                label: const Text('Star My Repo'),
+                                onPressed: () async {
+                                  Navigator.of(dialogContext).pop();
+                                  final result = await UrlLauncherUtils.launchExternalUrl(
+                                    _repoUrl,
+                                    context: context,
+                                  );
+                                  if (!context.mounted) return;
+                                  if (result == LaunchResult.failed) {
+                                    ScaffoldMessenger.of(context).showReplacingSnackBar(
+                                      const SnackBar(content: Text('Could not open the repository page.')),
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton.filledTonal(
+                              icon: const Icon(Icons.share_rounded, size: 20),
+                              tooltip: 'Share App',
+                              onPressed: () {
+                                Navigator.of(dialogContext).pop();
+                                SemesterShareService().shareAppWithOthers(context);
+                              },
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                  ],
+                    );
+                  },
                 );
               },
-            );
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.bug_report_outlined),
-          title: const Text('Request feature / Report bug'),
-          subtitle: const Text('Submit feedback or suggest improvements'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-            showDialog(
-              context: context,
-              barrierColor: isDarkMode
-                  ? Colors.white.withValues(alpha: 0.12)
-                  : null,
-              builder: (dialogContext) {
-                return AlertDialog(
-                  title: const Text('Request Feature or Report Bug'),
-                  content: const Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Please create a new issue on my GitHub Issues page.'),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () async {
-                        Navigator.of(dialogContext).pop();
-                        final result = await UrlLauncherUtils.launchExternalUrl(
-                          _issuesUrl,
-                          context: context,
-                        );
-                        if (!context.mounted) return;
-                        if (result == LaunchResult.failed) {
-                          ScaffoldMessenger.of(context).showReplacingSnackBar(
-                            const SnackBar(content: Text('Could not open the issues page.')),
-                          );
-                        }
-                      },
-                      child: const Text('Open Issues Page'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(dialogContext).pop(),
-                      child: const Text('Close'),
-                    ),
-                  ],
+            ),
+            _buildTileDivider(isDarkMode),
+            ListTile(
+              leading: _buildLeadingIcon(Icons.bug_report_outlined, isDarkMode),
+              title: Text(
+                'Request feature / Report bug',
+                style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+              ),
+              subtitle: Text(
+                'Submit feedback or suggest improvements',
+                style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+              ),
+              trailing: chevronIcon,
+              onTap: () {
+                showDialog(
+                  context: context,
+                  barrierColor: isDarkMode ? Colors.white.withValues(alpha: 0.12) : null,
+                  builder: (dialogContext) {
+                    return AlertDialog(
+                      title: const Text('Request Feature or Report Bug'),
+                      content: const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Please create a new issue on my GitHub Issues page.'),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () async {
+                            Navigator.of(dialogContext).pop();
+                            final result = await UrlLauncherUtils.launchExternalUrl(
+                              _issuesUrl,
+                              context: context,
+                            );
+                            if (!context.mounted) return;
+                            if (result == LaunchResult.failed) {
+                              ScaffoldMessenger.of(context).showReplacingSnackBar(
+                                const SnackBar(content: Text('Could not open the issues page.')),
+                              );
+                            }
+                          },
+                          child: const Text('Open Issues Page'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                          child: const Text('Close'),
+                        ),
+                      ],
+                    );
+                  },
                 );
               },
-            );
-          },
+            ),
+          ],
         ),
-        const Divider(),
-        _buildSectionHeader('System', colorScheme),
-        ListTile(
-          leading: Icon(
-            _isBatteryOptimizationIgnoring == true
-                ? Icons.battery_charging_full_rounded
-                : Icons.battery_alert_rounded,
-            color: _isBatteryOptimizationIgnoring == false
-                ? Colors.orange.shade800
-                : null,
-          ),
-          title: const Text('Background Access'),
-          subtitle: Text(
-            _isBatteryOptimizationIgnoring == null
-                ? 'Checking background access status...'
-                : _isBatteryOptimizationIgnoring!
-                    ? 'Granted (Optimal background execution)'
-                    : 'Restricted (Tap to allow & view device guides)',
-          ),
-          trailing: _isBatteryOptimizationIgnoring == false
-              ? Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withAlpha(38),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.orange.withAlpha(102)),
-                  ),
-                  child: const Text(
-                    'Fix Access',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.orange,
-                    ),
-                  ),
-                )
-              : const Icon(Icons.chevron_right),
-          onTap: () {
-            BatteryOptimizationService().showBatteryOptimizationDialog(
-              context,
-              onStatusChanged: _checkBatteryOptimizationStatus,
-            );
-          },
-        ),
-        ListTile(
-          leading: Icon(
-            _availableUpdate != null
-                ? Icons.system_update_alt_outlined
-                : Icons.system_update_outlined,
-          ),
-          title: const Text('App updates'),
-          subtitle: Text(
-            kDebugMode
-                ? 'Unavailable in debug mode'
-                : _isCheckingForUpdate
-                    ? 'Checking for updates...'
-                    : _availableUpdate != null
-                        ? 'Update to v${_availableUpdate!.version}'
-                        : _hasCheckedForUpdate
-                            ? 'You are on the latest version'
-                            : 'Tap to check for updates',
-          ),
-          trailing: kDebugMode
-              ? null
-              : _isCheckingForUpdate
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+
+        _buildSectionHeader('System', isDarkMode),
+        _buildGroupCard(
+          isDarkMode: isDarkMode,
+          children: [
+            ListTile(
+              leading: _buildLeadingIcon(
+                _isBatteryOptimizationIgnoring == true
+                    ? Icons.battery_charging_full_rounded
+                    : Icons.battery_alert_rounded,
+                isDarkMode,
+                accentColor: _isBatteryOptimizationIgnoring == false ? Colors.orange.shade800 : null,
+              ),
+              title: Text(
+                'Background Access',
+                style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+              ),
+              subtitle: Text(
+                _isBatteryOptimizationIgnoring == null
+                    ? 'Checking background access status...'
+                    : _isBatteryOptimizationIgnoring!
+                        ? 'Granted (Optimal background execution)'
+                        : 'Restricted (Tap to allow & view device guides)',
+                style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+              ),
+              trailing: _isBatteryOptimizationIgnoring == false
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withAlpha(38),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.orange.withAlpha(102)),
+                      ),
+                      child: const Text(
+                        'Fix Access',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange,
+                        ),
+                      ),
                     )
-                  : _availableUpdate != null
-                      ? const _UpdateAvailableBadge()
-                      : const Icon(Icons.chevron_right),
-          onTap: kDebugMode || _isCheckingForUpdate ? null : _onUpdateTileTap,
-        ),
-        FutureBuilder<PackageInfo>(
-          future: _packageInfoFuture,
-          builder: (context, snapshot) {
-            final version = snapshot.data?.version ?? 'Loading...';
-            final buildNumber = snapshot.data?.buildNumber ?? 'Loading...';
-
-            return ListTile(
-              leading: const Icon(Icons.info_outline),
-              title: const Text('App version'),
-              subtitle: Text('v$version (Build $buildNumber)'),
-            );
-          },
-        ),
-        FutureBuilder<DateTime?>(
-          future: _currentVersionReleaseDateFuture,
-          builder: (context, snapshot) {
-            final releaseDate = snapshot.data;
-            final subtitle = releaseDate != null
-                ? DateFormat.yMMMd().format(releaseDate)
-                : (snapshot.connectionState == ConnectionState.waiting
-                    ? 'Loading...'
-                    : 'Unavailable');
-
-            return ListTile(
-              leading: const Icon(Icons.update_outlined),
-              title: const Text('Current version release date'),
-              subtitle: Text(subtitle),
-            );
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.terminal_outlined),
-          title: const Text('Diagnostics Log'),
-          subtitle: const Text('View app events, logs, and report issues on GitHub'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const DiagnosticsLogScreen()),
-            );
-          },
-        ),
-
-        const Divider(),
-        _buildSectionHeader('Privacy & Terms', colorScheme),
-        ListTile(
-          leading: const Icon(Icons.privacy_tip_outlined),
-          title: const Text('Privacy Policy'),
-          subtitle: const Text('Read how your data and location permissions are protected'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const MarkdownViewerScreen(
-                  title: 'Privacy Policy',
-                  assetPath: 'git_public/privacy.md',
-                ),
+                  : chevronIcon,
+              onTap: () {
+                BatteryOptimizationService().showBatteryOptimizationDialog(
+                  context,
+                  onStatusChanged: _checkBatteryOptimizationStatus,
+                );
+              },
+            ),
+            _buildTileDivider(isDarkMode),
+            ListTile(
+              leading: _buildLeadingIcon(
+                _availableUpdate != null
+                    ? Icons.system_update_alt_outlined
+                    : Icons.system_update_outlined,
+                isDarkMode,
               ),
-            );
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.gavel_outlined),
-          title: const Text('Terms of Service'),
-          subtitle: const Text('Terms and conditions for using AttendMate'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const MarkdownViewerScreen(
-                  title: 'Terms of Service',
-                  assetPath: 'git_public/terms.md',
-                ),
+              title: Text(
+                'App updates',
+                style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
               ),
-            );
-          },
+              subtitle: Text(
+                kDebugMode
+                    ? 'Unavailable in debug mode'
+                    : _isCheckingForUpdate
+                        ? 'Checking for updates...'
+                        : _availableUpdate != null
+                            ? 'Update to v${_availableUpdate!.version}'
+                            : _hasCheckedForUpdate
+                                ? 'You are on the latest version'
+                                : 'Tap to check for updates',
+                style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+              ),
+              trailing: kDebugMode
+                  ? null
+                  : _isCheckingForUpdate
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : _availableUpdate != null
+                          ? const _UpdateAvailableBadge()
+                          : chevronIcon,
+              onTap: kDebugMode || _isCheckingForUpdate ? null : _onUpdateTileTap,
+            ),
+            _buildTileDivider(isDarkMode),
+            FutureBuilder<PackageInfo>(
+              future: _packageInfoFuture,
+              builder: (context, snapshot) {
+                final version = snapshot.data?.version ?? 'Loading...';
+                final buildNumber = snapshot.data?.buildNumber ?? 'Loading...';
+
+                return ListTile(
+                  leading: _buildLeadingIcon(Icons.info_outline, isDarkMode),
+                  title: Text(
+                    'App version',
+                    style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+                  ),
+                  subtitle: Text(
+                    'v$version (Build $buildNumber)',
+                    style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+                  ),
+                );
+              },
+            ),
+            _buildTileDivider(isDarkMode),
+            FutureBuilder<DateTime?>(
+              future: _currentVersionReleaseDateFuture,
+              builder: (context, snapshot) {
+                final releaseDate = snapshot.data;
+                final subtitle = releaseDate != null
+                    ? DateFormat.yMMMd().format(releaseDate)
+                    : (snapshot.connectionState == ConnectionState.waiting
+                        ? 'Loading...'
+                        : 'Unavailable');
+
+                return ListTile(
+                  leading: _buildLeadingIcon(Icons.update_outlined, isDarkMode),
+                  title: Text(
+                    'Current version release date',
+                    style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+                  ),
+                  subtitle: Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+                  ),
+                );
+              },
+            ),
+            _buildTileDivider(isDarkMode),
+            ListTile(
+              leading: _buildLeadingIcon(Icons.terminal_outlined, isDarkMode),
+              title: Text(
+                'Diagnostics Log',
+                style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+              ),
+              subtitle: Text(
+                'View app events, logs, and report issues on GitHub',
+                style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+              ),
+              trailing: chevronIcon,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const DiagnosticsLogScreen()),
+                );
+              },
+            ),
+          ],
+        ),
+
+        _buildSectionHeader('Privacy & Terms', isDarkMode),
+        _buildGroupCard(
+          isDarkMode: isDarkMode,
+          children: [
+            ListTile(
+              leading: _buildLeadingIcon(Icons.privacy_tip_outlined, isDarkMode),
+              title: Text(
+                'Privacy Policy',
+                style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+              ),
+              subtitle: Text(
+                'Read how your data and location permissions are protected',
+                style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+              ),
+              trailing: chevronIcon,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MarkdownViewerScreen(
+                      title: 'Privacy Policy',
+                      assetPath: 'git_public/privacy.md',
+                    ),
+                  ),
+                );
+              },
+            ),
+            _buildTileDivider(isDarkMode),
+            ListTile(
+              leading: _buildLeadingIcon(Icons.gavel_outlined, isDarkMode),
+              title: Text(
+                'Terms of Service',
+                style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+              ),
+              subtitle: Text(
+                'Terms and conditions for using AttendMate',
+                style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+              ),
+              trailing: chevronIcon,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MarkdownViewerScreen(
+                      title: 'Terms of Service',
+                      assetPath: 'git_public/terms.md',
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
         ),
 
         if (kDebugMode) ...[
-          const Divider(),
-          _buildSectionHeader('Developer Options', colorScheme),
-          ListTile(
-            leading: const Icon(Icons.bug_report_outlined, color: Colors.red),
-            title: const Text('Test GitHub Issue Handler'),
-            subtitle: const Text('Triggers a test diagnostic log report using the new GitHub template'),
-            onTap: _testGitHubIssueHandler,
-          ),
-          ListTile(
-            leading: const Icon(Icons.system_update_outlined, color: Colors.red),
-            title: const Text('Simulate Update Screen'),
-            subtitle: const Text('Fetch latest release from GitHub and test the update UI & progress'),
-            onTap: _simulateUpdateScreen,
-          ),
-          ListTile(
-            leading: const Icon(Icons.sync, color: Colors.red),
-            title: const Text('Enable Calendar Sync (Debug)'),
-            subtitle: const Text('Allows syncing generated timetable to Google/Device calendar during testing'),
-            trailing: Switch(
-              value: _devModeCalendarSyncEnabled,
-              onChanged: _toggleDevModeCalendarSync,
-              activeThumbColor: Colors.red,
-            ),
-            onTap: () => _toggleDevModeCalendarSync(!_devModeCalendarSyncEnabled),
-          ),
-          ListTile(
-            leading: const Icon(Icons.meeting_room_outlined, color: Colors.red),
-            title: const Text('Trigger Test Pre-Class Notification (15s)'),
-            subtitle: const Text('Schedules a 5-min location reminder for today\'s next class in 15 seconds'),
-            onTap: _triggerTestPreClassNotification,
-          ),
-          ListTile(
-            leading: const Icon(Icons.notification_important_outlined, color: Colors.red),
-            title: const Text('Trigger Test Notification (15s)'),
-            subtitle: const Text('Schedules a reminder for the most recent unmarked class of today in 15 seconds'),
-            onTap: _triggerTestNotification,
-          ),
-          ListTile(
-            leading: const Icon(Icons.backup_outlined, color: Colors.red),
-            title: const Text('Trigger Test Background Backup (30s)'),
-            subtitle: const Text('Schedules a WorkManager background backup in 30 seconds. Close the app to test.'),
-            onTap: _triggerTestBackgroundBackup,
-          ),
-          ListTile(
-            leading: const Icon(Icons.playlist_add_check_outlined, color: Colors.red),
-            title: const Text('Generate Timetable Data'),
-            subtitle: const Text('Generates 120-day semester or just today\'s timetable (5 classes/day)'),
-            onTap: _showDemoGenerationConfirmation,
-          ),
-          ListTile(
-            leading: const Icon(Icons.delete_forever_outlined, color: Colors.red),
-            title: const Text('Clear App Data'),
-            subtitle: const Text('Wipes DB and SharedPreferences immediately'),
-            onTap: _showClearDataConfirmation,
+          _buildSectionHeader('Developer Options', isDarkMode),
+          _buildGroupCard(
+            isDarkMode: isDarkMode,
+            children: [
+              Theme(
+                data: Theme.of(context).copyWith(
+                  dividerColor: Colors.transparent,
+                  splashColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                ),
+                child: ExpansionTile(
+                  key: const PageStorageKey<String>('developer_options_tile'),
+                  initiallyExpanded: false,
+                  tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  childrenPadding: EdgeInsets.zero,
+                  leading: _buildLeadingIcon(Icons.terminal_rounded, isDarkMode, accentColor: Colors.redAccent),
+                  title: Text(
+                    'Developer Tools',
+                    style: GoogleFonts.roboto(fontWeight: FontWeight.w600, fontSize: 14.5),
+                  ),
+                  subtitle: Text(
+                    'Tap to expand debug tools, simulations, & tests',
+                    style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+                  ),
+                  iconColor: isDarkMode ? Colors.white : Colors.black,
+                  collapsedIconColor: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70),
+                  children: [
+                    _buildTileDivider(isDarkMode),
+                    ListTile(
+                      leading: _buildLeadingIcon(Icons.bug_report_outlined, isDarkMode, accentColor: Colors.red),
+                      title: Text(
+                        'Test GitHub Issue Handler',
+                        style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+                      ),
+                      subtitle: const Text('Triggers a test diagnostic log report using the new GitHub template'),
+                      onTap: _testGitHubIssueHandler,
+                    ),
+                    _buildTileDivider(isDarkMode),
+                    ListTile(
+                      leading: _buildLeadingIcon(Icons.system_update_outlined, isDarkMode, accentColor: Colors.red),
+                      title: Text(
+                        'Simulate Update Screen',
+                        style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+                      ),
+                      subtitle: const Text('Fetch latest release from GitHub and test the update UI & progress'),
+                      onTap: _simulateUpdateScreen,
+                    ),
+                    _buildTileDivider(isDarkMode),
+                    ListTile(
+                      leading: _buildLeadingIcon(Icons.sync, isDarkMode, accentColor: Colors.red),
+                      title: Text(
+                        'Enable Calendar Sync (Debug)',
+                        style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+                      ),
+                      subtitle: const Text('Allows syncing generated timetable to Google/Device calendar during testing'),
+                      trailing: Switch(
+                        value: _devModeCalendarSyncEnabled,
+                        onChanged: _toggleDevModeCalendarSync,
+                        activeThumbColor: Colors.red,
+                      ),
+                      onTap: () => _toggleDevModeCalendarSync(!_devModeCalendarSyncEnabled),
+                    ),
+                    _buildTileDivider(isDarkMode),
+                    ListTile(
+                      leading: _buildLeadingIcon(Icons.meeting_room_outlined, isDarkMode, accentColor: Colors.red),
+                      title: Text(
+                        'Trigger Test Pre-Class Notification (15s)',
+                        style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+                      ),
+                      subtitle: const Text('Schedules a 5-min location reminder for today\'s next class in 15 seconds'),
+                      onTap: _triggerTestPreClassNotification,
+                    ),
+                    _buildTileDivider(isDarkMode),
+                    ListTile(
+                      leading: _buildLeadingIcon(Icons.notification_important_outlined, isDarkMode, accentColor: Colors.red),
+                      title: Text(
+                        'Trigger Test Notification (15s)',
+                        style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+                      ),
+                      subtitle: const Text('Schedules a reminder for the most recent unmarked class of today in 15 seconds'),
+                      onTap: _triggerTestNotification,
+                    ),
+                    _buildTileDivider(isDarkMode),
+                    ListTile(
+                      leading: _buildLeadingIcon(Icons.backup_outlined, isDarkMode, accentColor: Colors.red),
+                      title: Text(
+                        'Trigger Test Background Backup (30s)',
+                        style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+                      ),
+                      subtitle: const Text('Schedules a WorkManager background backup in 30 seconds. Close the app to test.'),
+                      onTap: _triggerTestBackgroundBackup,
+                    ),
+                    _buildTileDivider(isDarkMode),
+                    ListTile(
+                      leading: _buildLeadingIcon(Icons.playlist_add_check_outlined, isDarkMode, accentColor: Colors.red),
+                      title: Text(
+                        'Generate Timetable Data',
+                        style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+                      ),
+                      subtitle: const Text('Generates 120-day semester or just today\'s timetable (5 classes/day)'),
+                      onTap: _showDemoGenerationConfirmation,
+                    ),
+                    _buildTileDivider(isDarkMode),
+                    ListTile(
+                      leading: _buildLeadingIcon(Icons.delete_forever_outlined, isDarkMode, accentColor: Colors.red),
+                      title: Text(
+                        'Clear App Data',
+                        style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+                      ),
+                      subtitle: const Text('Wipes DB and SharedPreferences immediately'),
+                      onTap: _showClearDataConfirmation,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ],
@@ -1300,16 +1587,278 @@ class _MoreScreenState extends State<MoreScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title, ColorScheme colorScheme) {
+  void _showAmbientThemeModal(
+    BuildContext context,
+    AmbientThemeProvider ambientProvider,
+    bool isDarkMode,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: isDarkMode ? Colors.black.withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.3),
+      builder: (ctx) {
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+              decoration: BoxDecoration(
+                color: isDarkMode
+                    ? const Color(0xFF0C0C12).withValues(alpha: 0.70)
+                    : Colors.white.withValues(alpha: 0.78),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                border: Border(
+                  top: BorderSide(
+                    color: isDarkMode
+                        ? Colors.white.withValues(alpha: 0.18)
+                        : Colors.black.withValues(alpha: 0.10),
+                    width: 1.0,
+                  ),
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 18),
+                      decoration: BoxDecoration(
+                        color: isDarkMode
+                            ? Colors.white.withValues(alpha: 0.25)
+                            : Colors.black.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.palette_outlined,
+                        size: 20,
+                        color: isDarkMode ? Colors.white : Colors.black,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Ambient Lighting & AMOLED',
+                        style: GoogleFonts.inter(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
+                          color: isDarkMode ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Select atmospheric lighting or switch to clean black AMOLED.',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  ...AmbientThemeMode.values.map((mode) {
+                    final isSelected = ambientProvider.mode == mode;
+                    String title;
+                    String desc;
+                    IconData icon;
+                    Color accent;
+                    switch (mode) {
+                      case AmbientThemeMode.dynamicCycle:
+                        title = 'Dynamic (Time-Based)';
+                        desc = 'Transitions automatically with morning, sunset, and night cycles.';
+                        icon = Icons.auto_mode_rounded;
+                        accent = const Color(0xFF38BDF8);
+                        break;
+                      case AmbientThemeMode.morning:
+                        title = 'Only Morning Gradient';
+                        desc = 'Always illuminated with vibrant golden amber dawn warmth.';
+                        icon = Icons.wb_sunny_rounded;
+                        accent = const Color(0xFFF59E0B);
+                        break;
+                      case AmbientThemeMode.afternoon:
+                        title = 'Only Afternoon/Evening Gradient';
+                        desc = 'Always bathed in warm radiant sunset orange hues.';
+                        icon = Icons.wb_twilight_rounded;
+                        accent = const Color(0xFFEA580C);
+                        break;
+                      case AmbientThemeMode.night:
+                        title = 'Only Blue Night Gradient';
+                        desc = 'Always bathed in deep midnight sapphire dark blue tones.';
+                        icon = Icons.nights_stay_rounded;
+                        accent = const Color(0xFF3B82F6);
+                        break;
+                      case AmbientThemeMode.amoled:
+                        title = 'Clean Minimal AMOLED Black';
+                        desc = 'Turn off all gradients for pure pitch-black AMOLED aesthetic.';
+                        icon = Icons.contrast_rounded;
+                        accent = isDarkMode ? Colors.white : Colors.black;
+                        break;
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: GestureDetector(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          ambientProvider.setMode(mode);
+                          Navigator.pop(ctx);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? (isDarkMode
+                                    ? Colors.white.withValues(alpha: 0.12)
+                                    : Colors.black.withValues(alpha: 0.08))
+                                : (isDarkMode
+                                    ? Colors.white.withValues(alpha: 0.04)
+                                    : Colors.black.withValues(alpha: 0.03)),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isSelected
+                                  ? (isDarkMode ? Colors.white : Colors.black)
+                                  : (isDarkMode
+                                      ? Colors.white.withValues(alpha: 0.10)
+                                      : Colors.black.withValues(alpha: 0.06)),
+                              width: isSelected ? 1.4 : 0.8,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: accent.withValues(alpha: isDarkMode ? 0.20 : 0.15),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(icon, size: 18, color: accent),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 14,
+                                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                                        color: isDarkMode ? Colors.white : Colors.black,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      desc,
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isSelected)
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  size: 20,
+                                  color: isDarkMode ? Colors.white : Colors.black,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildGroupCard({
+    required List<Widget> children,
+    required bool isDarkMode,
+  }) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? const Color(0xFF0D0D12).withValues(alpha: 0.42)
+                : Colors.white.withValues(alpha: 0.55),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDarkMode
+                  ? Colors.white.withValues(alpha: 0.16)
+                  : Colors.black.withValues(alpha: 0.08),
+              width: 0.9,
+            ),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: children,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTileDivider(bool isDarkMode) {
+    return Divider(
+      height: 1,
+      thickness: 0.6,
+      indent: 62,
+      endIndent: 16,
+      color: isDarkMode ? const Color(0xFF202026) : const Color(0xFFEAEAEA),
+    );
+  }
+
+  Widget _buildLeadingIcon(IconData icon, bool isDarkMode, {Color? accentColor}) {
+    return Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF1B1B20) : const Color(0xFFECECF0),
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(
+          color: isDarkMode ? const Color(0xFF282830) : const Color(0xFFDCDCE2),
+          width: 0.6,
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          icon,
+          size: 18,
+          color: accentColor ?? (isDarkMode ? Colors.white : Colors.black87),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, bool isDarkMode) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: const EdgeInsets.fromLTRB(4, 18, 4, 8),
       child: Text(
         title.toUpperCase(),
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.0,
-          color: colorScheme.primary,
+        style: GoogleFonts.roboto(
+          fontSize: 10.5,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.2,
+          color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70),
         ),
       ),
     );
