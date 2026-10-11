@@ -918,8 +918,8 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
       children: [
         Column(
           children: [
-            // 1. Top Metrics Header Bar
-            _buildTopMetricsBar(
+            // 1. Unified Top Header Bar (Metrics + Perfectly Symmetrical Period Stepper)
+            _buildUnifiedTopBar(
               markedCount: markedCount,
               totalClasses: displayClasses.length,
               overallPercentage: overallPercentage,
@@ -927,20 +927,12 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
               isDarkMode: isDarkMode,
               rs: rs,
               allMarked: allMarked,
+              activeIndex: _activeCardIndex,
             ),
 
-            // 2. Card Stepper Bar on Top (Moved to top so it is NEVER buried behind nav bar!)
-            if (_viewMode == ScheduleViewMode.deck)
-              _buildTopStepperBar(
-                activeIndex: _activeCardIndex,
-                totalClasses: displayClasses.length,
-                isDarkMode: isDarkMode,
-                rs: rs,
-              ),
-
-            // 3. Main Stage: 3D Stacked Deck or Completed Summary
+            // 2. Main Stage: 3D Stacked Deck or Completed Summary
             Expanded(
-              child: (_viewMode == ScheduleViewMode.receipt || (allMarked && _viewMode == ScheduleViewMode.receipt))
+              child: (_viewMode == ScheduleViewMode.receipt)
                   ? DayOverSummaryView(
                       targetDate: widget.targetDate,
                       displayClasses: displayClasses,
@@ -1028,17 +1020,8 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
                           slotKey: slotKey,
                         );
 
-                        // If all classes are marked, transition to summary
-                        if (markedCount + 1 >= displayClasses.length) {
-                          Future.delayed(const Duration(milliseconds: 320), () {
-                            if (mounted) {
-                              setState(() {
-                                _viewMode = ScheduleViewMode.receipt;
-                              });
-                            }
-                          });
-                        } else {
-                          // Advance to next card
+                        // Advance smoothly to next card in the deck — keep user on deck!
+                        if (mounted) {
                           setState(() {
                             _activeCardIndex = (_activeCardIndex + 1) % displayClasses.length;
                           });
@@ -1085,8 +1068,8 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
     );
   }
 
-  // --- Top Metrics Header Bar (Active Day + Overall Attendance) ---
-  Widget _buildTopMetricsBar({
+  // --- Unified Top Header Bar (Metrics + Symmetrical Stepper Navigation) ---
+  Widget _buildUnifiedTopBar({
     required int markedCount,
     required int totalClasses,
     required double overallPercentage,
@@ -1094,14 +1077,15 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
     required bool isDarkMode,
     required ResponsiveScale rs,
     required bool allMarked,
+    required int activeIndex,
   }) {
     return Container(
-      margin: rs.insetsSymmetric(horizontal: 16, vertical: 2),
-      padding: rs.insetsSymmetric(horizontal: 14, vertical: 7),
+      margin: rs.insetsSymmetric(horizontal: 16, vertical: 4),
+      padding: rs.insetsSymmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: isDarkMode
             ? Colors.white.withValues(alpha: 0.05)
-            : Colors.black.withValues(alpha: 0.04),
+            : Colors.white.withValues(alpha: 0.70),
         borderRadius: BorderRadius.circular(rs.scale(18)),
         border: Border.all(
           color: isDarkMode
@@ -1110,229 +1094,247 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
           width: 0.8,
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Left: Day Progress Chip
+          // Row 1: Metrics & Overall Attendance Pill & View Switchers
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                width: 7,
-                height: 7,
-                decoration: BoxDecoration(
-                  color: allMarked
-                      ? const Color(0xFF10B981)
-                      : (markedCount > 0 ? const Color(0xFFF59E0B) : Colors.white38),
-                  shape: BoxShape.circle,
-                ),
-              ),
-              SizedBox(width: rs.width(8)),
-              Text(
-                allMarked ? 'Day Logged ($markedCount/$totalClasses)' : '$markedCount of $totalClasses Logged',
-                style: GoogleFonts.inter(
-                  fontSize: rs.font(12),
-                  fontWeight: FontWeight.w600,
-                  color: isDarkMode ? Colors.white.withValues(alpha: 0.85) : Colors.black87,
-                ),
-              ),
-            ],
-          ),
-
-          // Right: Overall Attendance & View Switcher
-          Row(
-            children: [
-              Container(
-                padding: rs.insetsSymmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: (isSafe ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: isDarkMode ? 0.18 : 0.12),
-                  borderRadius: BorderRadius.circular(rs.scale(12)),
-                  border: Border.all(
-                    color: (isSafe ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.35),
-                    width: 0.8,
-                  ),
-                ),
-                child: Text(
-                  '${overallPercentage.toStringAsFixed(1)}% Overall',
-                  style: GoogleFonts.inter(
-                    fontSize: rs.font(11),
-                    fontWeight: FontWeight.w700,
-                    color: isSafe ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                  ),
-                ),
-              ),
-              SizedBox(width: rs.width(8)),
-              // Mode Toggle
-              InkWell(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() {
-                    _viewMode = _viewMode == ScheduleViewMode.deck
-                        ? ScheduleViewMode.receipt
-                        : ScheduleViewMode.deck;
-                  });
-                },
-                borderRadius: BorderRadius.circular(rs.scale(12)),
-                child: Container(
-                  padding: const EdgeInsets.all(5),
-                  decoration: BoxDecoration(
-                    color: isDarkMode
-                        ? Colors.white.withValues(alpha: 0.08)
-                        : Colors.black.withValues(alpha: 0.06),
-                    borderRadius: BorderRadius.circular(rs.scale(10)),
-                  ),
-                  child: Icon(
-                    _viewMode == ScheduleViewMode.deck ? Icons.receipt_long_rounded : Icons.style_rounded,
-                    size: rs.scale(15),
-                    color: isDarkMode ? Colors.white : Colors.black87,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- Top Stepper Bar (Moved to Top to Never be Buried by Nav Bar!) ---
-  Widget _buildTopStepperBar({
-    required int activeIndex,
-    required int totalClasses,
-    required bool isDarkMode,
-    required ResponsiveScale rs,
-  }) {
-    return Container(
-      margin: rs.insetsSymmetric(horizontal: 16, vertical: 3),
-      padding: rs.insetsSymmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: isDarkMode
-            ? Colors.white.withValues(alpha: 0.04)
-            : Colors.black.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(rs.scale(14)),
-        border: Border.all(
-          color: isDarkMode
-              ? Colors.white.withValues(alpha: 0.08)
-              : Colors.black.withValues(alpha: 0.06),
-          width: 0.8,
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Previous Period Button
-          InkWell(
-            onTap: activeIndex > 0
-                ? () {
-                    HapticFeedback.selectionClick();
-                    _summonCard(activeIndex - 1);
-                  }
-                : null,
-            borderRadius: BorderRadius.circular(rs.scale(12)),
-            child: Padding(
-              padding: rs.insetsSymmetric(horizontal: 8, vertical: 5),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+              // Left: Day Progress Chip
+              Row(
                 children: [
-                  Icon(
-                    Icons.chevron_left_rounded,
-                    size: rs.scale(16),
-                    color: activeIndex > 0
-                        ? (isDarkMode ? Colors.white : Colors.black87)
-                        : (isDarkMode ? Colors.white24 : Colors.black26),
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: allMarked
+                          ? const Color(0xFF10B981)
+                          : (markedCount > 0 ? const Color(0xFFF59E0B) : Colors.white38),
+                      shape: BoxShape.circle,
+                    ),
                   ),
+                  SizedBox(width: rs.width(8)),
                   Text(
-                    'Prev',
+                    allMarked ? 'Day Logged ($markedCount/$totalClasses)' : '$markedCount of $totalClasses Logged',
                     style: GoogleFonts.inter(
-                      fontSize: rs.font(11.5),
+                      fontSize: rs.font(12),
                       fontWeight: FontWeight.w600,
+                      color: isDarkMode ? Colors.white.withValues(alpha: 0.85) : Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+
+              // Right: Overall Attendance & View Switcher
+              Row(
+                children: [
+                  Container(
+                    padding: rs.insetsSymmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: (isSafe ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: isDarkMode ? 0.18 : 0.12),
+                      borderRadius: BorderRadius.circular(rs.scale(10)),
+                      border: Border.all(
+                        color: (isSafe ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.35),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Text(
+                      '${overallPercentage.toStringAsFixed(1)}% Overall',
+                      style: GoogleFonts.inter(
+                        fontSize: rs.font(11),
+                        fontWeight: FontWeight.w700,
+                        color: isSafe ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: rs.width(6)),
+                  // Peek Accordion Drawer Toggle
+                  InkWell(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() {
+                        _isAccordionExpanded = !_isAccordionExpanded;
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(rs.scale(10)),
+                    child: Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        color: _isAccordionExpanded
+                            ? (isDarkMode ? Colors.white.withValues(alpha: 0.16) : Colors.black.withValues(alpha: 0.12))
+                            : (isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06)),
+                        borderRadius: BorderRadius.circular(rs.scale(10)),
+                      ),
+                      child: Icon(
+                        Icons.view_agenda_rounded,
+                        size: rs.scale(15),
+                        color: isDarkMode ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: rs.width(4)),
+                  // Mode Toggle
+                  InkWell(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() {
+                        _viewMode = _viewMode == ScheduleViewMode.deck
+                            ? ScheduleViewMode.receipt
+                            : ScheduleViewMode.deck;
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(rs.scale(10)),
+                    child: Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        color: isDarkMode
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.black.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(rs.scale(10)),
+                      ),
+                      child: Icon(
+                        _viewMode == ScheduleViewMode.deck ? Icons.receipt_long_rounded : Icons.style_rounded,
+                        size: rs.scale(15),
+                        color: isDarkMode ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          // Row 2: Perfectly Centered & Symmetrical Period Navigation (in Deck mode)
+          if (_viewMode == ScheduleViewMode.deck) ...[
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: rs.height(6)),
+              child: Divider(
+                height: 1,
+                thickness: 0.6,
+                color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Perfectly Symmetrical 30x30 Prev Button
+                InkWell(
+                  onTap: activeIndex > 0
+                      ? () {
+                          HapticFeedback.selectionClick();
+                          _summonCard(activeIndex - 1);
+                        }
+                      : null,
+                  borderRadius: BorderRadius.circular(rs.scale(8)),
+                  child: Container(
+                    width: rs.scale(30),
+                    height: rs.scale(30),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: activeIndex > 0
+                          ? (isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05))
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(rs.scale(8)),
+                      border: Border.all(
+                        color: activeIndex > 0
+                            ? (isDarkMode ? Colors.white.withValues(alpha: 0.14) : Colors.black.withValues(alpha: 0.10))
+                            : Colors.transparent,
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.chevron_left_rounded,
+                      size: rs.scale(18),
                       color: activeIndex > 0
                           ? (isDarkMode ? Colors.white : Colors.black87)
                           : (isDarkMode ? Colors.white24 : Colors.black26),
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-
-          // Period Indicator Dots
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Period ${activeIndex + 1} of $totalClasses',
-                style: GoogleFonts.inter(
-                  fontSize: rs.font(11.5),
-                  fontWeight: FontWeight.w700,
-                  color: isDarkMode ? Colors.white.withValues(alpha: 0.9) : Colors.black87,
                 ),
-              ),
-              SizedBox(width: rs.width(8)),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: List.generate(totalClasses, (dotIdx) {
-                  final isCurrent = dotIdx == activeIndex;
-                  return InkWell(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      _summonCard(dotIdx);
-                    },
-                    borderRadius: BorderRadius.circular(4),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: isCurrent ? 14 : 5,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: isCurrent
-                              ? (isDarkMode ? Colors.white : Colors.black)
-                              : (isDarkMode ? Colors.white24 : Colors.black26),
-                          borderRadius: BorderRadius.circular(3),
+
+                // Mathematically Centered Period Title & Interactive Dots
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Period ${activeIndex + 1} of $totalClasses',
+                        style: GoogleFonts.inter(
+                          fontSize: rs.font(11.5),
+                          fontWeight: FontWeight.w700,
+                          color: isDarkMode ? Colors.white : Colors.black87,
                         ),
                       ),
-                    ),
-                  );
-                }),
-              ),
-            ],
-          ),
+                      SizedBox(height: rs.height(4)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(totalClasses, (dotIdx) {
+                          final isCurrent = dotIdx == activeIndex;
+                          return InkWell(
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              _summonCard(dotIdx);
+                            },
+                            borderRadius: BorderRadius.circular(4),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 2.5, vertical: 2),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                width: isCurrent ? 14 : 5,
+                                height: 5,
+                                decoration: BoxDecoration(
+                                  color: isCurrent
+                                      ? (isDarkMode ? Colors.white : Colors.black)
+                                      : (isDarkMode ? Colors.white24 : Colors.black26),
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ],
+                  ),
+                ),
 
-          // Next Period Button
-          InkWell(
-            onTap: activeIndex < totalClasses - 1
-                ? () {
-                    HapticFeedback.selectionClick();
-                    _summonCard(activeIndex + 1);
-                  }
-                : null,
-            borderRadius: BorderRadius.circular(rs.scale(12)),
-            child: Padding(
-              padding: rs.insetsSymmetric(horizontal: 8, vertical: 5),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Next',
-                    style: GoogleFonts.inter(
-                      fontSize: rs.font(11.5),
-                      fontWeight: FontWeight.w600,
+                // Perfectly Symmetrical 30x30 Next Button
+                InkWell(
+                  onTap: activeIndex < totalClasses - 1
+                      ? () {
+                          HapticFeedback.selectionClick();
+                          _summonCard(activeIndex + 1);
+                        }
+                      : null,
+                  borderRadius: BorderRadius.circular(rs.scale(8)),
+                  child: Container(
+                    width: rs.scale(30),
+                    height: rs.scale(30),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: activeIndex < totalClasses - 1
+                          ? (isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05))
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(rs.scale(8)),
+                      border: Border.all(
+                        color: activeIndex < totalClasses - 1
+                            ? (isDarkMode ? Colors.white.withValues(alpha: 0.14) : Colors.black.withValues(alpha: 0.10))
+                            : Colors.transparent,
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.chevron_right_rounded,
+                      size: rs.scale(18),
                       color: activeIndex < totalClasses - 1
                           ? (isDarkMode ? Colors.white : Colors.black87)
                           : (isDarkMode ? Colors.white24 : Colors.black26),
                     ),
                   ),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    size: rs.scale(16),
-                    color: activeIndex < totalClasses - 1
-                        ? (isDarkMode ? Colors.white : Colors.black87)
-                        : (isDarkMode ? Colors.white24 : Colors.black26),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -1593,7 +1595,7 @@ class _StackedCardDeckState extends State<StackedCardDeck>
     final activeIndex = widget.activeIndex.clamp(0, count - 1);
 
     final centerCardWidth = (screenWidth * 0.70).clamp(255.0, 285.0);
-    final centerCardHeight = (widget.rs.height(355)).clamp(315.0, 385.0);
+    final centerCardHeight = (widget.rs.height(355)).clamp(320.0, 390.0);
     final peekOffset = centerCardWidth * 0.54;
 
     return Center(
@@ -1961,7 +1963,7 @@ class _StackedCardDeckState extends State<StackedCardDeck>
             children: [
               // Card Content
               Padding(
-                padding: rs.insetsAll(20),
+                padding: rs.insetsSymmetric(horizontal: 18, vertical: 13),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -2015,23 +2017,23 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                       ],
                     ),
 
-                    SizedBox(height: rs.height(16)),
+                    SizedBox(height: rs.height(10)),
 
                     // Subject Full Name (Image 1 style)
                     Text(
                       subject.name,
                       style: GoogleFonts.inter(
-                        fontSize: rs.font(23),
+                        fontSize: rs.font(22),
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.5,
                         color: isDarkMode ? Colors.white : Colors.black87,
-                        height: 1.25,
+                        height: 1.22,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
 
-                    SizedBox(height: rs.height(6)),
+                    SizedBox(height: rs.height(5)),
 
                     // Location / Room details
                     if (hasRoom)
@@ -2055,7 +2057,7 @@ class _StackedCardDeckState extends State<StackedCardDeck>
 
                     if (isLocked)
                       Padding(
-                        padding: EdgeInsets.only(top: rs.height(6)),
+                        padding: EdgeInsets.only(top: rs.height(4)),
                         child: Text(
                           '🔒 Locked by manual count update',
                           style: GoogleFonts.inter(fontSize: rs.font(11), color: const Color(0xFFF59E0B)),
@@ -2067,8 +2069,8 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                     // Current Marked Status Pill (if already decided)
                     if (attendance != null)
                       Container(
-                        margin: EdgeInsets.only(bottom: rs.height(12)),
-                        padding: rs.insetsSymmetric(horizontal: 10, vertical: 4.5),
+                        margin: EdgeInsets.only(bottom: rs.height(8)),
+                        padding: rs.insetsSymmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(rs.scale(10)),
@@ -2132,7 +2134,7 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                       ],
                     ),
 
-                    SizedBox(height: rs.height(12)),
+                    SizedBox(height: rs.height(9)),
 
                     // Bottom 3 Interactive Action Buttons (for 1-tap marking)
                     Row(
@@ -2277,7 +2279,7 @@ class _StackedCardDeckState extends State<StackedCardDeck>
         },
         borderRadius: BorderRadius.circular(rs.scale(14)),
         child: Container(
-          padding: EdgeInsets.symmetric(vertical: rs.height(9)),
+          padding: EdgeInsets.symmetric(vertical: rs.height(7.5)),
           decoration: BoxDecoration(
             color: color.withValues(alpha: isDarkMode ? 0.14 : 0.09),
             borderRadius: BorderRadius.circular(rs.scale(14)),
@@ -2429,15 +2431,16 @@ class AccordionPeekWindow extends StatelessWidget {
                 ),
               ),
 
-              // Expanded Accordion List
+              // Expanded Accordion List (Styled after previous attendance view cards)
               if (isExpanded)
                 ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: rs.height(240)),
+                  constraints: BoxConstraints(maxHeight: rs.height(290)),
                   child: ListView.separated(
-                    padding: rs.insetsSymmetric(horizontal: 14, vertical: 6),
+                    padding: rs.insetsSymmetric(horizontal: 14, vertical: 8),
                     shrinkWrap: true,
+                    physics: const BouncingScrollPhysics(),
                     itemCount: displayClasses.length,
-                    separatorBuilder: (context, index) => SizedBox(height: rs.height(6)),
+                    separatorBuilder: (context, index) => SizedBox(height: rs.height(7)),
                     itemBuilder: (context, idx) {
                       final subject = displayClasses[idx];
                       final slot = subject.schedule.first;
@@ -2450,32 +2453,103 @@ class AccordionPeekWindow extends StatelessWidget {
                         slotKey: slotKey,
                       );
 
-                      final status = attendance?.status;
+                      // Effective room and block location
+                      final effectiveLocId = subject.getEffectiveLocationId(slot);
+                      final locConfig = effectiveLocId != null ? locationById[effectiveLocId] : null;
+                      final room = subject.getEffectiveRoom(slot) ?? locConfig?.name;
+                      final block = subject.getEffectiveBlock(slot) ?? locConfig?.block;
+                      final hasRoom = room != null && room.isNotEmpty;
+
+                      // Duration calculation
+                      final startMinutes = slot.startTime.hour * 60 + slot.startTime.minute;
+                      final endMinutes = slot.endTime.hour * 60 + slot.endTime.minute;
+                      final diffMinutes = endMinutes - startMinutes;
+                      String durationStr = '';
+                      if (diffMinutes > 0) {
+                        if (diffMinutes % 60 == 0) {
+                          durationStr = ' (${diffMinutes ~/ 60}h)';
+                        } else if (diffMinutes > 60) {
+                          durationStr = ' (${diffMinutes ~/ 60}h ${diffMinutes % 60}m)';
+                        } else {
+                          durationStr = ' (${diffMinutes}m)';
+                        }
+                      }
+
+                      // Status pill styling from previous attendance view
+                      final AttendanceStatus? status = attendance?.status;
+                      final bool isAttended = status == AttendanceStatus.attended;
+                      final bool isAbsent = status == AttendanceStatus.absent || status == AttendanceStatus.plannedAbsent;
+                      final bool isHoliday = status == AttendanceStatus.cancelled;
+
+                      final IconData statusIcon;
+                      final String statusLabel;
+                      final Color statusBg;
+                      final Color statusFg;
+                      final Color statusBorder;
+
+                      if (isAttended) {
+                        statusIcon = Icons.check_rounded;
+                        statusLabel = 'Present';
+                        statusBg = isDarkMode ? Colors.white : Colors.black;
+                        statusFg = isDarkMode ? Colors.black : Colors.white;
+                        statusBorder = isDarkMode ? Colors.white : Colors.black;
+                      } else if (isAbsent) {
+                        statusIcon = Icons.close_rounded;
+                        statusLabel = 'Absent';
+                        statusBg = const Color(0xFFEF4444).withValues(alpha: 0.16);
+                        statusFg = const Color(0xFFEF4444);
+                        statusBorder = const Color(0xFFEF4444).withValues(alpha: 0.35);
+                      } else if (isHoliday) {
+                        statusIcon = Icons.pause_rounded;
+                        statusLabel = 'Cancelled';
+                        statusBg = const Color(0xFFF59E0B).withValues(alpha: 0.16);
+                        statusFg = const Color(0xFFF59E0B);
+                        statusBorder = const Color(0xFFF59E0B).withValues(alpha: 0.35);
+                      } else {
+                        statusIcon = Icons.radio_button_unchecked_rounded;
+                        statusLabel = 'Awaiting';
+                        statusBg = isDarkMode ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03);
+                        statusFg = isDarkMode ? Colors.white.withValues(alpha: 0.55) : Colors.black.withValues(alpha: 0.55);
+                        statusBorder = isDarkMode ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.08);
+                      }
 
                       return Material(
                         color: Colors.transparent,
                         child: InkWell(
-                          onTap: () => onSummonPeriod(idx),
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            onSummonPeriod(idx);
+                          },
                           borderRadius: BorderRadius.circular(rs.scale(14)),
                           child: Container(
-                            padding: rs.insetsSymmetric(horizontal: 12, vertical: 8),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: rs.width(12),
+                              vertical: rs.height(9.5),
+                            ),
                             decoration: BoxDecoration(
                               color: isCurrent
-                                  ? (isDarkMode ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08))
-                                  : (isDarkMode ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03)),
+                                  ? (isDarkMode
+                                      ? Colors.white.withValues(alpha: 0.09)
+                                      : Colors.black.withValues(alpha: 0.06))
+                                  : (isDarkMode
+                                      ? Colors.white.withValues(alpha: 0.04)
+                                      : Colors.white.withValues(alpha: 0.65)),
                               borderRadius: BorderRadius.circular(rs.scale(14)),
                               border: Border.all(
                                 color: isCurrent
-                                    ? (isDarkMode ? Colors.white38 : Colors.black38)
-                                    : (isDarkMode ? Colors.white10 : Colors.black12),
-                                width: isCurrent ? 1.2 : 0.8,
+                                    ? subject.color.withValues(alpha: 0.65)
+                                    : (isDarkMode
+                                        ? Colors.white.withValues(alpha: 0.10)
+                                        : Colors.black.withValues(alpha: 0.08)),
+                                width: isCurrent ? 1.4 : 0.8,
                               ),
                             ),
                             child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                // Acronym node
+                                // Acronym node badge
                                 Container(
-                                  padding: const EdgeInsets.all(5),
+                                  padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
                                     color: subject.color.withValues(alpha: 0.18),
                                     shape: BoxShape.circle,
@@ -2489,68 +2563,116 @@ class AccordionPeekWindow extends StatelessWidget {
                                     ),
                                   ),
                                 ),
-                                SizedBox(width: rs.width(8)),
+                                SizedBox(width: rs.width(10)),
+
+                                // Subject title, time with duration, and room/block
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Text(
-                                        subject.name,
-                                        style: GoogleFonts.inter(
-                                          fontSize: rs.font(12.5),
-                                          fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w600,
-                                          color: isDarkMode ? Colors.white : Colors.black87,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
+                                      Row(
+                                        children: [
+                                          Flexible(
+                                            child: Text(
+                                              subject.name,
+                                              style: GoogleFonts.inter(
+                                                fontSize: rs.font(13.5),
+                                                fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w600,
+                                                color: isDarkMode ? Colors.white : Colors.black87,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          if (isCurrent) ...[
+                                            SizedBox(width: rs.width(6)),
+                                            Container(
+                                              padding: rs.insetsSymmetric(horizontal: 5, vertical: 1.5),
+                                              decoration: BoxDecoration(
+                                                color: subject.color.withValues(alpha: 0.2),
+                                                borderRadius: BorderRadius.circular(rs.scale(6)),
+                                              ),
+                                              child: Text(
+                                                'IN DECK',
+                                                style: GoogleFonts.inter(
+                                                  fontSize: rs.font(8.5),
+                                                  fontWeight: FontWeight.w800,
+                                                  letterSpacing: 0.5,
+                                                  color: subject.color,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
                                       ),
+                                      SizedBox(height: rs.height(2.5)),
+                                      Row(
+                                        children: [
+                                          Flexible(
+                                            child: Text(
+                                              '${slot.formatTimeRange(timeFormatProvider.timeFormat)}$durationStr',
+                                              style: GoogleFonts.inter(
+                                                fontSize: rs.font(11),
+                                                color: isDarkMode ? Colors.white60 : Colors.black54,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          if (hasRoom) ...[
+                                            SizedBox(width: rs.width(6)),
+                                            Flexible(
+                                              child: Text(
+                                                'Room $room${block != null && block.isNotEmpty ? " ($block)" : ""}',
+                                                style: GoogleFonts.inter(
+                                                  fontSize: rs.font(10.5),
+                                                  color: isDarkMode ? Colors.white54 : Colors.black45,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(width: rs.width(8)),
+
+                                // Status toggle pill (Present, Absent, Cancelled, Awaiting)
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: rs.width(8),
+                                    vertical: rs.height(4.5),
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: statusBg,
+                                    borderRadius: BorderRadius.circular(rs.scale(14)),
+                                    border: Border.all(
+                                      color: statusBorder,
+                                      width: 0.8,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(statusIcon, size: rs.scale(11), color: statusFg),
+                                      SizedBox(width: rs.width(4)),
                                       Text(
-                                        slot.formatTimeRange(timeFormatProvider.timeFormat),
+                                        statusLabel,
                                         style: GoogleFonts.inter(
+                                          color: statusFg,
                                           fontSize: rs.font(10.5),
-                                          color: isDarkMode ? Colors.white60 : Colors.black54,
+                                          fontWeight: isAttended ? FontWeight.w700 : FontWeight.w500,
+                                          letterSpacing: 0.1,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                SizedBox(width: rs.width(6)),
-                                // Status chip
-                                if (status != null)
-                                  Container(
-                                    padding: rs.insetsSymmetric(horizontal: 7, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: status == AttendanceStatus.attended
-                                          ? const Color(0xFF10B981).withValues(alpha: 0.16)
-                                          : (status == AttendanceStatus.absent || status == AttendanceStatus.plannedAbsent
-                                              ? const Color(0xFFEF4444).withValues(alpha: 0.16)
-                                              : const Color(0xFFF59E0B).withValues(alpha: 0.16)),
-                                      borderRadius: BorderRadius.circular(rs.scale(10)),
-                                    ),
-                                    child: Text(
-                                      status == AttendanceStatus.attended
-                                          ? 'Attended'
-                                          : (status == AttendanceStatus.absent || status == AttendanceStatus.plannedAbsent ? 'Missed' : 'Cancelled'),
-                                      style: GoogleFonts.inter(
-                                        fontSize: rs.font(10),
-                                        fontWeight: FontWeight.w700,
-                                        color: status == AttendanceStatus.attended
-                                            ? const Color(0xFF10B981)
-                                            : (status == AttendanceStatus.absent || status == AttendanceStatus.plannedAbsent
-                                                ? const Color(0xFFEF4444)
-                                                : const Color(0xFFF59E0B)),
-                                      ),
-                                    ),
-                                  )
-                                else
-                                  Text(
-                                    'Summon >',
-                                    style: GoogleFonts.inter(
-                                      fontSize: rs.font(10.5),
-                                      fontWeight: FontWeight.w600,
-                                      color: isDarkMode ? Colors.white54 : Colors.black45,
-                                    ),
-                                  ),
                               ],
                             ),
                           ),
