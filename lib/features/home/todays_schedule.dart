@@ -934,129 +934,154 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
               activeIndex: _activeCardIndex,
             ),
 
-            // 2. Main Stage: 3D Stacked Deck or Completed Summary
+            // 2. Main Stage: 3D Stacked Deck or Completed Summary with Smooth Animated Switcher
             Expanded(
-              child: (_viewMode == ScheduleViewMode.receipt)
-                  ? DayOverSummaryView(
-                      targetDate: widget.targetDate,
-                      displayClasses: displayClasses,
-                      attendanceProvider: attendanceProvider,
-                      subjectProvider: subjectProvider,
-                      timeFormatProvider: timeFormatProvider,
-                      locationById: widget.locationById,
-                      overallPercentage: overallPercentage,
-                      bunkBuffer: bunkBuffer,
-                      isSafe: isSafe,
-                      markedCount: markedCount,
-                      attendedCount: attendedCount,
-                      absentCount: absentCount,
-                      cancelledCount: cancelledCount,
-                      isToday: isToday,
-                      isDarkMode: isDarkMode,
-                      rs: rs,
-                      semesterEnded: semesterEnded,
-                      isFutureDate: isFutureDate,
-                      onRevisitDeck: () {
-                        setState(() {
-                          _viewMode = ScheduleViewMode.deck;
-                          _activeCardIndex = 0;
-                        });
-                      },
-                      onModifyItem: (subject, slot, slotKey, attendance) {
-                        _openDecisionModificationSheet(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 520),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: (child, animation) {
+                  final isSummary = child.key == const ValueKey('summary_view');
+                  return FadeTransition(
+                    opacity: animation,
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: isSummary ? 0.95 : 1.02, end: 1.0).animate(
+                        CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+                      ),
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: Offset(0.0, isSummary ? 0.04 : -0.04),
+                          end: Offset.zero,
+                        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+                        child: child,
+                      ),
+                    ),
+                  );
+                },
+                child: (_viewMode == ScheduleViewMode.receipt)
+                    ? DayOverSummaryView(
+                        key: const ValueKey('summary_view'),
+                        targetDate: widget.targetDate,
+                        displayClasses: displayClasses,
+                        attendanceProvider: attendanceProvider,
+                        subjectProvider: subjectProvider,
+                        timeFormatProvider: timeFormatProvider,
+                        locationById: widget.locationById,
+                        overallPercentage: overallPercentage,
+                        bunkBuffer: bunkBuffer,
+                        isSafe: isSafe,
+                        markedCount: markedCount,
+                        attendedCount: attendedCount,
+                        absentCount: absentCount,
+                        cancelledCount: cancelledCount,
+                        isToday: isToday,
+                        isDarkMode: isDarkMode,
+                        rs: rs,
+                        semesterEnded: semesterEnded,
+                        isFutureDate: isFutureDate,
+                        onRevisitDeck: () {
+                          setState(() {
+                            _viewMode = ScheduleViewMode.deck;
+                            _activeCardIndex = 0;
+                          });
+                        },
+                        onModifyItem: (subject, slot, slotKey, attendance) {
+                          _openDecisionModificationSheet(
+                            context: context,
+                            subject: subject,
+                            timeSlot: slot,
+                            slotKey: slotKey,
+                            currentAttendance: attendance,
+                            subjectProvider: subjectProvider,
+                            timeFormatProvider: timeFormatProvider,
+                            rs: rs,
+                            isDarkMode: isDarkMode,
+                          );
+                        },
+                        onMarkDayHoliday: () => _showConfirmationDialog(
                           context: context,
-                          subject: subject,
-                          timeSlot: slot,
-                          slotKey: slotKey,
-                          currentAttendance: attendance,
-                          subjectProvider: subjectProvider,
-                          timeFormatProvider: timeFormatProvider,
-                          rs: rs,
-                          isDarkMode: isDarkMode,
-                        );
-                      },
-                      onMarkDayHoliday: () => _showConfirmationDialog(
-                        context: context,
-                        title: 'Mark as Holiday',
-                        content: isToday
-                            ? 'Are you sure you want to mark today as a holiday? All classes will be cancelled and will not affect attendance criteria.'
-                            : 'Are you sure you want to mark this day as a holiday? All classes will be cancelled and will not affect attendance criteria.',
-                        onConfirm: () => subjectProvider.markDayAsHoliday(widget.targetDate),
-                        successMessage: 'Holiday action completed.',
-                      ),
-                      onMarkDayAbsent: () => _showConfirmationDialog(
-                        context: context,
-                        title: isToday ? 'Skip Today' : 'Skip Day',
-                        content: isToday
-                            ? 'Are you sure you want to skip all classes today? This will mark all scheduled classes as absent.'
-                            : 'Are you sure you want to skip all classes on this day? This will mark all scheduled classes as absent.',
-                        onConfirm: () => subjectProvider.markDayAsAbsent(widget.targetDate),
-                        successMessage: 'Skip Day action completed.',
-                      ),
-                      onMarkDayPresent: () => _showConfirmationDialog(
-                        context: context,
-                        title: isToday ? 'Mark as Present' : 'Mark Day as Present',
-                        content: isToday
-                            ? 'Are you sure you want to mark today as present? All classes will be marked as attended.'
-                            : 'Are you sure you want to mark all classes on this day as attended?',
-                        onConfirm: () => subjectProvider.markDayAsPresent(widget.targetDate),
-                        successMessage: 'Mark as Present action completed.',
-                      ),
-                    )
-                  : StackedCardDeck(
-                      targetDate: widget.targetDate,
-                      displayClasses: displayClasses,
-                      activeIndex: _activeCardIndex,
-                      attendanceProvider: attendanceProvider,
-                      subjectProvider: subjectProvider,
-                      timeFormatProvider: timeFormatProvider,
-                      locationById: widget.locationById,
-                      semesterEnded: semesterEnded,
-                      isFutureDate: isFutureDate,
-                      isDarkMode: isDarkMode,
-                      rs: rs,
-                      onCardSwiped: (index, newStatus) async {
-                        final subject = displayClasses[index];
-                        final slotKey = subject.schedule.first.slotKey;
-                        await subjectProvider.markAttendance(
-                          subject.id,
-                          widget.targetDate,
-                          newStatus,
-                          slotKey: slotKey,
-                        );
-                        if (mounted) {
-                          setState(() {});
-                        }
+                          title: 'Mark as Holiday',
+                          content: isToday
+                              ? 'Are you sure you want to mark today as a holiday? All classes will be cancelled and will not affect attendance criteria.'
+                              : 'Are you sure you want to mark this day as a holiday? All classes will be cancelled and will not affect attendance criteria.',
+                          onConfirm: () => subjectProvider.markDayAsHoliday(widget.targetDate),
+                          successMessage: 'Holiday action completed.',
+                        ),
+                        onMarkDayAbsent: () => _showConfirmationDialog(
+                          context: context,
+                          title: isToday ? 'Skip Today' : 'Skip Day',
+                          content: isToday
+                              ? 'Are you sure you want to skip all classes today? This will mark all scheduled classes as absent.'
+                              : 'Are you sure you want to skip all classes on this day? This will mark all scheduled classes as absent.',
+                          onConfirm: () => subjectProvider.markDayAsAbsent(widget.targetDate),
+                          successMessage: 'Skip Day action completed.',
+                        ),
+                        onMarkDayPresent: () => _showConfirmationDialog(
+                          context: context,
+                          title: isToday ? 'Mark as Present' : 'Mark Day as Present',
+                          content: isToday
+                              ? 'Are you sure you want to mark today as present? All classes will be marked as attended.'
+                              : 'Are you sure you want to mark all classes on this day as attended?',
+                          onConfirm: () => subjectProvider.markDayAsPresent(widget.targetDate),
+                          successMessage: 'Mark as Present action completed.',
+                        ),
+                      )
+                    : StackedCardDeck(
+                        key: const ValueKey('deck_view'),
+                        targetDate: widget.targetDate,
+                        displayClasses: displayClasses,
+                        activeIndex: _activeCardIndex,
+                        attendanceProvider: attendanceProvider,
+                        subjectProvider: subjectProvider,
+                        timeFormatProvider: timeFormatProvider,
+                        locationById: widget.locationById,
+                        semesterEnded: semesterEnded,
+                        isFutureDate: isFutureDate,
+                        isDarkMode: isDarkMode,
+                        rs: rs,
+                        onCardSwiped: (index, newStatus) async {
+                          final subject = displayClasses[index];
+                          final slotKey = subject.schedule.first.slotKey;
+                          await subjectProvider.markAttendance(
+                            subject.id,
+                            widget.targetDate,
+                            newStatus,
+                            slotKey: slotKey,
+                          );
+                          if (mounted) {
+                            setState(() {});
+                          }
 
-                        // Only show automatic summary after the person has swiped through the LAST card!
-                        final isLastCardInDeck = index >= displayClasses.length - 1;
-                        if (isLastCardInDeck) {
-                          Future.delayed(const Duration(milliseconds: 320), () {
+                          // Only show automatic summary after the person has swiped through the LAST card!
+                          final isLastCardInDeck = index >= displayClasses.length - 1;
+                          if (isLastCardInDeck) {
+                            Future.delayed(const Duration(milliseconds: 320), () {
+                              if (mounted) {
+                                setState(() {
+                                  _viewMode = ScheduleViewMode.receipt;
+                                });
+                              }
+                            });
+                          } else {
                             if (mounted) {
                               setState(() {
-                                _viewMode = ScheduleViewMode.receipt;
+                                _activeCardIndex = index + 1;
                               });
                             }
-                          });
-                        } else {
-                          if (mounted) {
-                            setState(() {
-                              _activeCardIndex = index + 1;
-                            });
                           }
-                        }
-                      },
-                      onIndexChanged: (newIdx) {
-                        setState(() {
-                          _activeCardIndex = newIdx;
-                        });
-                      },
-                      onViewSummaryTap: () {
-                        setState(() {
-                          _viewMode = ScheduleViewMode.receipt;
-                        });
-                      },
-                    ),
+                        },
+                        onIndexChanged: (newIdx) {
+                          setState(() {
+                            _activeCardIndex = newIdx;
+                          });
+                        },
+                        onViewSummaryTap: () {
+                          setState(() {
+                            _viewMode = ScheduleViewMode.receipt;
+                          });
+                        },
+                      ),
+              ),
             ),
           ],
         ),
@@ -1092,7 +1117,7 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
             right: _isAccordionExpanded ? rs.width(8) : rs.width(14),
             top: _isAccordionExpanded ? rs.scale(12) : null,
             bottom: _isAccordionExpanded ? rs.scale(80) : rs.scale(88),
-            height: _isAccordionExpanded ? null : rs.scale(54),
+            height: _isAccordionExpanded ? null : null,
             child: AccordionPeekWindow(
               displayClasses: displayClasses,
               activeCardIndex: _activeCardIndex,
@@ -1177,30 +1202,23 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Row 1: Metrics & Overall Attendance Pill & View Switchers
+          // Row 1: Metrics & Overall Attendance Pill & View Switchers (matching Concept 3 header)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Left: Day Progress Chip
-              Row(
+              // Left: "Active Day" Hero Title
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: allMarked
-                          ? const Color(0xFF10B981)
-                          : (markedCount > 0 ? const Color(0xFFF59E0B) : Colors.white38),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  SizedBox(width: rs.width(8)),
                   Text(
-                    allMarked ? 'Day Logged ($markedCount/$totalClasses)' : '$markedCount of $totalClasses Logged',
+                    'Active\nDay',
                     style: GoogleFonts.inter(
-                      fontSize: rs.font(12),
-                      fontWeight: FontWeight.w600,
-                      color: isDarkMode ? Colors.white.withValues(alpha: 0.85) : Colors.black87,
+                      fontSize: rs.font(18),
+                      fontWeight: FontWeight.w800,
+                      height: 1.1,
+                      letterSpacing: -0.5,
+                      color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
                     ),
                   ),
                 ],
@@ -1209,26 +1227,31 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
               // Right: Overall Attendance & View Switcher
               Row(
                 children: [
-                  Container(
-                    padding: rs.insetsSymmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: (isSafe ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: isDarkMode ? 0.18 : 0.12),
-                      borderRadius: BorderRadius.circular(rs.scale(10)),
-                      border: Border.all(
-                        color: (isSafe ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.35),
-                        width: 0.8,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${overallPercentage.toStringAsFixed(1)}%',
+                        style: GoogleFonts.inter(
+                          fontSize: rs.font(18),
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                          color: isSafe
+                              ? (isDarkMode ? Colors.white : const Color(0xFF0F172A))
+                              : const Color(0xFFEF4444),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      '${overallPercentage.toStringAsFixed(1)}% Overall',
-                      style: GoogleFonts.inter(
-                        fontSize: rs.font(11),
-                        fontWeight: FontWeight.w700,
-                        color: isSafe ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                      Text(
+                        'Overall',
+                        style: GoogleFonts.inter(
+                          fontSize: rs.font(11),
+                          fontWeight: FontWeight.w500,
+                          color: isDarkMode ? Colors.white60 : Colors.black54,
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                  SizedBox(width: rs.width(6)),
+                  SizedBox(width: rs.width(8)),
                   // Peek Accordion Drawer Toggle
                   InkWell(
                     onTap: () {
@@ -1666,7 +1689,8 @@ class _StackedCardDeckState extends State<StackedCardDeck>
         targetRot = -0.28;
         break;
       case AttendanceStatus.cancelled:
-        targetFly = Offset(_dragOffset.dx * 0.3, -screenHeight * 1.30);
+        final bool flyUp = _dragOffset.dy < -15;
+        targetFly = Offset(_dragOffset.dx * 0.3, flyUp ? -screenHeight * 1.30 : screenHeight * 1.30);
         targetRot = 0.0;
         break;
     }
@@ -1744,14 +1768,13 @@ class _StackedCardDeckState extends State<StackedCardDeck>
     // Modern glass card proportions
     final centerCardWidth = (screenWidth * 0.76).clamp(265.0, 310.0);
     final centerCardHeight = (widget.rs.height(375)).clamp(345.0, 415.0);
-    final peekOffset = centerCardWidth * 0.52;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final totalHeight = constraints.maxHeight;
         final bottomOcclusion = widget.rs.scale(136);
         final visibleHeight = (totalHeight - bottomOcclusion).clamp(0.0, totalHeight);
-        final cardBoxHeight = centerCardHeight + widget.rs.height(24);
+        final cardBoxHeight = centerCardHeight + widget.rs.height(28);
         final topOffset = ((visibleHeight - cardBoxHeight) / 2).clamp(0.0, totalHeight - cardBoxHeight);
 
         return Stack(
@@ -1776,21 +1799,23 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                       ? _snapOffsetAnim.value
                       : _dragOffset;
                   final dragDistance = currentDrag.distance;
-                  final dragProgress = (dragDistance / 110.0).clamp(0.0, 1.0);
+                  final dragProgress = (dragDistance / 100.0).clamp(0.0, 1.0);
 
-                  // Collect visible card indices, skipping any currently dismissing card
+                  // Collect visible card indices in the deck (active card + upcoming cards underneath)
                   final visibleIndices = <int>[];
                   for (int i = 0; i < count; i++) {
                     if (i == _dismissingIndex) continue;
-                    if ((i - currentAnimatedIndex).abs() <= 3.2) {
+                    final d = i - currentAnimatedIndex;
+                    // Only active card and up to 2 upcoming cards directly underneath in stack
+                    if (d >= -0.2 && d <= 2.4) {
                       visibleIndices.add(i);
                     }
                   }
 
-                  // Sort back-to-front so active card is on top of subordinate cards
+                  // Sort back-to-front: deepest upcoming card paints first, active card on top
                   visibleIndices.sort((a, b) {
-                    final distA = (a - currentAnimatedIndex).abs();
-                    final distB = (b - currentAnimatedIndex).abs();
+                    final distA = (a - currentAnimatedIndex);
+                    final distB = (b - currentAnimatedIndex);
                     return distB.compareTo(distA);
                   });
 
@@ -1798,7 +1823,7 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                     alignment: Alignment.center,
                     clipBehavior: Clip.none,
                     children: [
-                      // Subordinate and active cards in 3D fan layout
+                      // Subordinate deck cards and active card
                       ...visibleIndices.map((i) {
                         final subject = widget.displayClasses[i];
                         final slot = subject.schedule.first;
@@ -1813,12 +1838,12 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                         final d = i - currentAnimatedIndex;
                         final isCurrentActive = (i == activeIndex);
 
-                        final clampedD = d.clamp(-3.0, 3.0);
-                        final double baseDx = clampedD * peekOffset;
-                        final double baseDy = (clampedD.abs() * 7.5).clamp(0.0, 22.0);
-                        final double baseRot = (clampedD * 0.08).clamp(-0.24, 0.24);
-                        final double baseScale = (1.0 - (clampedD.abs() * 0.07)).clamp(0.74, 1.0);
-                        final double baseOpacity = (1.0 - (clampedD.abs() * 0.16)).clamp(0.30, 1.0);
+                        // True vertical deck stack: NO side wings, pure centered depth stack
+                        final double baseDx = 0.0;
+                        final double baseDy = (d * 14.0).clamp(0.0, 36.0);
+                        final double baseRot = 0.0;
+                        final double baseScale = (1.0 - (d * 0.06)).clamp(0.84, 1.0);
+                        final double baseOpacity = (1.0 - (d * 0.22)).clamp(0.35, 1.0);
 
                         Offset cardOffset = Offset(baseDx, baseDy);
                         double cardRot = baseRot;
@@ -1833,42 +1858,38 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                           cardRot = baseRot + liveRot;
                           cardOpacity = 1.0;
                         } else {
-                          // Tactile depth reaction: subordinate card gently steps forward as top card is pulled
+                          // Tactile dynamic card rise: next card in deck elevates as top card is pulled away
                           if (d > 0 && d <= 1.2) {
-                            cardScale = lerpDouble(baseScale, 1.0, dragProgress * 0.40) ?? baseScale;
+                            cardScale = lerpDouble(baseScale, 1.0, dragProgress * 0.65) ?? baseScale;
                             cardOffset = Offset(
-                              lerpDouble(baseDx, 0.0, dragProgress * 0.30) ?? baseDx,
-                              lerpDouble(baseDy, 0.0, dragProgress * 0.45) ?? baseDy,
+                              0.0,
+                              lerpDouble(baseDy, 0.0, dragProgress * 0.65) ?? baseDy,
                             );
-                            cardOpacity = lerpDouble(baseOpacity, 1.0, dragProgress * 0.40) ?? baseOpacity;
+                            cardOpacity = lerpDouble(baseOpacity, 1.0, dragProgress * 0.50) ?? baseOpacity;
+                          } else if (d > 1.2 && d <= 2.2) {
+                            cardScale = lerpDouble(baseScale, 0.94, dragProgress * 0.50) ?? baseScale;
+                            cardOffset = Offset(
+                              0.0,
+                              lerpDouble(baseDy, 14.0, dragProgress * 0.50) ?? baseDy,
+                            );
+                            cardOpacity = lerpDouble(baseOpacity, 0.88, dragProgress * 0.40) ?? baseOpacity;
                           }
                         }
 
-                        // Peeking wing cards
+                        // Upcoming stacked deck cards resting directly beneath the active card
                         if (!isCurrentActive) {
-                          final bool isLeftWing = d < 0;
                           return RepaintBoundary(
                             child: Transform.translate(
                               offset: cardOffset,
-                              child: Transform.rotate(
-                                angle: cardRot,
-                                child: Transform.scale(
-                                  scale: cardScale,
-                                  child: Opacity(
-                                    opacity: cardOpacity,
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        HapticFeedback.selectionClick();
-                                        widget.onIndexChanged(i);
-                                      },
-                                      child: _buildPeekingCardFace(
-                                        subject: subject,
-                                        slot: slot,
-                                        width: centerCardWidth,
-                                        height: centerCardHeight,
-                                        isLeft: isLeftWing,
-                                      ),
-                                    ),
+                              child: Transform.scale(
+                                scale: cardScale,
+                                child: Opacity(
+                                  opacity: cardOpacity.clamp(0.0, 1.0),
+                                  child: _buildStackedDeckCardFace(
+                                    subject: subject,
+                                    slot: slot,
+                                    width: centerCardWidth,
+                                    height: centerCardHeight,
                                   ),
                                 ),
                               ),
@@ -1876,7 +1897,7 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                           );
                         }
 
-                        // Active interactive card
+                        // Active interactive front card
                         return RepaintBoundary(
                           child: Transform.translate(
                             offset: cardOffset,
@@ -1893,10 +1914,7 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                                   onPanUpdate: (details) {
                                     if (widget.semesterEnded || isLocked) return;
                                     setState(() {
-                                      final double dampDy = details.delta.dy > 0
-                                          ? details.delta.dy * 0.35 // Rubber-band resistance on down pull
-                                          : details.delta.dy;
-                                      _dragOffset += Offset(details.delta.dx, dampDy);
+                                      _dragOffset += details.delta;
                                     });
                                   },
                                   onPanEnd: (details) {
@@ -1915,15 +1933,15 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                                         : AttendanceStatus.absent;
 
                                     // Horizontal swipe right (Present or Absent per setting)
-                                    if (dx > 65 || (vx > 300 && dx > 15)) {
+                                    if (dx > 60 || (vx > 280 && dx > 15)) {
                                       _triggerAction(rightStatus, initialVelocity: velocity);
                                     }
                                     // Horizontal swipe left (Opposite per setting)
-                                    else if (dx < -65 || (vx < -300 && dx < -15)) {
+                                    else if (dx < -60 || (vx < -280 && dx < -15)) {
                                       _triggerAction(leftStatus, initialVelocity: velocity);
                                     }
-                                    // Upward swipe (Cancelled / Holiday)
-                                    else if (dy < -50 || (vy < -300 && dy < -15)) {
+                                    // Vertical swipe down or up (Cancelled / Holiday)
+                                    else if (dy.abs() > 48 || (vy.abs() > 280 && dy.abs() > 15)) {
                                       _triggerAction(AttendanceStatus.cancelled, initialVelocity: velocity);
                                     }
                                     // Smooth spring reset
@@ -1998,109 +2016,110 @@ class _StackedCardDeckState extends State<StackedCardDeck>
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(rs.scale(28)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-        child: Container(
-          width: width,
-          height: height,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDarkMode
-                  ? [
-                      const Color(0xFF222432).withValues(alpha: 0.92),
-                      const Color(0xFF151620).withValues(alpha: 0.95),
-                    ]
-                  : [
-                      Colors.white.withValues(alpha: 0.95),
-                      const Color(0xFFF8FAFC).withValues(alpha: 0.96),
-                    ],
-            ),
-            borderRadius: BorderRadius.circular(rs.scale(28)),
-            border: Border.all(color: glowColor.withValues(alpha: 0.8), width: 1.6),
-            boxShadow: [
-              BoxShadow(
-                color: glowColor.withValues(alpha: 0.35),
-                blurRadius: 36,
-                spreadRadius: -2,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: rs.insetsSymmetric(horizontal: 20, vertical: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: subject.color.withValues(alpha: 0.22),
-                        borderRadius: BorderRadius.circular(rs.scale(10)),
-                        border: Border.all(color: subject.color.withValues(alpha: 0.5), width: 0.8),
-                      ),
-                      child: Text(
-                        subject.displayAcronym,
-                        style: GoogleFonts.inter(
-                          fontSize: rs.font(11.5),
-                          fontWeight: FontWeight.w800,
-                          color: subject.color,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: rs.insetsSymmetric(horizontal: 8, vertical: 3.5),
-                      decoration: BoxDecoration(
-                        color: glowColor.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(rs.scale(10)),
-                        border: Border.all(color: glowColor.withValues(alpha: 0.4), width: 0.8),
-                      ),
-                      child: Text(
-                        status == AttendanceStatus.attended
-                            ? '✓ PRESENT'
-                            : (status == AttendanceStatus.cancelled ? '⏸ HOLIDAY' : '✕ ABSENT'),
-                        style: GoogleFonts.inter(
-                          fontSize: rs.font(10.5),
-                          fontWeight: FontWeight.w800,
-                          color: glowColor,
-                        ),
-                      ),
-                    ),
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDarkMode
+                ? [
+                    const Color(0xFF222430).withValues(alpha: 0.95),
+                    const Color(0xFF141620).withValues(alpha: 0.98),
+                  ]
+                : [
+                    Colors.white.withValues(alpha: 0.96),
+                    const Color(0xFFF8FAFC).withValues(alpha: 0.98),
                   ],
-                ),
-                SizedBox(height: rs.height(14)),
-                Text(
-                  subject.name,
-                  style: GoogleFonts.inter(
-                    fontSize: rs.font(23),
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.6,
-                    color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
-                    height: 1.2,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const Spacer(),
-              ],
+          ),
+          borderRadius: BorderRadius.circular(rs.scale(28)),
+          border: Border.all(color: glowColor.withValues(alpha: 0.8), width: 1.6),
+          boxShadow: [
+            BoxShadow(
+              color: glowColor.withValues(alpha: 0.25),
+              blurRadius: 28,
+              spreadRadius: -2,
+              offset: const Offset(0, 8),
             ),
+          ],
+        ),
+        child: Padding(
+          padding: rs.insetsSymmetric(horizontal: 22, vertical: 22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 5,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: isDarkMode ? Colors.white70 : Colors.black54,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      SizedBox(width: rs.width(7)),
+                      Text(
+                        slot.startTime.format(context),
+                        style: GoogleFonts.inter(
+                          fontSize: rs.font(13.5),
+                          fontWeight: FontWeight.w600,
+                          color: isDarkMode ? Colors.white70 : Colors.black54,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: rs.insetsSymmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: glowColor.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(rs.scale(12)),
+                      border: Border.all(color: glowColor.withValues(alpha: 0.45), width: 0.8),
+                    ),
+                    child: Text(
+                      status == AttendanceStatus.attended
+                          ? '✓ ATTENDED'
+                          : (status == AttendanceStatus.cancelled ? '⏸ CANCELLED' : '✕ MISSED'),
+                      style: GoogleFonts.inter(
+                        fontSize: rs.font(10.5),
+                        fontWeight: FontWeight.w800,
+                        color: glowColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: rs.height(14)),
+              Text(
+                subject.name,
+                style: GoogleFonts.inter(
+                  fontSize: rs.font(24),
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.6,
+                  color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
+                  height: 1.15,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const Spacer(),
+            ],
           ),
         ),
       ),
     );
   }
 
-  // --- Peeking Background Card Face (Layered Frosted Glass Wings) ---
-  Widget _buildPeekingCardFace({
+  // --- Stacked Background Card Face (Deck Stack Depth Layer) ---
+  Widget _buildStackedDeckCardFace({
     required Subject subject,
     required TimeSlot slot,
     required double width,
     required double height,
-    required bool isLeft,
   }) {
     final rs = widget.rs;
     final isDarkMode = widget.isDarkMode;
@@ -2108,166 +2127,122 @@ class _StackedCardDeckState extends State<StackedCardDeck>
     final effectiveLocId = subject.getEffectiveLocationId(slot);
     final locConfig = effectiveLocId != null ? widget.locationById[effectiveLocId] : null;
     final room = subject.getEffectiveRoom(slot) ?? locConfig?.name;
+    final block = subject.getEffectiveBlock(slot) ?? locConfig?.block;
     final hasRoom = room != null && room.isNotEmpty;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(rs.scale(28)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
-          width: width,
-          height: height,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDarkMode
-                  ? [
-                      const Color(0xFF1E202A).withValues(alpha: 0.88),
-                      const Color(0xFF14151D).withValues(alpha: 0.92),
-                    ]
-                  : [
-                      Colors.white.withValues(alpha: 0.90),
-                      const Color(0xFFF1F5F9).withValues(alpha: 0.92),
-                    ],
-            ),
-            borderRadius: BorderRadius.circular(rs.scale(28)),
-            border: Border.all(
-              color: isDarkMode
-                  ? Colors.white.withValues(alpha: 0.16)
-                  : Colors.black.withValues(alpha: 0.10),
-              width: 1.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: subject.color.withValues(alpha: isDarkMode ? 0.22 : 0.14),
-                blurRadius: 28,
-                spreadRadius: -4,
-                offset: Offset(isLeft ? -6 : 6, 8),
-              ),
-            ],
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDarkMode
+                ? [
+                    const Color(0xFF222432).withValues(alpha: 0.94),
+                    const Color(0xFF141622).withValues(alpha: 0.96),
+                  ]
+                : [
+                    Colors.white.withValues(alpha: 0.96),
+                    const Color(0xFFF6F8FA).withValues(alpha: 0.98),
+                  ],
           ),
-          child: Stack(
-            children: [
-              // Top gloss line
-              Positioned(
-                top: 0,
-                left: 20,
-                right: 20,
-                height: 1,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.transparent,
-                        isDarkMode ? Colors.white.withValues(alpha: 0.25) : Colors.white,
-                        Colors.transparent,
-                      ],
-                    ),
+          borderRadius: BorderRadius.circular(rs.scale(28)),
+          border: Border.all(
+            color: isDarkMode
+                ? Colors.white.withValues(alpha: 0.14)
+                : Colors.black.withValues(alpha: 0.08),
+            width: 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDarkMode ? 0.35 : 0.06),
+              blurRadius: 22,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Top specular sheen line
+            Positioned(
+              top: 0,
+              left: 20,
+              right: 20,
+              height: 1.2,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.transparent,
+                      isDarkMode ? Colors.white.withValues(alpha: 0.28) : Colors.white.withValues(alpha: 0.8),
+                      Colors.transparent,
+                    ],
                   ),
                 ),
               ),
-              Positioned(
-                left: isLeft ? rs.scale(16) : null,
-                right: !isLeft ? rs.scale(16) : null,
-                top: rs.scale(18),
-                bottom: rs.scale(18),
-                width: width * 0.44,
-                child: Column(
-                  crossAxisAlignment: isLeft ? CrossAxisAlignment.start : CrossAxisAlignment.end,
-                  children: [
-                    // Acronym Node
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: subject.color.withValues(alpha: 0.22),
-                        borderRadius: BorderRadius.circular(rs.scale(10)),
-                        border: Border.all(color: subject.color.withValues(alpha: 0.45), width: 0.8),
-                      ),
-                      child: Text(
-                        subject.displayAcronym,
-                        style: GoogleFonts.inter(
-                          fontSize: rs.font(11),
-                          fontWeight: FontWeight.w800,
-                          color: subject.color,
+            ),
+            Padding(
+              padding: rs.insetsSymmetric(horizontal: 22, vertical: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    subject.name,
+                    style: GoogleFonts.inter(
+                      fontSize: rs.font(24),
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.6,
+                      color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
+                      height: 1.15,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: rs.height(7)),
+                  Row(
+                    children: [
+                      Container(
+                        width: 5,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: isDarkMode ? Colors.white70 : Colors.black54,
+                          shape: BoxShape.circle,
                         ),
                       ),
-                    ),
-                    SizedBox(height: rs.height(9)),
-                    // Time indicator
-                    Text(
-                      slot.formatTimeRange(widget.timeFormatProvider.timeFormat),
-                      style: GoogleFonts.inter(
-                        fontSize: rs.font(11.5),
-                        fontWeight: FontWeight.w600,
-                        color: isDarkMode ? Colors.white70 : Colors.black54,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: isLeft ? TextAlign.left : TextAlign.right,
-                    ),
-                    SizedBox(height: rs.height(5)),
-                    // Subject Name
-                    Text(
-                      subject.name,
-                      style: GoogleFonts.inter(
-                        fontSize: rs.font(16),
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.4,
-                        color: isDarkMode ? Colors.white : Colors.black87,
-                        height: 1.2,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: isLeft ? TextAlign.left : TextAlign.right,
-                    ),
-                    if (hasRoom) ...[
-                      SizedBox(height: rs.height(4)),
+                      SizedBox(width: rs.width(7)),
                       Text(
-                        'Rm $room',
+                        slot.startTime.format(context),
                         style: GoogleFonts.inter(
-                          fontSize: rs.font(11),
-                          color: isDarkMode ? Colors.white54 : Colors.black45,
+                          fontSize: rs.font(14),
+                          fontWeight: FontWeight.w600,
+                          color: isDarkMode ? Colors.white70 : Colors.black54,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: isLeft ? TextAlign.left : TextAlign.right,
                       ),
-                    ],
-                    const Spacer(),
-                    // Hint to tap
-                    Container(
-                      padding: rs.insetsSymmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(rs.scale(10)),
-                        border: Border.all(color: isDarkMode ? Colors.white12 : Colors.black12, width: 0.6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (isLeft)
-                            Icon(Icons.arrow_back_rounded, size: rs.scale(11), color: isDarkMode ? Colors.white70 : Colors.black54),
-                          if (isLeft) SizedBox(width: rs.width(4)),
-                          Text(
-                            'Peek',
+                      if (hasRoom) ...[
+                        SizedBox(width: rs.width(6)),
+                        Flexible(
+                          child: Text(
+                            '• Rm $room${block != null && block.isNotEmpty ? " • $block" : ""}',
                             style: GoogleFonts.inter(
-                              fontSize: rs.font(10.5),
-                              fontWeight: FontWeight.w700,
-                              color: isDarkMode ? Colors.white70 : Colors.black87,
+                              fontSize: rs.font(13),
+                              fontWeight: FontWeight.w500,
+                              color: isDarkMode ? Colors.white54 : Colors.black45,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          if (!isLeft) SizedBox(width: rs.width(4)),
-                          if (!isLeft)
-                            Icon(Icons.arrow_forward_rounded, size: rs.scale(11), color: isDarkMode ? Colors.white70 : Colors.black54),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const Spacer(),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -2298,65 +2273,53 @@ class _StackedCardDeckState extends State<StackedCardDeck>
     // Real-time drag stamp opacity
     final double rightSwipeRatio = (dragOffset.dx / 60.0).clamp(0.0, 1.0);
     final double leftSwipeRatio = (-dragOffset.dx / 60.0).clamp(0.0, 1.0);
-    final double upSwipeRatio = (-dragOffset.dy / 50.0).clamp(0.0, 1.0);
-
-    final rightAction = swipeProvider.rightAction;
-    final leftAction = swipeProvider.leftAction;
-    final bool rightIsPresent = rightAction == SwipeAction.present;
+    final double downSwipeRatio = (dragOffset.dy / 50.0).clamp(0.0, 1.0);
+    final double verticalSwipeRatio = (dragOffset.dy.abs() / 50.0).clamp(0.0, 1.0);
 
     // Dynamic Reactive Border Color
     final Color borderColor;
     if (rightSwipeRatio > 0.18) {
-      borderColor = (rightIsPresent ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.90);
+      borderColor = const Color(0xFF10B981).withValues(alpha: 0.90);
     } else if (leftSwipeRatio > 0.18) {
-      borderColor = (rightIsPresent ? const Color(0xFFEF4444) : const Color(0xFF10B981)).withValues(alpha: 0.90);
-    } else if (upSwipeRatio > 0.18) {
+      borderColor = const Color(0xFFEF4444).withValues(alpha: 0.90);
+    } else if (verticalSwipeRatio > 0.18) {
       borderColor = const Color(0xFFF59E0B).withValues(alpha: 0.90);
     } else {
       borderColor = isDarkMode ? Colors.white.withValues(alpha: 0.18) : Colors.black.withValues(alpha: 0.10);
     }
 
-    final borderWidth = (rightSwipeRatio > 0.18 || leftSwipeRatio > 0.18 || upSwipeRatio > 0.18) ? 1.6 : 1.0;
+    final borderWidth = (rightSwipeRatio > 0.18 || leftSwipeRatio > 0.18 || verticalSwipeRatio > 0.18) ? 1.6 : 1.0;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(rs.scale(28)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-        child: Container(
-          width: width,
-          height: height,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDarkMode
-                  ? [
-                      const Color(0xFF222432).withValues(alpha: 0.92),
-                      const Color(0xFF151620).withValues(alpha: 0.95),
-                    ]
-                  : [
-                      Colors.white.withValues(alpha: 0.95),
-                      const Color(0xFFF8FAFC).withValues(alpha: 0.96),
-                    ],
-            ),
-            borderRadius: BorderRadius.circular(rs.scale(28)),
-            border: Border.all(color: borderColor, width: borderWidth),
-            boxShadow: [
-              // Ambient colored aura
-              BoxShadow(
-                color: subject.color.withValues(alpha: isDarkMode ? 0.28 : 0.16),
-                blurRadius: 36,
-                spreadRadius: -4,
-                offset: const Offset(0, 10),
-              ),
-              // Deep contact shadow
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDarkMode ? 0.45 : 0.08),
-                blurRadius: 22,
-                offset: const Offset(0, 8),
-              ),
-            ],
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDarkMode
+                ? [
+                    const Color(0xFF222430).withValues(alpha: 0.94),
+                    const Color(0xFF141620).withValues(alpha: 0.96),
+                  ]
+                : [
+                    Colors.white.withValues(alpha: 0.95),
+                    const Color(0xFFF8FAFC).withValues(alpha: 0.97),
+                  ],
           ),
+          borderRadius: BorderRadius.circular(rs.scale(28)),
+          border: Border.all(color: borderColor, width: borderWidth),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDarkMode ? 0.38 : 0.08),
+              blurRadius: 28,
+              spreadRadius: -2,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
           child: Stack(
             children: [
               // Specular top highlight sheen
@@ -2370,7 +2333,7 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                     gradient: LinearGradient(
                       colors: [
                         Colors.transparent,
-                        isDarkMode ? Colors.white.withValues(alpha: 0.35) : Colors.white.withValues(alpha: 0.8),
+                        isDarkMode ? Colors.white.withValues(alpha: 0.32) : Colors.white.withValues(alpha: 0.8),
                         Colors.transparent,
                       ],
                     ),
@@ -2380,118 +2343,67 @@ class _StackedCardDeckState extends State<StackedCardDeck>
 
               // Card Content
               Padding(
-                padding: rs.insetsSymmetric(horizontal: 20, vertical: 15),
+                padding: rs.insetsSymmetric(horizontal: 22, vertical: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Top Bar: Acronym & Period Badge
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: subject.color.withValues(alpha: 0.22),
-                                borderRadius: BorderRadius.circular(rs.scale(10)),
-                                border: Border.all(color: subject.color.withValues(alpha: 0.5), width: 0.8),
-                              ),
-                              child: Text(
-                                subject.displayAcronym,
-                                style: GoogleFonts.inter(
-                                  fontSize: rs.font(11.5),
-                                  fontWeight: FontWeight.w800,
-                                  color: subject.color,
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: rs.width(8)),
-                            Container(
-                              padding: rs.insetsSymmetric(horizontal: 8, vertical: 3.5),
-                              decoration: BoxDecoration(
-                                color: isDarkMode ? Colors.white.withValues(alpha: 0.07) : Colors.black.withValues(alpha: 0.04),
-                                borderRadius: BorderRadius.circular(rs.scale(10)),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.schedule_rounded, size: rs.scale(12), color: isDarkMode ? Colors.white60 : Colors.black54),
-                                  SizedBox(width: rs.width(4)),
-                                  Text(
-                                    slot.formatTimeRange(widget.timeFormatProvider.timeFormat),
-                                    style: GoogleFonts.inter(
-                                      fontSize: rs.font(11.5),
-                                      fontWeight: FontWeight.w600,
-                                      color: isDarkMode ? Colors.white70 : Colors.black87,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          padding: rs.insetsSymmetric(horizontal: 9, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
-                            borderRadius: BorderRadius.circular(rs.scale(12)),
-                            border: Border.all(color: isDarkMode ? Colors.white12 : Colors.black12, width: 0.6),
-                          ),
-                          child: Text(
-                            'PERIOD $periodNumber OF $totalPeriods',
-                            style: GoogleFonts.inter(
-                              fontSize: rs.font(10),
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.6,
-                              color: isDarkMode ? Colors.white70 : Colors.black54,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: rs.height(11)),
-
-                    // Subject Full Name Hero
+                    // Subject Name Hero
                     Text(
                       subject.name,
                       style: GoogleFonts.inter(
-                        fontSize: rs.font(23),
+                        fontSize: rs.font(24),
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.6,
                         color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
-                        height: 1.2,
+                        height: 1.15,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
 
-                    SizedBox(height: rs.height(6)),
+                    SizedBox(height: rs.height(7)),
 
-                    // Location / Room details
-                    if (hasRoom)
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.location_on_rounded,
-                            size: rs.scale(13),
-                            color: subject.color,
+                    // Bullet Dot + Time + Room
+                    Row(
+                      children: [
+                        Container(
+                          width: 5,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: isDarkMode ? Colors.white70 : Colors.black54,
+                            shape: BoxShape.circle,
                           ),
-                          SizedBox(width: rs.width(4)),
-                          Text(
-                            'Room $room${block != null && block.isNotEmpty ? " • $block" : ""}',
-                            style: GoogleFonts.inter(
-                              fontSize: rs.font(12),
-                              fontWeight: FontWeight.w500,
-                              color: isDarkMode ? Colors.white60 : Colors.black54,
+                        ),
+                        SizedBox(width: rs.width(7)),
+                        Text(
+                          slot.startTime.format(context),
+                          style: GoogleFonts.inter(
+                            fontSize: rs.font(14),
+                            fontWeight: FontWeight.w600,
+                            color: isDarkMode ? Colors.white70 : Colors.black54,
+                          ),
+                        ),
+                        if (hasRoom) ...[
+                          SizedBox(width: rs.width(6)),
+                          Flexible(
+                            child: Text(
+                              '• Rm $room${block != null && block.isNotEmpty ? " • $block" : ""}',
+                              style: GoogleFonts.inter(
+                                fontSize: rs.font(13),
+                                fontWeight: FontWeight.w500,
+                                color: isDarkMode ? Colors.white54 : Colors.black45,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
-                      ),
+                      ],
+                    ),
 
                     if (isLocked)
                       Padding(
-                        padding: EdgeInsets.only(top: rs.height(4)),
+                        padding: EdgeInsets.only(top: rs.height(5)),
                         child: Text(
                           '🔒 Locked by manual count override',
                           style: GoogleFonts.inter(fontSize: rs.font(11), color: const Color(0xFFF59E0B)),
@@ -2500,152 +2412,185 @@ class _StackedCardDeckState extends State<StackedCardDeck>
 
                     const Spacer(),
 
-                    // Current Marked Status Pill
+                    // Current Marked Status Pill (if recorded)
                     if (attendance != null)
-                      Container(
-                        margin: EdgeInsets.only(bottom: rs.height(9)),
-                        padding: rs.insetsSymmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: attendance.status == AttendanceStatus.attended
-                              ? const Color(0xFF10B981).withValues(alpha: 0.16)
-                              : (attendance.status == AttendanceStatus.cancelled
-                                  ? const Color(0xFFF59E0B).withValues(alpha: 0.16)
-                                  : const Color(0xFFEF4444).withValues(alpha: 0.16)),
-                          borderRadius: BorderRadius.circular(rs.scale(12)),
-                          border: Border.all(
-                            color: attendance.status == AttendanceStatus.attended
-                                ? const Color(0xFF10B981).withValues(alpha: 0.35)
-                                : (attendance.status == AttendanceStatus.cancelled
-                                    ? const Color(0xFFF59E0B).withValues(alpha: 0.35)
-                                    : const Color(0xFFEF4444).withValues(alpha: 0.35)),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              attendance.status == AttendanceStatus.attended
-                                  ? Icons.check_circle_rounded
-                                  : (attendance.status == AttendanceStatus.cancelled
-                                      ? Icons.pause_circle_rounded
-                                      : Icons.cancel_rounded),
-                              size: rs.scale(13),
-                              color: attendance.status == AttendanceStatus.attended
-                                  ? const Color(0xFF10B981)
-                                  : (attendance.status == AttendanceStatus.cancelled
-                                      ? const Color(0xFFF59E0B)
-                                      : const Color(0xFFEF4444)),
+                      Center(
+                        child: Container(
+                          margin: EdgeInsets.only(bottom: rs.height(14)),
+                          padding: rs.insetsSymmetric(horizontal: 10, vertical: 4.5),
+                          decoration: BoxDecoration(
+                            color: (attendance.status == AttendanceStatus.attended
+                                    ? const Color(0xFF10B981)
+                                    : (attendance.status == AttendanceStatus.cancelled
+                                        ? const Color(0xFFF59E0B)
+                                        : const Color(0xFFEF4444)))
+                                .withValues(alpha: 0.16),
+                            borderRadius: BorderRadius.circular(rs.scale(12)),
+                            border: Border.all(
+                              color: (attendance.status == AttendanceStatus.attended
+                                      ? const Color(0xFF10B981)
+                                      : (attendance.status == AttendanceStatus.cancelled
+                                          ? const Color(0xFFF59E0B)
+                                          : const Color(0xFFEF4444)))
+                                  .withValues(alpha: 0.40),
+                              width: 0.8,
                             ),
-                            SizedBox(width: rs.width(5)),
-                            Text(
-                              'Marked: ${attendance.status == AttendanceStatus.attended ? "Present" : (attendance.status == AttendanceStatus.cancelled ? "Holiday" : "Absent")}',
-                              style: GoogleFonts.inter(
-                                fontSize: rs.font(11.5),
-                                fontWeight: FontWeight.w700,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                attendance.status == AttendanceStatus.attended
+                                    ? Icons.check_circle_rounded
+                                    : (attendance.status == AttendanceStatus.cancelled
+                                        ? Icons.pause_circle_rounded
+                                        : Icons.cancel_rounded),
+                                size: rs.scale(12),
                                 color: attendance.status == AttendanceStatus.attended
                                     ? const Color(0xFF10B981)
                                     : (attendance.status == AttendanceStatus.cancelled
                                         ? const Color(0xFFF59E0B)
                                         : const Color(0xFFEF4444)),
                               ),
-                            ),
-                          ],
+                              SizedBox(width: rs.width(5)),
+                              Text(
+                                'Marked: ${attendance.status == AttendanceStatus.attended ? "Attended" : (attendance.status == AttendanceStatus.cancelled ? "Holiday" : "Missed")}',
+                                style: GoogleFonts.inter(
+                                  fontSize: rs.font(11),
+                                  fontWeight: FontWeight.w700,
+                                  color: attendance.status == AttendanceStatus.attended
+                                      ? const Color(0xFF10B981)
+                                      : (attendance.status == AttendanceStatus.cancelled
+                                          ? const Color(0xFFF59E0B)
+                                          : const Color(0xFFEF4444)),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
 
-                    // Directional Swipe Guidance
+                    // Concept 3 Action Cues: Left [← Missed], Center [︽ Cancelled], Right [→ Attended]
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.arrow_back_rounded,
-                              size: rs.scale(13),
-                              color: leftAction == SwipeAction.present ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                        // Left: Missed Cue
+                        GestureDetector(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            _triggerAction(AttendanceStatus.absent);
+                          },
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(horizontal: rs.width(6), vertical: rs.height(6)),
+                            decoration: BoxDecoration(
+                              color: leftSwipeRatio > 0.08
+                                  ? const Color(0xFFE26153).withValues(alpha: 0.20)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(rs.scale(12)),
                             ),
-                            SizedBox(width: rs.width(4)),
-                            Text(
-                              leftAction == SwipeAction.present ? 'Present' : 'Absent',
-                              style: GoogleFonts.inter(
-                                fontSize: rs.font(11),
-                                fontWeight: FontWeight.w700,
-                                color: leftAction == SwipeAction.present ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                              ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.arrow_back_rounded,
+                                  size: rs.scale(19),
+                                  color: const Color(0xFFE26153),
+                                ),
+                                SizedBox(height: rs.height(10)),
+                                RotatedBox(
+                                  quarterTurns: 1,
+                                  child: Text(
+                                    'Missed',
+                                    style: GoogleFonts.inter(
+                                      fontSize: rs.font(13),
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.5,
+                                      color: const Color(0xFFE26153),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.keyboard_arrow_up_rounded, size: rs.scale(14), color: const Color(0xFFF59E0B)),
-                            Text(
-                              'Cancel',
-                              style: GoogleFonts.inter(
-                                fontSize: rs.font(10),
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFFF59E0B),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Text(
-                              rightAction == SwipeAction.present ? 'Present' : 'Absent',
-                              style: GoogleFonts.inter(
-                                fontSize: rs.font(11),
-                                fontWeight: FontWeight.w700,
-                                color: rightAction == SwipeAction.present ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                              ),
-                            ),
-                            SizedBox(width: rs.width(4)),
-                            Icon(
-                              Icons.arrow_forward_rounded,
-                              size: rs.scale(13),
-                              color: rightAction == SwipeAction.present ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: rs.height(10)),
-
-                    // Bottom 3 Polished Glass Action Buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildCardActionBtn(
-                            title: 'Absent',
-                            icon: Icons.close_rounded,
-                            color: const Color(0xFFEF4444),
-                            onTap: () => _triggerAction(AttendanceStatus.absent),
-                            rs: rs,
-                            isDarkMode: isDarkMode,
                           ),
                         ),
-                        SizedBox(width: rs.width(8)),
-                        Expanded(
-                          child: _buildCardActionBtn(
-                            title: 'Cancel',
-                            icon: Icons.pause_rounded,
-                            color: const Color(0xFFF59E0B),
-                            onTap: () => _triggerAction(AttendanceStatus.cancelled),
-                            rs: rs,
-                            isDarkMode: isDarkMode,
+
+                        // Center: Cancelled Cue
+                        GestureDetector(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            _triggerAction(AttendanceStatus.cancelled);
+                          },
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(horizontal: rs.width(14), vertical: rs.height(6)),
+                            decoration: BoxDecoration(
+                              color: verticalSwipeRatio > 0.08
+                                  ? const Color(0xFFF59E0B).withValues(alpha: 0.20)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(rs.scale(12)),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.keyboard_double_arrow_up_rounded,
+                                  size: rs.scale(23),
+                                  color: isDarkMode ? Colors.white70 : Colors.black54,
+                                ),
+                                SizedBox(height: rs.height(4)),
+                                Text(
+                                  'Cancelled',
+                                  style: GoogleFonts.inter(
+                                    fontSize: rs.font(12),
+                                    fontWeight: FontWeight.w600,
+                                    color: isDarkMode ? Colors.white70 : Colors.black54,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        SizedBox(width: rs.width(8)),
-                        Expanded(
-                          child: _buildCardActionBtn(
-                            title: 'Present',
-                            icon: Icons.check_rounded,
-                            color: const Color(0xFF10B981),
-                            onTap: () => _triggerAction(AttendanceStatus.attended),
-                            rs: rs,
-                            isDarkMode: isDarkMode,
+
+                        // Right: Attended Cue
+                        GestureDetector(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            _triggerAction(AttendanceStatus.attended);
+                          },
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(horizontal: rs.width(6), vertical: rs.height(6)),
+                            decoration: BoxDecoration(
+                              color: rightSwipeRatio > 0.08
+                                  ? const Color(0xFF34D399).withValues(alpha: 0.20)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(rs.scale(12)),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.arrow_forward_rounded,
+                                  size: rs.scale(19),
+                                  color: const Color(0xFF34D399),
+                                ),
+                                SizedBox(height: rs.height(10)),
+                                RotatedBox(
+                                  quarterTurns: 3,
+                                  child: Text(
+                                    'Attended',
+                                    style: GoogleFonts.inter(
+                                      fontSize: rs.font(13),
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.5,
+                                      color: const Color(0xFF34D399),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -2666,11 +2611,11 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                       child: Container(
                         padding: rs.insetsSymmetric(horizontal: 14, vertical: 6),
                         decoration: BoxDecoration(
-                          color: (rightIsPresent ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.95),
+                          color: const Color(0xFF10B981).withValues(alpha: 0.95),
                           borderRadius: BorderRadius.circular(rs.scale(14)),
                           boxShadow: [
                             BoxShadow(
-                              color: (rightIsPresent ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.5),
+                              color: const Color(0xFF10B981).withValues(alpha: 0.5),
                               blurRadius: 18,
                               spreadRadius: 1,
                             ),
@@ -2679,10 +2624,10 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(rightIsPresent ? Icons.check_rounded : Icons.close_rounded, size: rs.scale(14), color: Colors.white),
+                            Icon(Icons.check_rounded, size: rs.scale(14), color: Colors.white),
                             SizedBox(width: rs.width(5)),
                             Text(
-                              rightIsPresent ? 'PRESENT' : 'ABSENT',
+                              'ATTENDED',
                               style: GoogleFonts.inter(
                                 fontSize: rs.font(12),
                                 fontWeight: FontWeight.w800,
@@ -2708,11 +2653,11 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                       child: Container(
                         padding: rs.insetsSymmetric(horizontal: 14, vertical: 6),
                         decoration: BoxDecoration(
-                          color: (rightIsPresent ? const Color(0xFFEF4444) : const Color(0xFF10B981)).withValues(alpha: 0.95),
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.95),
                           borderRadius: BorderRadius.circular(rs.scale(14)),
                           boxShadow: [
                             BoxShadow(
-                              color: (rightIsPresent ? const Color(0xFFEF4444) : const Color(0xFF10B981)).withValues(alpha: 0.5),
+                              color: const Color(0xFFEF4444).withValues(alpha: 0.5),
                               blurRadius: 18,
                               spreadRadius: 1,
                             ),
@@ -2721,10 +2666,10 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(rightIsPresent ? Icons.close_rounded : Icons.check_rounded, size: rs.scale(14), color: Colors.white),
+                            Icon(Icons.close_rounded, size: rs.scale(14), color: Colors.white),
                             SizedBox(width: rs.width(5)),
                             Text(
-                              rightIsPresent ? 'ABSENT' : 'PRESENT',
+                              'MISSED',
                               style: GoogleFonts.inter(
                                 fontSize: rs.font(12),
                                 fontWeight: FontWeight.w800,
@@ -2739,98 +2684,52 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                   ),
                 ),
 
-              if (upSwipeRatio > 0.05 && dragOffset.dx.abs() < 50)
+              if (verticalSwipeRatio > 0.05 && dragOffset.dx.abs() < 50)
                 Positioned(
-                  top: rs.height(20),
+                  top: downSwipeRatio > 0.05 ? null : rs.height(20),
+                  bottom: downSwipeRatio > 0.05 ? rs.height(20) : null,
                   left: 0,
                   right: 0,
                   child: Center(
                     child: Opacity(
-                      opacity: upSwipeRatio,
-                      child: Container(
-                        padding: rs.insetsSymmetric(horizontal: 14, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF59E0B).withValues(alpha: 0.95),
-                          borderRadius: BorderRadius.circular(rs.scale(14)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
-                              blurRadius: 18,
-                              spreadRadius: 1,
+                    opacity: verticalSwipeRatio,
+                    child: Container(
+                      padding: rs.insetsSymmetric(horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF59E0B).withValues(alpha: 0.95),
+                        borderRadius: BorderRadius.circular(rs.scale(14)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
+                            blurRadius: 18,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.pause_rounded, size: rs.scale(14), color: Colors.white),
+                          SizedBox(width: rs.width(5)),
+                          Text(
+                            'CANCELLED',
+                            style: GoogleFonts.inter(
+                              fontSize: rs.font(12),
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: 0.8,
                             ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.pause_rounded, size: rs.scale(14), color: Colors.white),
-                            SizedBox(width: rs.width(5)),
-                            Text(
-                              'CANCELLED',
-                              style: GoogleFonts.inter(
-                                fontSize: rs.font(12),
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCardActionBtn({
-    required String title,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-    required ResponsiveScale rs,
-    required bool isDarkMode,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(rs.scale(16)),
-        child: Container(
-          padding: EdgeInsets.symmetric(vertical: rs.height(9)),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: isDarkMode ? 0.15 : 0.10),
-            borderRadius: BorderRadius.circular(rs.scale(16)),
-            border: Border.all(
-              color: color.withValues(alpha: isDarkMode ? 0.40 : 0.28),
-              width: 0.9,
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: rs.scale(14), color: color),
-              SizedBox(width: rs.width(5)),
-              Text(
-                title,
-                style: GoogleFonts.inter(
-                  fontSize: rs.font(11.5),
-                  fontWeight: FontWeight.w700,
-                  color: color,
                 ),
               ),
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 }
 
@@ -3006,7 +2905,7 @@ class AccordionPeekWindow extends StatelessWidget {
       },
       borderRadius: BorderRadius.circular(rs.scale(16)),
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: rs.height(8)),
+        padding: EdgeInsets.symmetric(vertical: rs.height(7), horizontal: rs.width(4)),
         decoration: BoxDecoration(
           color: isActive
               ? tint.withValues(alpha: isDarkMode ? 0.20 : 0.12)
@@ -3027,13 +2926,17 @@ class AccordionPeekWindow extends StatelessWidget {
               size: rs.scale(13),
               color: isActive ? tint : (isDarkMode ? Colors.white70 : Colors.black87),
             ),
-            SizedBox(width: rs.width(5)),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: rs.font(11.5),
-                fontWeight: FontWeight.w700,
-                color: isActive ? tint : (isDarkMode ? Colors.white : Colors.black87),
+            SizedBox(width: rs.width(4)),
+            Flexible(
+              child: Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: rs.font(10.5),
+                  fontWeight: FontWeight.w700,
+                  color: isActive ? tint : (isDarkMode ? Colors.white : Colors.black87),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -3076,7 +2979,7 @@ class AccordionPeekWindow extends StatelessWidget {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
-            margin: rs.insetsSymmetric(horizontal: 16),
+            margin: EdgeInsets.zero,
             decoration: BoxDecoration(
               color: isDarkMode
                   ? const Color(0xFF141620).withValues(alpha: 0.92)
@@ -3100,18 +3003,18 @@ class AccordionPeekWindow extends StatelessWidget {
               onTap: onToggleExpand,
               borderRadius: BorderRadius.circular(rs.scale(22)),
               child: Padding(
-                padding: rs.insetsSymmetric(horizontal: 16, vertical: 10),
+                padding: rs.insetsSymmetric(horizontal: 14, vertical: 7),
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(5),
+                      padding: const EdgeInsets.all(4.5),
                       decoration: BoxDecoration(
                         color: isDarkMode ? Colors.white12 : Colors.black12,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         Icons.keyboard_arrow_up_rounded,
-                        size: rs.scale(15),
+                        size: rs.scale(14),
                         color: isDarkMode ? Colors.white : Colors.black87,
                       ),
                     ),
@@ -3129,13 +3032,17 @@ class AccordionPeekWindow extends StatelessWidget {
                               letterSpacing: 0.8,
                               color: isDarkMode ? Colors.white70 : Colors.black87,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           Text(
                             '$totalClasses classes scheduled • Tap to peek timeline',
                             style: GoogleFonts.inter(
-                              fontSize: rs.font(10.5),
+                              fontSize: rs.font(10),
                               color: isDarkMode ? Colors.white54 : Colors.black54,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
@@ -3225,41 +3132,48 @@ class AccordionPeekWindow extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.calendar_today_rounded,
-                                size: rs.scale(14),
-                                color: isDarkMode ? Colors.white70 : Colors.black87,
-                              ),
-                              SizedBox(width: rs.width(8)),
-                              Text(
-                                'DAY TIMETABLE',
-                                style: GoogleFonts.inter(
-                                  fontSize: rs.font(12.5),
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.8,
-                                  color: isDarkMode ? Colors.white : Colors.black87,
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.calendar_today_rounded,
+                                  size: rs.scale(14),
+                                  color: isDarkMode ? Colors.white70 : Colors.black87,
                                 ),
-                              ),
-                              SizedBox(width: rs.width(6)),
-                              Container(
-                                padding: rs.insetsSymmetric(horizontal: 7, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
-                                  borderRadius: BorderRadius.circular(rs.scale(10)),
-                                ),
-                                child: Text(
-                                  '$totalClasses Periods',
-                                  style: GoogleFonts.inter(
-                                    fontSize: rs.font(10.5),
-                                    fontWeight: FontWeight.w600,
-                                    color: isDarkMode ? Colors.white70 : Colors.black54,
+                                SizedBox(width: rs.width(8)),
+                                Flexible(
+                                  child: Text(
+                                    'DAY TIMETABLE',
+                                    style: GoogleFonts.inter(
+                                      fontSize: rs.font(12),
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.8,
+                                      color: isDarkMode ? Colors.white : Colors.black87,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                              ),
-                            ],
+                                SizedBox(width: rs.width(6)),
+                                Container(
+                                  padding: rs.insetsSymmetric(horizontal: 7, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                                    borderRadius: BorderRadius.circular(rs.scale(10)),
+                                  ),
+                                  child: Text(
+                                    '$totalClasses Periods',
+                                    style: GoogleFonts.inter(
+                                      fontSize: rs.font(10),
+                                      fontWeight: FontWeight.w600,
+                                      color: isDarkMode ? Colors.white70 : Colors.black54,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
+                          SizedBox(width: rs.width(6)),
                           Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
@@ -3324,44 +3238,52 @@ class AccordionPeekWindow extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              if (attendedCount > 0) ...[
-                                Text(
-                                  '✓ $attendedCount Attended',
-                                  style: GoogleFonts.inter(
-                                    fontSize: rs.font(10.5),
-                                    fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF10B981),
-                                  ),
-                                ),
-                                SizedBox(width: rs.width(8)),
-                              ],
-                              if (absentCount > 0) ...[
-                                Text(
-                                  '✕ $absentCount Missed',
-                                  style: GoogleFonts.inter(
-                                    fontSize: rs.font(10.5),
-                                    fontWeight: FontWeight.w700,
-                                    color: const Color(0xFFEF4444),
-                                  ),
-                                ),
-                                SizedBox(width: rs.width(8)),
-                              ],
-                              if (cancelledCount > 0) ...[
-                                Text(
-                                  '⏸ $cancelledCount Holiday',
-                                  style: GoogleFonts.inter(
-                                    fontSize: rs.font(10.5),
-                                    fontWeight: FontWeight.w700,
-                                    color: const Color(0xFFF59E0B),
-                                  ),
-                                ),
-                              ],
-                            ],
+                          Expanded(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              physics: const BouncingScrollPhysics(),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (attendedCount > 0) ...[
+                                    Text(
+                                      '✓ $attendedCount Attended',
+                                      style: GoogleFonts.inter(
+                                        fontSize: rs.font(10.5),
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF10B981),
+                                      ),
+                                    ),
+                                    SizedBox(width: rs.width(8)),
+                                  ],
+                                  if (absentCount > 0) ...[
+                                    Text(
+                                      '✕ $absentCount Missed',
+                                      style: GoogleFonts.inter(
+                                        fontSize: rs.font(10.5),
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFFEF4444),
+                                      ),
+                                    ),
+                                    SizedBox(width: rs.width(8)),
+                                  ],
+                                  if (cancelledCount > 0) ...[
+                                    Text(
+                                      '⏸ $cancelledCount Holiday',
+                                      style: GoogleFonts.inter(
+                                        fontSize: rs.font(10.5),
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFFF59E0B),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
                           ),
+                          SizedBox(width: rs.width(6)),
                           Text(
-                            remainingCount > 0 ? '$remainingCount remaining' : 'All periods marked',
+                            remainingCount > 0 ? '$remainingCount left' : 'All marked',
                             style: GoogleFonts.inter(
                               fontSize: rs.font(10.5),
                               fontWeight: FontWeight.w500,
@@ -3492,7 +3414,7 @@ class AccordionPeekWindow extends StatelessWidget {
                         children: [
                           // 1. Left: Time Column (Structured Time Rail)
                           SizedBox(
-                            width: rs.scale(58),
+                            width: rs.scale(50),
                             child: Padding(
                               padding: EdgeInsets.symmetric(vertical: rs.height(10)),
                               child: Column(
@@ -3706,20 +3628,26 @@ class AccordionPeekWindow extends StatelessWidget {
                                               ),
                                               if (room != null && room.isNotEmpty) ...[
                                                 SizedBox(width: rs.width(6)),
-                                                Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    Icon(Icons.location_on_rounded, size: rs.scale(11), color: isDarkMode ? Colors.white54 : Colors.black45),
-                                                    SizedBox(width: rs.width(2)),
-                                                    Text(
-                                                      'Rm $room',
-                                                      style: GoogleFonts.inter(
-                                                        fontSize: rs.font(10.5),
-                                                        fontWeight: FontWeight.w500,
-                                                        color: isDarkMode ? Colors.white60 : Colors.black54,
+                                                Flexible(
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(Icons.location_on_rounded, size: rs.scale(11), color: isDarkMode ? Colors.white54 : Colors.black45),
+                                                      SizedBox(width: rs.width(2)),
+                                                      Flexible(
+                                                        child: Text(
+                                                          'Rm $room',
+                                                          style: GoogleFonts.inter(
+                                                            fontSize: rs.font(10.5),
+                                                            fontWeight: FontWeight.w500,
+                                                            color: isDarkMode ? Colors.white60 : Colors.black54,
+                                                          ),
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow.ellipsis,
+                                                        ),
                                                       ),
-                                                    ),
-                                                  ],
+                                                    ],
+                                                  ),
                                                 ),
                                               ],
                                               const Spacer(),
@@ -3777,48 +3705,53 @@ class AccordionPeekWindow extends StatelessWidget {
                                           Row(
                                             children: [
                                               // Present Button
-                                              InkWell(
-                                                onTap: () {
-                                                  HapticFeedback.selectionClick();
-                                                  if (isAttended) {
-                                                    subjectProvider.unmarkAttendance(subject.id, targetDate, slotKey: slotKey);
-                                                  } else {
-                                                    subjectProvider.markAttendance(subject.id, targetDate, AttendanceStatus.attended, slotKey: slotKey);
-                                                  }
-                                                },
-                                                borderRadius: BorderRadius.circular(rs.scale(12)),
-                                                child: Container(
-                                                  padding: EdgeInsets.symmetric(horizontal: rs.width(9), vertical: rs.height(5)),
-                                                  decoration: BoxDecoration(
-                                                    color: isAttended
-                                                        ? const Color(0xFF10B981).withValues(alpha: 0.20)
-                                                        : (isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
-                                                    borderRadius: BorderRadius.circular(rs.scale(12)),
-                                                    border: Border.all(
+                                              Expanded(
+                                                child: InkWell(
+                                                  onTap: () {
+                                                    HapticFeedback.selectionClick();
+                                                    if (isAttended) {
+                                                      subjectProvider.unmarkAttendance(subject.id, targetDate, slotKey: slotKey);
+                                                    } else {
+                                                      subjectProvider.markAttendance(subject.id, targetDate, AttendanceStatus.attended, slotKey: slotKey);
+                                                    }
+                                                  },
+                                                  borderRadius: BorderRadius.circular(rs.scale(10)),
+                                                  child: Container(
+                                                    padding: EdgeInsets.symmetric(vertical: rs.height(6)),
+                                                    decoration: BoxDecoration(
                                                       color: isAttended
-                                                          ? const Color(0xFF10B981).withValues(alpha: 0.6)
-                                                          : (isDarkMode ? Colors.white12 : Colors.black12),
-                                                      width: 0.8,
+                                                          ? const Color(0xFF10B981).withValues(alpha: 0.20)
+                                                          : (isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
+                                                      borderRadius: BorderRadius.circular(rs.scale(10)),
+                                                      border: Border.all(
+                                                        color: isAttended
+                                                            ? const Color(0xFF10B981).withValues(alpha: 0.6)
+                                                            : (isDarkMode ? Colors.white12 : Colors.black12),
+                                                        width: 0.8,
+                                                      ),
                                                     ),
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    children: [
-                                                      Icon(
-                                                        Icons.check_rounded,
-                                                        size: rs.scale(12),
-                                                        color: isAttended ? const Color(0xFF10B981) : (isDarkMode ? Colors.white60 : Colors.black54),
-                                                      ),
-                                                      SizedBox(width: rs.width(4)),
-                                                      Text(
-                                                        isAttended ? 'Present' : 'Present',
-                                                        style: GoogleFonts.inter(
-                                                          fontSize: rs.font(11),
-                                                          fontWeight: FontWeight.w700,
-                                                          color: isAttended ? const Color(0xFF10B981) : (isDarkMode ? Colors.white70 : Colors.black87),
+                                                    child: Row(
+                                                      mainAxisAlignment: MainAxisAlignment.center,
+                                                      children: [
+                                                        Icon(
+                                                          Icons.check_rounded,
+                                                          size: rs.scale(12),
+                                                          color: isAttended ? const Color(0xFF10B981) : (isDarkMode ? Colors.white60 : Colors.black54),
                                                         ),
-                                                      ),
-                                                    ],
+                                                        SizedBox(width: rs.width(4)),
+                                                        Flexible(
+                                                          child: Text(
+                                                            'Present',
+                                                            style: GoogleFonts.inter(
+                                                              fontSize: rs.font(11),
+                                                              fontWeight: FontWeight.w700,
+                                                              color: isAttended ? const Color(0xFF10B981) : (isDarkMode ? Colors.white70 : Colors.black87),
+                                                            ),
+                                                            overflow: TextOverflow.ellipsis,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
                                                   ),
                                                 ),
                                               ),
@@ -3826,53 +3759,58 @@ class AccordionPeekWindow extends StatelessWidget {
                                               SizedBox(width: rs.width(6)),
 
                                               // Absent Button
-                                              InkWell(
-                                                onTap: () {
-                                                  HapticFeedback.selectionClick();
-                                                  if (isAbsent) {
-                                                    subjectProvider.unmarkAttendance(subject.id, targetDate, slotKey: slotKey);
-                                                  } else {
-                                                    subjectProvider.markAttendance(subject.id, targetDate, AttendanceStatus.absent, slotKey: slotKey);
-                                                  }
-                                                },
-                                                borderRadius: BorderRadius.circular(rs.scale(12)),
-                                                child: Container(
-                                                  padding: EdgeInsets.symmetric(horizontal: rs.width(9), vertical: rs.height(5)),
-                                                  decoration: BoxDecoration(
-                                                    color: isAbsent
-                                                        ? const Color(0xFFEF4444).withValues(alpha: 0.20)
-                                                        : (isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
-                                                    borderRadius: BorderRadius.circular(rs.scale(12)),
-                                                    border: Border.all(
+                                              Expanded(
+                                                child: InkWell(
+                                                  onTap: () {
+                                                    HapticFeedback.selectionClick();
+                                                    if (isAbsent) {
+                                                      subjectProvider.unmarkAttendance(subject.id, targetDate, slotKey: slotKey);
+                                                    } else {
+                                                      subjectProvider.markAttendance(subject.id, targetDate, AttendanceStatus.absent, slotKey: slotKey);
+                                                    }
+                                                  },
+                                                  borderRadius: BorderRadius.circular(rs.scale(10)),
+                                                  child: Container(
+                                                    padding: EdgeInsets.symmetric(vertical: rs.height(6)),
+                                                    decoration: BoxDecoration(
                                                       color: isAbsent
-                                                          ? const Color(0xFFEF4444).withValues(alpha: 0.6)
-                                                          : (isDarkMode ? Colors.white12 : Colors.black12),
-                                                      width: 0.8,
+                                                          ? const Color(0xFFEF4444).withValues(alpha: 0.20)
+                                                          : (isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
+                                                      borderRadius: BorderRadius.circular(rs.scale(10)),
+                                                      border: Border.all(
+                                                        color: isAbsent
+                                                            ? const Color(0xFFEF4444).withValues(alpha: 0.6)
+                                                            : (isDarkMode ? Colors.white12 : Colors.black12),
+                                                        width: 0.8,
+                                                      ),
                                                     ),
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    children: [
-                                                      Icon(
-                                                        Icons.close_rounded,
-                                                        size: rs.scale(12),
-                                                        color: isAbsent ? const Color(0xFFEF4444) : (isDarkMode ? Colors.white60 : Colors.black54),
-                                                      ),
-                                                      SizedBox(width: rs.width(4)),
-                                                      Text(
-                                                        'Absent',
-                                                        style: GoogleFonts.inter(
-                                                          fontSize: rs.font(11),
-                                                          fontWeight: FontWeight.w700,
-                                                          color: isAbsent ? const Color(0xFFEF4444) : (isDarkMode ? Colors.white70 : Colors.black87),
+                                                    child: Row(
+                                                      mainAxisAlignment: MainAxisAlignment.center,
+                                                      children: [
+                                                        Icon(
+                                                          Icons.close_rounded,
+                                                          size: rs.scale(12),
+                                                          color: isAbsent ? const Color(0xFFEF4444) : (isDarkMode ? Colors.white60 : Colors.black54),
                                                         ),
-                                                      ),
-                                                    ],
+                                                        SizedBox(width: rs.width(4)),
+                                                        Flexible(
+                                                          child: Text(
+                                                            'Absent',
+                                                            style: GoogleFonts.inter(
+                                                              fontSize: rs.font(11),
+                                                              fontWeight: FontWeight.w700,
+                                                              color: isAbsent ? const Color(0xFFEF4444) : (isDarkMode ? Colors.white70 : Colors.black87),
+                                                            ),
+                                                            overflow: TextOverflow.ellipsis,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
                                                   ),
                                                 ),
                                               ),
 
-                                              const Spacer(),
+                                              SizedBox(width: rs.width(6)),
 
                                               // Holiday/Pause Button
                                               InkWell(
@@ -3884,14 +3822,14 @@ class AccordionPeekWindow extends StatelessWidget {
                                                     subjectProvider.markAttendance(subject.id, targetDate, AttendanceStatus.cancelled, slotKey: slotKey);
                                                   }
                                                 },
-                                                borderRadius: BorderRadius.circular(rs.scale(12)),
+                                                borderRadius: BorderRadius.circular(rs.scale(10)),
                                                 child: Container(
-                                                  padding: EdgeInsets.all(rs.scale(6)),
+                                                  padding: EdgeInsets.all(rs.scale(5.5)),
                                                   decoration: BoxDecoration(
                                                     color: isHoliday
                                                         ? const Color(0xFFF59E0B).withValues(alpha: 0.20)
                                                         : (isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
-                                                    shape: BoxShape.circle,
+                                                    borderRadius: BorderRadius.circular(rs.scale(10)),
                                                     border: Border.all(
                                                       color: isHoliday ? const Color(0xFFF59E0B) : (isDarkMode ? Colors.white12 : Colors.black12),
                                                       width: 0.8,
@@ -4105,28 +4043,35 @@ class DayOverSummaryView extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  // Circular Progress Donut Ring (Image 2 style)
-                  SizedBox(
-                    width: rs.scale(82),
-                    height: rs.scale(82),
-                    child: CustomPaint(
-                      painter: CircularAttendanceRingPainter(
-                        percentage: overallPercentage / 100.0,
-                        ringColor: isSafe ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                        trackColor: isDarkMode ? Colors.white12 : Colors.black12,
-                        strokeWidth: 8.0,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '${overallPercentage.toStringAsFixed(0)}%',
-                          style: GoogleFonts.inter(
-                            fontSize: rs.font(18),
-                            fontWeight: FontWeight.w800,
-                            color: isDarkMode ? Colors.white : Colors.black87,
+                  // Circular Progress Donut Ring with Dynamic Rising Percentage
+                  TweenAnimationBuilder<double>(
+                    tween: Tween<double>(begin: 0.0, end: overallPercentage),
+                    duration: const Duration(milliseconds: 950),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, animatedPercentage, _) {
+                      return SizedBox(
+                        width: rs.scale(82),
+                        height: rs.scale(82),
+                        child: CustomPaint(
+                          painter: CircularAttendanceRingPainter(
+                            percentage: (animatedPercentage / 100.0).clamp(0.0, 1.0),
+                            ringColor: isSafe ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                            trackColor: isDarkMode ? Colors.white12 : Colors.black12,
+                            strokeWidth: 8.0,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${animatedPercentage.toStringAsFixed(0)}%',
+                              style: GoogleFonts.inter(
+                                fontSize: rs.font(18),
+                                fontWeight: FontWeight.w800,
+                                color: isDarkMode ? Colors.white : Colors.black87,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                   SizedBox(width: rs.width(16)),
                   // Metrics & Status Details
@@ -4179,7 +4124,7 @@ class DayOverSummaryView extends StatelessWidget {
                               style: GoogleFonts.inter(
                                 fontSize: rs.font(11),
                                 fontWeight: FontWeight.w600,
-                                color: isSafe ? Colors.white70 : const Color(0xFFEF4444),
+                                color: isSafe ? (isDarkMode ? Colors.white70 : Colors.black87) : const Color(0xFFEF4444),
                               ),
                             ),
                           ],
@@ -4227,7 +4172,7 @@ class DayOverSummaryView extends StatelessWidget {
 
         SizedBox(height: rs.height(20)),
 
-        // "Receipt" List Header (Image 2 style)
+        // Structured Timeline Header (Aligned with Peek Window)
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -4235,7 +4180,7 @@ class DayOverSummaryView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Receipt List',
+                  'Daily Schedule Timeline',
                   style: GoogleFonts.inter(
                     fontSize: rs.font(16),
                     fontWeight: FontWeight.w700,
@@ -4243,7 +4188,7 @@ class DayOverSummaryView extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  "Today's Decisions • Tap to inspect or modify",
+                  "Today's Decisions • Tap or swipe to update",
                   style: GoogleFonts.inter(
                     fontSize: rs.font(11.5),
                     color: isDarkMode ? Colors.white54 : Colors.black45,
@@ -4253,7 +4198,7 @@ class DayOverSummaryView extends StatelessWidget {
             ),
             IconButton(
               icon: const Icon(Icons.style_rounded),
-              tooltip: 'Switch back to Card Deck',
+              tooltip: 'Reopen Cards Deck',
               onPressed: onRevisitDeck,
             ),
           ],
@@ -4261,12 +4206,11 @@ class DayOverSummaryView extends StatelessWidget {
 
         SizedBox(height: rs.height(10)),
 
-        // "Receipt" Items List
-        ListView.separated(
+        // Structured App Timeline List matching Peek Window
+        ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: displayClasses.length,
-          separatorBuilder: (context, index) => SizedBox(height: rs.height(8)),
           itemBuilder: (context, idx) {
             final subject = displayClasses[idx];
             final slot = subject.schedule.first;
@@ -4278,13 +4222,9 @@ class DayOverSummaryView extends StatelessWidget {
               slotKey: slotKey,
             );
 
-            final status = attendance?.status;
-
-            // Room details
-            final effectiveLocId = subject.getEffectiveLocationId(slot);
-            final locConfig = effectiveLocId != null ? locationById[effectiveLocId] : null;
-            final room = subject.getEffectiveRoom(slot) ?? locConfig?.name;
-            final hasRoom = room != null && room.isNotEmpty;
+            final isAttended = attendance?.status == AttendanceStatus.attended;
+            final isAbsent = attendance?.status == AttendanceStatus.absent || attendance?.status == AttendanceStatus.plannedAbsent;
+            final isHoliday = attendance?.status == AttendanceStatus.cancelled;
 
             final startMin = slot.startTime.hour * 60 + slot.startTime.minute;
             final endMin = slot.endTime.hour * 60 + slot.endTime.minute;
@@ -4300,36 +4240,13 @@ class DayOverSummaryView extends StatelessWidget {
               }
             }
 
-            final monogram = subject.displayAcronym.isNotEmpty
-                ? subject.displayAcronym.substring(0, 1).toUpperCase()
-                : (subject.name.isNotEmpty ? subject.name.substring(0, 1).toUpperCase() : '•');
-
-            final Color statusColor;
-            final String statusLabel;
-            final IconData statusIcon;
-
-            if (status == AttendanceStatus.attended) {
-              statusColor = const Color(0xFF10B981);
-              statusLabel = 'Present';
-              statusIcon = Icons.check_rounded;
-            } else if (status == AttendanceStatus.absent || status == AttendanceStatus.plannedAbsent) {
-              statusColor = const Color(0xFFEF4444);
-              statusLabel = 'Absent';
-              statusIcon = Icons.close_rounded;
-            } else if (status == AttendanceStatus.cancelled) {
-              statusColor = const Color(0xFFF59E0B);
-              statusLabel = 'Holiday';
-              statusIcon = Icons.pause_rounded;
-            } else {
-              statusColor = isDarkMode ? Colors.white54 : Colors.black45;
-              statusLabel = 'Awaiting';
-              statusIcon = Icons.radio_button_unchecked_rounded;
-            }
+            final effectiveLocId = subject.getEffectiveLocationId(slot);
+            final locConfig = effectiveLocId != null ? locationById[effectiveLocId] : null;
+            final room = subject.getEffectiveRoom(slot) ?? locConfig?.name;
+            final hasRoom = room != null && room.isNotEmpty;
 
             final rightSwipeAction = swipeProvider.rightAction;
             final leftSwipeAction = swipeProvider.leftAction;
-            final isAttended = status == AttendanceStatus.attended;
-            final isAbsent = status == AttendanceStatus.absent || status == AttendanceStatus.plannedAbsent;
             final isLocked = CalendarUtils.isLockedByManualOverride(subject, targetDate);
 
             final isUnmarkingRight = (isAttended && rightSwipeAction == SwipeAction.present) ||
@@ -4337,201 +4254,471 @@ class DayOverSummaryView extends StatelessWidget {
             final isUnmarkingLeft = (isAttended && leftSwipeAction == SwipeAction.present) ||
                 (isAbsent && leftSwipeAction == SwipeAction.absent);
 
-            return Padding(
-              padding: EdgeInsets.symmetric(vertical: rs.height(2)),
-              child: SwipeableCard(
-                key: ValueKey('summary_swipe_${subject.id}_$slotKey'),
-                rs: rs,
-                borderRadius: BorderRadius.circular(rs.scale(18)),
-                swipeRightBackground: _buildScheduleSwipeBackground(
-                  action: rightSwipeAction,
-                  alignment: Alignment.centerLeft,
-                  rs: rs,
-                  isUnmarking: isUnmarkingRight,
-                ),
-                swipeLeftBackground: _buildScheduleSwipeBackground(
-                  action: leftSwipeAction,
-                  alignment: Alignment.centerRight,
-                  rs: rs,
-                  isUnmarking: isUnmarkingLeft,
-                ),
-                onSwipeRight: () => _handleScheduleSwipeAction(
-                  context: context,
-                  action: rightSwipeAction,
-                  isUnmarking: isUnmarkingRight,
-                  subject: subject,
-                  slotKey: slotKey,
-                  targetDate: targetDate,
-                  subjectProvider: subjectProvider,
-                  isLocked: isLocked,
-                  semesterEnded: semesterEnded,
-                  isFutureDate: isFutureDate,
-                ),
-                onSwipeLeft: () => _handleScheduleSwipeAction(
-                  context: context,
-                  action: leftSwipeAction,
-                  isUnmarking: isUnmarkingLeft,
-                  subject: subject,
-                  slotKey: slotKey,
-                  targetDate: targetDate,
-                  subjectProvider: subjectProvider,
-                  isLocked: isLocked,
-                  semesterEnded: semesterEnded,
-                  isFutureDate: isFutureDate,
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => onModifyItem(subject, slot, slotKey, attendance),
-                    borderRadius: BorderRadius.circular(rs.scale(18)),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: rs.height(2)),
-                      child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Left: Circular Timeline Node (matching screenshot circle 'B')
-                      Container(
-                        width: rs.scale(36),
-                        height: rs.scale(36),
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.black.withValues(alpha: 0.08),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isDarkMode ? Colors.white12 : Colors.black12,
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Text(
-                          monogram,
-                          style: GoogleFonts.inter(
-                            fontSize: rs.font(12.5),
-                            fontWeight: FontWeight.w800,
-                            color: isDarkMode ? Colors.white : Colors.black87,
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: rs.width(10)),
+            // Node Theme Colors
+            final Color nodeColor = isAttended
+                ? const Color(0xFF10B981)
+                : (isAbsent
+                    ? const Color(0xFFEF4444)
+                    : (isHoliday
+                        ? const Color(0xFFF59E0B)
+                        : (isDarkMode ? const Color(0xFF272935) : const Color(0xFFE2E8F0))));
 
-                      // Right: Obsidian Card
-                      Expanded(
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: rs.width(14),
-                            vertical: rs.height(11),
+            final IconData? nodeIcon = isAttended
+                ? Icons.check_rounded
+                : (isAbsent ? Icons.close_rounded : (isHoliday ? Icons.pause_rounded : null));
+
+            final Color statusPillColor = isAttended
+                ? const Color(0xFF10B981)
+                : (isAbsent
+                    ? const Color(0xFFEF4444)
+                    : (isHoliday ? const Color(0xFFF59E0B) : (isDarkMode ? Colors.white60 : Colors.black54)));
+
+            final String statusLabel = isAttended
+                ? 'Present'
+                : (isAbsent ? 'Absent' : (isHoliday ? 'Holiday' : 'Awaiting'));
+
+            return IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // 1. Left: Time Column (Structured Time Rail)
+                  SizedBox(
+                    width: rs.scale(50),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: rs.height(10)),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Text(
+                            slot.startTime.format(context),
+                            style: GoogleFonts.inter(
+                              fontSize: rs.font(11.5),
+                              fontWeight: FontWeight.w700,
+                              color: isDarkMode ? Colors.white : Colors.black87,
+                            ),
+                            maxLines: 1,
                           ),
+                          Text(
+                            slot.endTime.format(context),
+                            style: GoogleFonts.inter(
+                              fontSize: rs.font(10),
+                              fontWeight: FontWeight.w500,
+                              color: isDarkMode ? Colors.white54 : Colors.black45,
+                            ),
+                            maxLines: 1,
+                          ),
+                          if (durationStr.isNotEmpty) ...[
+                            SizedBox(height: rs.height(4)),
+                            Container(
+                              padding: rs.insetsSymmetric(horizontal: 5, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                                borderRadius: BorderRadius.circular(rs.scale(6)),
+                              ),
+                              child: Text(
+                                durationStr,
+                                style: GoogleFonts.inter(
+                                  fontSize: rs.font(9.5),
+                                  fontWeight: FontWeight.w600,
+                                  color: isDarkMode ? Colors.white60 : Colors.black54,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(width: rs.width(8)),
+
+                  // 2. Central Continuous Timeline Rail with Period Node
+                  SizedBox(
+                    width: rs.scale(32),
+                    child: Column(
+                      children: [
+                        // Top connecting line
+                        Container(
+                          width: 1.6,
+                          height: rs.height(10),
+                          color: idx == 0
+                              ? Colors.transparent
+                              : (isDarkMode ? Colors.white12 : Colors.black12),
+                        ),
+                        // Glowing Circular Period Node
+                        Container(
+                          width: rs.scale(30),
+                          height: rs.scale(30),
+                          alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: isDarkMode
-                                ? const Color(0xFF1C1C1E)
-                                : Colors.white,
-                            borderRadius: BorderRadius.circular(rs.scale(18)),
+                            color: nodeColor,
+                            shape: BoxShape.circle,
                             border: Border.all(
-                              color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
-                              width: 0.8,
+                              color: isDarkMode ? Colors.white24 : Colors.black12,
+                              width: 1.0,
                             ),
                           ),
-                          child: Row(
-                            children: [
-                              // Title and time range • duration
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      subject.name,
-                                      style: GoogleFonts.inter(
-                                        fontSize: rs.font(15),
-                                        fontWeight: FontWeight.w700,
-                                        color: isDarkMode ? Colors.white : Colors.black87,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    SizedBox(height: rs.height(3)),
-                                    Text(
-                                      '${slot.formatTimeRange(timeFormatProvider.timeFormat)}${durationStr.isNotEmpty ? " • $durationStr" : ""}${hasRoom ? " • Room $room" : ""}',
-                                      style: GoogleFonts.inter(
-                                        fontSize: rs.font(11.5),
-                                        fontWeight: FontWeight.w500,
-                                        color: isDarkMode ? Colors.white54 : Colors.black54,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(width: rs.width(8)),
-
-                              // Status Capsule (Structured Screenshot Style)
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: rs.width(10),
-                                  vertical: rs.height(6),
-                                ),
-                                decoration: BoxDecoration(
-                                  color: status == AttendanceStatus.attended
-                                      ? (isDarkMode ? Colors.white : Colors.black)
-                                      : ((status == AttendanceStatus.absent || status == AttendanceStatus.plannedAbsent)
-                                          ? const Color(0xFFEF4444).withValues(alpha: 0.18)
-                                          : (status == AttendanceStatus.cancelled
-                                              ? const Color(0xFFF59E0B).withValues(alpha: 0.20)
-                                              : (isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05)))),
-                                  borderRadius: BorderRadius.circular(rs.scale(16)),
-                                  border: Border.all(
-                                    color: status == AttendanceStatus.attended
-                                        ? (isDarkMode ? Colors.white : Colors.black)
-                                        : ((status == AttendanceStatus.absent || status == AttendanceStatus.plannedAbsent)
-                                            ? const Color(0xFFEF4444).withValues(alpha: 0.4)
-                                            : (status == AttendanceStatus.cancelled
-                                                ? const Color(0xFFF59E0B).withValues(alpha: 0.5)
-                                                : (isDarkMode ? Colors.white12 : Colors.black12))),
-                                    width: 0.8,
+                          child: nodeIcon != null
+                              ? Icon(nodeIcon, size: rs.scale(15), color: Colors.white)
+                              : Text(
+                                  'P${idx + 1}',
+                                  style: GoogleFonts.inter(
+                                    fontSize: rs.font(10.5),
+                                    fontWeight: FontWeight.w800,
+                                    color: isDarkMode ? Colors.white70 : Colors.black87,
                                   ),
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      statusIcon,
-                                      size: rs.scale(13),
-                                      color: status == AttendanceStatus.attended
-                                          ? (isDarkMode ? Colors.black : Colors.white)
-                                          : statusColor,
+                        ),
+                        // Bottom connecting line
+                        Expanded(
+                          child: Container(
+                            width: 1.6,
+                            color: idx == displayClasses.length - 1
+                                ? Colors.transparent
+                                : (isDarkMode ? Colors.white12 : Colors.black12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(width: rs.width(8)),
+
+                  // 3. Right: Structured Period Glass Card
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: rs.height(5)),
+                      child: SwipeableCard(
+                        key: ValueKey('summary_timeline_${subject.id}_${slotKey}_$idx'),
+                        rs: rs,
+                        borderRadius: BorderRadius.circular(rs.scale(18)),
+                        swipeRightBackground: _buildScheduleSwipeBackground(
+                          action: rightSwipeAction,
+                          alignment: Alignment.centerLeft,
+                          rs: rs,
+                          isUnmarking: isUnmarkingRight,
+                        ),
+                        swipeLeftBackground: _buildScheduleSwipeBackground(
+                          action: leftSwipeAction,
+                          alignment: Alignment.centerRight,
+                          rs: rs,
+                          isUnmarking: isUnmarkingLeft,
+                        ),
+                        onSwipeRight: () => _handleScheduleSwipeAction(
+                          context: context,
+                          action: rightSwipeAction,
+                          isUnmarking: isUnmarkingRight,
+                          subject: subject,
+                          slotKey: slotKey,
+                          targetDate: targetDate,
+                          subjectProvider: subjectProvider,
+                          isLocked: isLocked,
+                          semesterEnded: semesterEnded,
+                          isFutureDate: isFutureDate,
+                        ),
+                        onSwipeLeft: () => _handleScheduleSwipeAction(
+                          context: context,
+                          action: leftSwipeAction,
+                          isUnmarking: isUnmarkingLeft,
+                          subject: subject,
+                          slotKey: slotKey,
+                          targetDate: targetDate,
+                          subjectProvider: subjectProvider,
+                          isLocked: isLocked,
+                          semesterEnded: semesterEnded,
+                          isFutureDate: isFutureDate,
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(rs.scale(18)),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () => onModifyItem(subject, slot, slotKey, attendance),
+                                borderRadius: BorderRadius.circular(rs.scale(18)),
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: rs.width(13),
+                                    vertical: rs.height(10),
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isDarkMode
+                                        ? const Color(0xFF1B1D27).withValues(alpha: 0.92)
+                                        : Colors.white.withValues(alpha: 0.94),
+                                    borderRadius: BorderRadius.circular(rs.scale(18)),
+                                    border: Border.all(
+                                      color: isDarkMode
+                                          ? Colors.white.withValues(alpha: 0.10)
+                                          : Colors.black.withValues(alpha: 0.08),
+                                      width: 0.8,
                                     ),
-                                    SizedBox(width: rs.width(4)),
-                                    Text(
-                                      statusLabel,
-                                      style: GoogleFonts.inter(
-                                        fontSize: rs.font(11.5),
-                                        fontWeight: FontWeight.w700,
-                                        color: status == AttendanceStatus.attended
-                                            ? (isDarkMode ? Colors.black : Colors.white)
-                                            : statusColor,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: isDarkMode ? 0.22 : 0.04),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 3),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // Header row: Acronym + Room + Status pill
+                                      Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 2.5),
+                                            decoration: BoxDecoration(
+                                              color: subject.color.withValues(alpha: 0.20),
+                                              borderRadius: BorderRadius.circular(rs.scale(8)),
+                                              border: Border.all(
+                                                color: subject.color.withValues(alpha: 0.45),
+                                                width: 0.7,
+                                              ),
+                                            ),
+                                            child: Text(
+                                              subject.displayAcronym,
+                                              style: GoogleFonts.inter(
+                                                fontSize: rs.font(10.5),
+                                                fontWeight: FontWeight.w800,
+                                                color: subject.color,
+                                              ),
+                                            ),
+                                          ),
+                                          if (hasRoom) ...[
+                                            SizedBox(width: rs.width(6)),
+                                            Flexible(
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(Icons.location_on_rounded, size: rs.scale(11), color: isDarkMode ? Colors.white54 : Colors.black45),
+                                                  SizedBox(width: rs.width(2)),
+                                                  Flexible(
+                                                    child: Text(
+                                                      'Rm $room',
+                                                      style: GoogleFonts.inter(
+                                                        fontSize: rs.font(10.5),
+                                                        fontWeight: FontWeight.w500,
+                                                        color: isDarkMode ? Colors.white60 : Colors.black54,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                          const Spacer(),
+                                          // Status Pill
+                                          Container(
+                                            padding: rs.insetsSymmetric(horizontal: 7, vertical: 2.5),
+                                            decoration: BoxDecoration(
+                                              color: statusPillColor.withValues(alpha: 0.16),
+                                              borderRadius: BorderRadius.circular(rs.scale(8)),
+                                              border: Border.all(
+                                                color: statusPillColor.withValues(alpha: 0.45),
+                                                width: 0.7,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                if (nodeIcon != null) ...[
+                                                  Icon(nodeIcon, size: rs.scale(10.5), color: statusPillColor),
+                                                  SizedBox(width: rs.width(3)),
+                                                ],
+                                                Text(
+                                                  statusLabel,
+                                                  style: GoogleFonts.inter(
+                                                    fontSize: rs.font(10),
+                                                    fontWeight: FontWeight.w700,
+                                                    color: statusPillColor,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+
+                                      SizedBox(height: rs.height(6)),
+
+                                      // Subject Full Name
+                                      Text(
+                                        subject.name,
+                                        style: GoogleFonts.inter(
+                                          fontSize: rs.font(14.5),
+                                          fontWeight: FontWeight.w700,
+                                          color: isDarkMode ? Colors.white : Colors.black87,
+                                          height: 1.2,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+
+                                      SizedBox(height: rs.height(8)),
+
+                                      // Interactive Quick Attendance Action Row
+                                      Row(
+                                        children: [
+                                          // Present Button
+                                          Expanded(
+                                            child: InkWell(
+                                              onTap: () {
+                                                HapticFeedback.selectionClick();
+                                                if (isAttended) {
+                                                  subjectProvider.unmarkAttendance(subject.id, targetDate, slotKey: slotKey);
+                                                } else {
+                                                  subjectProvider.markAttendance(subject.id, targetDate, AttendanceStatus.attended, slotKey: slotKey);
+                                                }
+                                              },
+                                              borderRadius: BorderRadius.circular(rs.scale(10)),
+                                              child: Container(
+                                                padding: EdgeInsets.symmetric(vertical: rs.height(6)),
+                                                decoration: BoxDecoration(
+                                                  color: isAttended
+                                                      ? const Color(0xFF10B981).withValues(alpha: 0.20)
+                                                      : (isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
+                                                  borderRadius: BorderRadius.circular(rs.scale(10)),
+                                                  border: Border.all(
+                                                    color: isAttended
+                                                        ? const Color(0xFF10B981).withValues(alpha: 0.6)
+                                                        : (isDarkMode ? Colors.white12 : Colors.black12),
+                                                    width: 0.8,
+                                                  ),
+                                                ),
+                                                child: Row(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.check_rounded,
+                                                      size: rs.scale(12),
+                                                      color: isAttended ? const Color(0xFF10B981) : (isDarkMode ? Colors.white60 : Colors.black54),
+                                                    ),
+                                                    SizedBox(width: rs.width(4)),
+                                                    Flexible(
+                                                      child: Text(
+                                                        'Present',
+                                                        style: GoogleFonts.inter(
+                                                          fontSize: rs.font(11),
+                                                          fontWeight: FontWeight.w700,
+                                                          color: isAttended ? const Color(0xFF10B981) : (isDarkMode ? Colors.white70 : Colors.black87),
+                                                        ),
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+
+                                          SizedBox(width: rs.width(6)),
+
+                                          // Absent Button
+                                          Expanded(
+                                            child: InkWell(
+                                              onTap: () {
+                                                HapticFeedback.selectionClick();
+                                                if (isAbsent) {
+                                                  subjectProvider.unmarkAttendance(subject.id, targetDate, slotKey: slotKey);
+                                                } else {
+                                                  subjectProvider.markAttendance(subject.id, targetDate, AttendanceStatus.absent, slotKey: slotKey);
+                                                }
+                                              },
+                                              borderRadius: BorderRadius.circular(rs.scale(10)),
+                                              child: Container(
+                                                padding: EdgeInsets.symmetric(vertical: rs.height(6)),
+                                                decoration: BoxDecoration(
+                                                  color: isAbsent
+                                                      ? const Color(0xFFEF4444).withValues(alpha: 0.20)
+                                                      : (isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
+                                                  borderRadius: BorderRadius.circular(rs.scale(10)),
+                                                  border: Border.all(
+                                                    color: isAbsent
+                                                        ? const Color(0xFFEF4444).withValues(alpha: 0.6)
+                                                        : (isDarkMode ? Colors.white12 : Colors.black12),
+                                                    width: 0.8,
+                                                  ),
+                                                ),
+                                                child: Row(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.close_rounded,
+                                                      size: rs.scale(12),
+                                                      color: isAbsent ? const Color(0xFFEF4444) : (isDarkMode ? Colors.white60 : Colors.black54),
+                                                    ),
+                                                    SizedBox(width: rs.width(4)),
+                                                    Flexible(
+                                                      child: Text(
+                                                        'Absent',
+                                                        style: GoogleFonts.inter(
+                                                          fontSize: rs.font(11),
+                                                          fontWeight: FontWeight.w700,
+                                                          color: isAbsent ? const Color(0xFFEF4444) : (isDarkMode ? Colors.white70 : Colors.black87),
+                                                        ),
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+
+                                          SizedBox(width: rs.width(6)),
+
+                                          // Holiday/Pause Button
+                                          InkWell(
+                                            onTap: () {
+                                              HapticFeedback.selectionClick();
+                                              if (isHoliday) {
+                                                subjectProvider.unmarkAttendance(subject.id, targetDate, slotKey: slotKey);
+                                              } else {
+                                                subjectProvider.markAttendance(subject.id, targetDate, AttendanceStatus.cancelled, slotKey: slotKey);
+                                              }
+                                            },
+                                            borderRadius: BorderRadius.circular(rs.scale(10)),
+                                            child: Container(
+                                              padding: EdgeInsets.all(rs.scale(5.5)),
+                                              decoration: BoxDecoration(
+                                                color: isHoliday
+                                                    ? const Color(0xFFF59E0B).withValues(alpha: 0.20)
+                                                    : (isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
+                                                borderRadius: BorderRadius.circular(rs.scale(10)),
+                                                border: Border.all(
+                                                  color: isHoliday ? const Color(0xFFF59E0B) : (isDarkMode ? Colors.white12 : Colors.black12),
+                                                  width: 0.8,
+                                                ),
+                                              ),
+                                              child: Icon(
+                                                Icons.pause_rounded,
+                                                size: rs.scale(13),
+                                                color: isHoliday ? const Color(0xFFF59E0B) : (isDarkMode ? Colors.white54 : Colors.black45),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                              SizedBox(width: rs.width(4)),
-                              Icon(
-                                Icons.chevron_right_rounded,
-                                size: rs.scale(16),
-                                color: isDarkMode ? Colors.white38 : Colors.black26,
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
-            ),
-          ),
-        );
-      },
+            );
+          },
         ),
 
         SizedBox(height: rs.height(20)),
