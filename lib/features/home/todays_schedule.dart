@@ -1024,11 +1024,14 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
                           newStatus,
                           slotKey: slotKey,
                         );
+                        if (mounted) {
+                          setState(() {});
+                        }
 
                         // Only show automatic summary after the person has swiped through the LAST card!
                         final isLastCardInDeck = index >= displayClasses.length - 1;
                         if (isLastCardInDeck) {
-                          Future.delayed(const Duration(milliseconds: 260), () {
+                          Future.delayed(const Duration(milliseconds: 320), () {
                             if (mounted) {
                               setState(() {
                                 _viewMode = ScheduleViewMode.receipt;
@@ -1059,111 +1062,88 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
         ),
 
         // Dimming Backdrop when Peek Drawer is Expanded
-        if (_viewMode == ScheduleViewMode.deck && _isAccordionExpanded)
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                setState(() {
-                  _isAccordionExpanded = false;
-                });
-              },
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.58),
+        if (_viewMode == ScheduleViewMode.deck)
+          IgnorePointer(
+            ignoring: !_isAccordionExpanded,
+            child: AnimatedOpacity(
+              opacity: _isAccordionExpanded ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeOutCubic,
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() {
+                    _isAccordionExpanded = false;
+                  });
+                },
+                child: Container(
+                  color: Colors.black.withValues(alpha: isDarkMode ? 0.65 : 0.45),
+                ),
               ),
             ),
           ),
 
         // Floating Structured Peek Drawer (Positioned in Stack above bottom dock)
         if (_viewMode == ScheduleViewMode.deck)
-          _isAccordionExpanded
-              ? Positioned(
-                  left: rs.width(8),
-                  right: rs.width(8),
-                  top: rs.scale(8),
-                  bottom: rs.scale(84),
-                  child: AccordionPeekWindow(
-                    displayClasses: displayClasses,
-                    activeCardIndex: _activeCardIndex,
-                    attendanceProvider: attendanceProvider,
-                    subjectProvider: subjectProvider,
-                    timeFormatProvider: timeFormatProvider,
-                    targetDate: widget.targetDate,
-                    locationById: widget.locationById,
-                    isExpanded: true,
-                    isDarkMode: isDarkMode,
-                    rs: rs,
-                    semesterEnded: semesterEnded,
-                    isFutureDate: isFutureDate,
-                    onToggleExpand: () {
-                      HapticFeedback.selectionClick();
-                      setState(() {
-                        _isAccordionExpanded = false;
-                      });
-                    },
-                    onSummonPeriod: (idx) {
-                      _summonCard(idx);
-                    },
-                    onMarkDayHoliday: () => _showConfirmationDialog(
-                      context: context,
-                      title: 'Mark as Holiday',
-                      content: isToday
-                          ? 'Are you sure you want to mark today as a holiday? All classes will be cancelled and will not affect attendance criteria.'
-                          : 'Are you sure you want to mark this day as a holiday? All classes will be cancelled and will not affect attendance criteria.',
-                      onConfirm: () => subjectProvider.markDayAsHoliday(widget.targetDate),
-                      successMessage: 'Holiday action completed.',
-                    ),
-                    onMarkDayAbsent: () => _showConfirmationDialog(
-                      context: context,
-                      title: isToday ? 'Skip Today' : 'Skip Day',
-                      content: isToday
-                          ? 'Are you sure you want to skip all classes today? This will mark all scheduled classes as absent.'
-                          : 'Are you sure you want to skip all classes on this day? This will mark all scheduled classes as absent.',
-                      onConfirm: () => subjectProvider.markDayAsAbsent(widget.targetDate),
-                      successMessage: 'Skip Day action completed.',
-                    ),
-                    onMarkDayPresent: () => _showConfirmationDialog(
-                      context: context,
-                      title: isToday ? 'Mark as Present' : 'Mark Day as Present',
-                      content: isToday
-                          ? 'Are you sure you want to mark today as present? All classes will be marked as attended.'
-                          : 'Are you sure you want to mark all classes on this day as attended?',
-                      onConfirm: () => subjectProvider.markDayAsPresent(widget.targetDate),
-                      successMessage: 'Mark as Present action completed.',
-                    ),
-                  ),
-                )
-              : Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: rs.scale(88),
-                  child: AccordionPeekWindow(
-                    displayClasses: displayClasses,
-                    activeCardIndex: _activeCardIndex,
-                    attendanceProvider: attendanceProvider,
-                    subjectProvider: subjectProvider,
-                    timeFormatProvider: timeFormatProvider,
-                    targetDate: widget.targetDate,
-                    locationById: widget.locationById,
-                    isExpanded: false,
-                    isDarkMode: isDarkMode,
-                    rs: rs,
-                    semesterEnded: semesterEnded,
-                    isFutureDate: isFutureDate,
-                    onToggleExpand: () {
-                      HapticFeedback.selectionClick();
-                      setState(() {
-                        _isAccordionExpanded = true;
-                      });
-                    },
-                    onSummonPeriod: (idx) {
-                      _summonCard(idx);
-                    },
-                    onMarkDayHoliday: () {},
-                    onMarkDayAbsent: () {},
-                    onMarkDayPresent: () {},
-                  ),
-                ),
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 320),
+            curve: Curves.easeOutCubic,
+            left: _isAccordionExpanded ? rs.width(8) : rs.width(14),
+            right: _isAccordionExpanded ? rs.width(8) : rs.width(14),
+            top: _isAccordionExpanded ? rs.scale(12) : null,
+            bottom: _isAccordionExpanded ? rs.scale(80) : rs.scale(88),
+            height: _isAccordionExpanded ? null : rs.scale(54),
+            child: AccordionPeekWindow(
+              displayClasses: displayClasses,
+              activeCardIndex: _activeCardIndex,
+              attendanceProvider: attendanceProvider,
+              subjectProvider: subjectProvider,
+              timeFormatProvider: timeFormatProvider,
+              targetDate: widget.targetDate,
+              locationById: widget.locationById,
+              isExpanded: _isAccordionExpanded,
+              isDarkMode: isDarkMode,
+              rs: rs,
+              semesterEnded: semesterEnded,
+              isFutureDate: isFutureDate,
+              onToggleExpand: () {
+                HapticFeedback.selectionClick();
+                setState(() {
+                  _isAccordionExpanded = !_isAccordionExpanded;
+                });
+              },
+              onSummonPeriod: (idx) {
+                _summonCard(idx);
+              },
+              onMarkDayHoliday: () => _showConfirmationDialog(
+                context: context,
+                title: 'Mark as Holiday',
+                content: isToday
+                    ? 'Are you sure you want to mark today as a holiday? All classes will be cancelled and will not affect attendance criteria.'
+                    : 'Are you sure you want to mark this day as a holiday? All classes will be cancelled and will not affect attendance criteria.',
+                onConfirm: () => subjectProvider.markDayAsHoliday(widget.targetDate),
+                successMessage: 'Holiday action completed.',
+              ),
+              onMarkDayAbsent: () => _showConfirmationDialog(
+                context: context,
+                title: isToday ? 'Skip Today' : 'Skip Day',
+                content: isToday
+                    ? 'Are you sure you want to skip all classes today? This will mark all scheduled classes as absent.'
+                    : 'Are you sure you want to skip all classes on this day? This will mark all scheduled classes as absent.',
+                onConfirm: () => subjectProvider.markDayAsAbsent(widget.targetDate),
+                successMessage: 'Skip Day action completed.',
+              ),
+              onMarkDayPresent: () => _showConfirmationDialog(
+                context: context,
+                title: isToday ? 'Mark as Present' : 'Mark Day as Present',
+                content: isToday
+                    ? 'Are you sure you want to mark today as present? All classes will be marked as attended.'
+                    : 'Are you sure you want to mark all classes on this day as attended?',
+                onConfirm: () => subjectProvider.markDayAsPresent(widget.targetDate),
+                successMessage: 'Mark as Present action completed.',
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -1565,11 +1545,23 @@ class StackedCardDeck extends StatefulWidget {
 class _StackedCardDeckState extends State<StackedCardDeck>
     with TickerProviderStateMixin {
   Offset _dragOffset = Offset.zero;
-  late AnimationController _flyAnimController;
-  late Animation<Offset> _flyOffsetAnim;
-  late Animation<double> _rotationAnim;
 
-  // Continuous animation controller for smooth animated 3D card swapping
+  // Dedicated Dismissal Animation (Card flies off smoothly without ever teleporting back)
+  late AnimationController _dismissAnimController;
+  late Animation<Offset> _dismissOffsetAnim;
+  late Animation<double> _dismissRotAnim;
+  late Animation<double> _dismissOpacityAnim;
+  Subject? _dismissingSubject;
+  TimeSlot? _dismissingSlot;
+  int? _dismissingIndex;
+  AttendanceStatus? _dismissingStatus;
+
+  // Spring Snap-back Animation when drag is released below threshold
+  late AnimationController _snapAnimController;
+  late Animation<Offset> _snapOffsetAnim;
+  late Animation<double> _snapRotAnim;
+
+  // Carousel deck transition controller for smooth index navigation
   late AnimationController _indexAnimController;
   late Animation<double> _indexAnimation;
   double _fromIndex = 0.0;
@@ -1581,24 +1573,41 @@ class _StackedCardDeckState extends State<StackedCardDeck>
     _fromIndex = widget.activeIndex.toDouble();
     _toIndex = widget.activeIndex.toDouble();
 
-    _flyAnimController = AnimationController(
+    // Dismissal animation
+    _dismissAnimController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 230),
+      duration: const Duration(milliseconds: 270),
     );
-    _flyOffsetAnim = Tween<Offset>(begin: Offset.zero, end: Offset.zero).animate(
-      CurvedAnimation(parent: _flyAnimController, curve: Curves.easeOutCubic),
+    _dismissOffsetAnim = Tween<Offset>(begin: Offset.zero, end: Offset.zero).animate(
+      CurvedAnimation(parent: _dismissAnimController, curve: Curves.easeOutCubic),
     );
-    _rotationAnim = Tween<double>(begin: 0.0, end: 0.0).animate(
-      CurvedAnimation(parent: _flyAnimController, curve: Curves.easeOutCubic),
+    _dismissRotAnim = Tween<double>(begin: 0.0, end: 0.0).animate(
+      CurvedAnimation(parent: _dismissAnimController, curve: Curves.easeOutCubic),
+    );
+    _dismissOpacityAnim = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _dismissAnimController, curve: Curves.easeInCubic),
     );
 
+    // Snap-back animation
+    _snapAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+    );
+    _snapOffsetAnim = Tween<Offset>(begin: Offset.zero, end: Offset.zero).animate(
+      CurvedAnimation(parent: _snapAnimController, curve: Curves.easeOutCubic),
+    );
+    _snapRotAnim = Tween<double>(begin: 0.0, end: 0.0).animate(
+      CurvedAnimation(parent: _snapAnimController, curve: Curves.easeOutCubic),
+    );
+
+    // Deck index transition
     _indexAnimController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 260),
+      duration: const Duration(milliseconds: 280),
     );
     _indexAnimation = CurvedAnimation(
       parent: _indexAnimController,
-      curve: Curves.fastOutSlowIn,
+      curve: Curves.easeOutCubic,
     );
   }
 
@@ -1614,7 +1623,8 @@ class _StackedCardDeckState extends State<StackedCardDeck>
 
   @override
   void dispose() {
-    _flyAnimController.dispose();
+    _dismissAnimController.dispose();
+    _snapAnimController.dispose();
     _indexAnimController.dispose();
     super.dispose();
   }
@@ -1624,64 +1634,100 @@ class _StackedCardDeckState extends State<StackedCardDeck>
     return lerpDouble(_fromIndex, _toIndex, _indexAnimation.value) ?? _toIndex;
   }
 
-  void _triggerAction(AttendanceStatus status) {
+  void _triggerAction(AttendanceStatus status, {Offset? initialVelocity}) {
     if (widget.semesterEnded) return;
+    if (_dismissAnimController.isAnimating) return;
+
+    final dismissIdx = widget.activeIndex;
+    if (dismissIdx < 0 || dismissIdx >= widget.displayClasses.length) return;
 
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+
+    final currentSub = widget.displayClasses[dismissIdx];
+    final currentSlot = currentSub.schedule.first;
+
+    _dismissingSubject = currentSub;
+    _dismissingSlot = currentSlot;
+    _dismissingIndex = dismissIdx;
+    _dismissingStatus = status;
 
     Offset targetFly;
     double targetRot = 0;
 
     switch (status) {
       case AttendanceStatus.attended:
-        targetFly = Offset(screenWidth * 1.35, _dragOffset.dy);
-        targetRot = 0.22;
+        targetFly = Offset(screenWidth * 1.55, _dragOffset.dy * 0.4);
+        targetRot = 0.28;
         break;
       case AttendanceStatus.absent:
       case AttendanceStatus.plannedAbsent:
-        targetFly = Offset(-screenWidth * 1.35, _dragOffset.dy);
-        targetRot = -0.22;
+        targetFly = Offset(-screenWidth * 1.55, _dragOffset.dy * 0.4);
+        targetRot = -0.28;
         break;
       case AttendanceStatus.cancelled:
-        targetFly = Offset(_dragOffset.dx, -screenHeight * 1.15);
-        targetRot = 0;
+        targetFly = Offset(_dragOffset.dx * 0.3, -screenHeight * 1.30);
+        targetRot = 0.0;
         break;
     }
 
     HapticFeedback.mediumImpact();
 
-    _flyOffsetAnim = Tween<Offset>(begin: _dragOffset, end: targetFly).animate(
-      CurvedAnimation(parent: _flyAnimController, curve: Curves.easeOutCubic),
+    final startOffset = _dragOffset;
+    final startRot = (_dragOffset.dx / (screenWidth * 0.75)) * 0.28;
+
+    _dismissOffsetAnim = Tween<Offset>(begin: startOffset, end: targetFly).animate(
+      CurvedAnimation(parent: _dismissAnimController, curve: Curves.easeOutCubic),
     );
-    _rotationAnim = Tween<double>(begin: (_dragOffset.dx / 300) * 0.18, end: targetRot).animate(
-      CurvedAnimation(parent: _flyAnimController, curve: Curves.easeOutCubic),
+    _dismissRotAnim = Tween<double>(begin: startRot, end: targetRot).animate(
+      CurvedAnimation(parent: _dismissAnimController, curve: Curves.easeOutCubic),
+    );
+    _dismissOpacityAnim = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _dismissAnimController, curve: const Interval(0.2, 1.0, curve: Curves.easeInCubic)),
     );
 
-    _flyAnimController.forward(from: 0.0).then((_) {
-      widget.onCardSwiped(widget.activeIndex, status);
+    setState(() {
+      _dragOffset = Offset.zero;
+    });
+
+    // Notify parent immediately so deck smoothly promotes the next card underneath
+    widget.onCardSwiped(dismissIdx, status);
+
+    _dismissAnimController.forward(from: 0.0).then((_) {
       if (mounted) {
         setState(() {
-          _dragOffset = Offset.zero;
+          _dismissingSubject = null;
+          _dismissingSlot = null;
+          _dismissingIndex = null;
+          _dismissingStatus = null;
         });
-        _flyAnimController.reset();
+        _dismissAnimController.reset();
       }
     });
   }
 
   void _resetPosition() {
-    _flyOffsetAnim = Tween<Offset>(begin: _dragOffset, end: Offset.zero).animate(
-      CurvedAnimation(parent: _flyAnimController, curve: Curves.easeOutCubic),
+    if (_dragOffset == Offset.zero) return;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    HapticFeedback.selectionClick();
+
+    _snapOffsetAnim = Tween<Offset>(begin: _dragOffset, end: Offset.zero).animate(
+      CurvedAnimation(parent: _snapAnimController, curve: Curves.easeOutCubic),
     );
-    _rotationAnim = Tween<double>(begin: (_dragOffset.dx / 300) * 0.18, end: 0.0).animate(
-      CurvedAnimation(parent: _flyAnimController, curve: Curves.easeOutCubic),
+    _snapRotAnim = Tween<double>(
+      begin: (_dragOffset.dx / (screenWidth * 0.75)) * 0.28,
+      end: 0.0,
+    ).animate(
+      CurvedAnimation(parent: _snapAnimController, curve: Curves.easeOutCubic),
     );
-    _flyAnimController.forward(from: 0.0).then((_) {
+
+    _snapAnimController.forward(from: 0.0).then((_) {
       if (mounted) {
         setState(() {
           _dragOffset = Offset.zero;
         });
-        _flyAnimController.reset();
+        _snapAnimController.reset();
       }
     });
   }
@@ -1693,19 +1739,19 @@ class _StackedCardDeckState extends State<StackedCardDeck>
 
     final screenWidth = MediaQuery.of(context).size.width;
     final activeIndex = widget.activeIndex.clamp(0, count - 1);
+    final swipeProvider = Provider.of<SwipeActionProvider>(context);
 
-    final centerCardWidth = (screenWidth * 0.70).clamp(255.0, 285.0);
-    final centerCardHeight = (widget.rs.height(355)).clamp(320.0, 390.0);
-    final peekOffset = centerCardWidth * 0.54;
+    // Modern glass card proportions
+    final centerCardWidth = (screenWidth * 0.76).clamp(265.0, 310.0);
+    final centerCardHeight = (widget.rs.height(375)).clamp(345.0, 415.0);
+    final peekOffset = centerCardWidth * 0.52;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final totalHeight = constraints.maxHeight;
-        // The bottom timetable peek drawer occupies 88 (position) + 48 (pill height) = 136 scale
         final bottomOcclusion = widget.rs.scale(136);
         final visibleHeight = (totalHeight - bottomOcclusion).clamp(0.0, totalHeight);
         final cardBoxHeight = centerCardHeight + widget.rs.height(24);
-        // Place the card precisely in the vertical center of the visible open area!
         final topOffset = ((visibleHeight - cardBoxHeight) / 2).clamp(0.0, totalHeight - cardBoxHeight);
 
         return Stack(
@@ -1717,19 +1763,31 @@ class _StackedCardDeckState extends State<StackedCardDeck>
               width: screenWidth,
               height: cardBoxHeight,
               child: AnimatedBuilder(
-                animation: Listenable.merge([_flyAnimController, _indexAnimController]),
+                animation: Listenable.merge([
+                  _dismissAnimController,
+                  _snapAnimController,
+                  _indexAnimController,
+                ]),
                 builder: (context, _) {
                   final currentAnimatedIndex = _currentAnimatedIndex;
 
-                  // Collect visible card indices
+                  // Active drag offset (either live finger drag or smooth snap-back)
+                  final currentDrag = _snapAnimController.isAnimating
+                      ? _snapOffsetAnim.value
+                      : _dragOffset;
+                  final dragDistance = currentDrag.distance;
+                  final dragProgress = (dragDistance / 110.0).clamp(0.0, 1.0);
+
+                  // Collect visible card indices, skipping any currently dismissing card
                   final visibleIndices = <int>[];
                   for (int i = 0; i < count; i++) {
-                    if ((i - currentAnimatedIndex).abs() <= 3.5) {
+                    if (i == _dismissingIndex) continue;
+                    if ((i - currentAnimatedIndex).abs() <= 3.2) {
                       visibleIndices.add(i);
                     }
                   }
 
-                  // Sort so furthest from currentAnimatedIndex is rendered first (bottom of stack)
+                  // Sort back-to-front so active card is on top of subordinate cards
                   visibleIndices.sort((a, b) {
                     final distA = (a - currentAnimatedIndex).abs();
                     final distB = (b - currentAnimatedIndex).abs();
@@ -1739,126 +1797,180 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                   return Stack(
                     alignment: Alignment.center,
                     clipBehavior: Clip.none,
-                    children: visibleIndices.map((i) {
-                      final subject = widget.displayClasses[i];
-                      final slot = subject.schedule.first;
-                      final slotKey = slot.slotKey;
-                      final attendance = widget.attendanceProvider.getAttendanceForSubjectOnDate(
-                        subject.id,
-                        widget.targetDate,
-                        slotKey: slotKey,
-                      );
-                      final isLocked = CalendarUtils.isLockedByManualOverride(subject, widget.targetDate);
+                    children: [
+                      // Subordinate and active cards in 3D fan layout
+                      ...visibleIndices.map((i) {
+                        final subject = widget.displayClasses[i];
+                        final slot = subject.schedule.first;
+                        final slotKey = slot.slotKey;
+                        final attendance = widget.attendanceProvider.getAttendanceForSubjectOnDate(
+                          subject.id,
+                          widget.targetDate,
+                          slotKey: slotKey,
+                        );
+                        final isLocked = CalendarUtils.isLockedByManualOverride(subject, widget.targetDate);
 
-                      final d = i - currentAnimatedIndex;
-                      final isCurrentActive = (i == activeIndex);
+                        final d = i - currentAnimatedIndex;
+                        final isCurrentActive = (i == activeIndex);
 
-                      final clampedD = d.clamp(-3.0, 3.0);
-                      final double baseDx = clampedD * peekOffset;
-                      final double baseDy = (clampedD.abs() * 7.5).clamp(0.0, 22.0);
-                      final double baseRot = (clampedD * 0.09).clamp(-0.24, 0.24);
-                      final double baseScale = (1.0 - (clampedD.abs() * 0.075)).clamp(0.72, 1.0);
-                      final double baseOpacity = (1.0 - (clampedD.abs() * 0.18)).clamp(0.25, 1.0);
+                        final clampedD = d.clamp(-3.0, 3.0);
+                        final double baseDx = clampedD * peekOffset;
+                        final double baseDy = (clampedD.abs() * 7.5).clamp(0.0, 22.0);
+                        final double baseRot = (clampedD * 0.08).clamp(-0.24, 0.24);
+                        final double baseScale = (1.0 - (clampedD.abs() * 0.07)).clamp(0.74, 1.0);
+                        final double baseOpacity = (1.0 - (clampedD.abs() * 0.16)).clamp(0.30, 1.0);
 
-                      Offset cardOffset = Offset(baseDx, baseDy);
-                      double cardRot = baseRot;
-                      double cardScale = baseScale;
-                      double cardOpacity = baseOpacity;
+                        Offset cardOffset = Offset(baseDx, baseDy);
+                        double cardRot = baseRot;
+                        double cardScale = baseScale;
+                        double cardOpacity = baseOpacity;
 
-                      if (isCurrentActive) {
-                        final flyOffset = _flyAnimController.isAnimating ? _flyOffsetAnim.value : _dragOffset;
-                        final flyRot = _flyAnimController.isAnimating
-                            ? _rotationAnim.value
-                            : (flyOffset.dx / 320) * 0.18;
-                        cardOffset = Offset(baseDx + flyOffset.dx, baseDy + flyOffset.dy);
-                        cardRot = baseRot + flyRot;
-                        cardOpacity = 1.0;
-                      }
+                        if (isCurrentActive) {
+                          final double liveRot = _snapAnimController.isAnimating
+                              ? _snapRotAnim.value
+                              : (currentDrag.dx / (screenWidth * 0.75)) * 0.28;
+                          cardOffset = Offset(baseDx + currentDrag.dx, baseDy + currentDrag.dy);
+                          cardRot = baseRot + liveRot;
+                          cardOpacity = 1.0;
+                        } else {
+                          // Tactile depth reaction: subordinate card gently steps forward as top card is pulled
+                          if (d > 0 && d <= 1.2) {
+                            cardScale = lerpDouble(baseScale, 1.0, dragProgress * 0.40) ?? baseScale;
+                            cardOffset = Offset(
+                              lerpDouble(baseDx, 0.0, dragProgress * 0.30) ?? baseDx,
+                              lerpDouble(baseDy, 0.0, dragProgress * 0.45) ?? baseDy,
+                            );
+                            cardOpacity = lerpDouble(baseOpacity, 1.0, dragProgress * 0.40) ?? baseOpacity;
+                          }
+                        }
 
-                      // If not active, render as tapable peeking card face
-                      if (!isCurrentActive) {
-                        final bool isLeftWing = d < 0;
-                        return Transform.translate(
-                          offset: cardOffset,
-                          child: Transform.rotate(
-                            angle: cardRot,
-                            child: Transform.scale(
-                              scale: cardScale,
-                              child: Opacity(
-                                opacity: cardOpacity,
+                        // Peeking wing cards
+                        if (!isCurrentActive) {
+                          final bool isLeftWing = d < 0;
+                          return RepaintBoundary(
+                            child: Transform.translate(
+                              offset: cardOffset,
+                              child: Transform.rotate(
+                                angle: cardRot,
+                                child: Transform.scale(
+                                  scale: cardScale,
+                                  child: Opacity(
+                                    opacity: cardOpacity,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        HapticFeedback.selectionClick();
+                                        widget.onIndexChanged(i);
+                                      },
+                                      child: _buildPeekingCardFace(
+                                        subject: subject,
+                                        slot: slot,
+                                        width: centerCardWidth,
+                                        height: centerCardHeight,
+                                        isLeft: isLeftWing,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+
+                        // Active interactive card
+                        return RepaintBoundary(
+                          child: Transform.translate(
+                            offset: cardOffset,
+                            child: Transform.rotate(
+                              angle: cardRot,
+                              child: Transform.scale(
+                                scale: cardScale,
                                 child: GestureDetector(
-                                  onTap: () {
-                                    HapticFeedback.selectionClick();
-                                    widget.onIndexChanged(i);
+                                  behavior: HitTestBehavior.opaque,
+                                  onPanStart: (details) {
+                                    if (widget.semesterEnded || isLocked) return;
+                                    _snapAnimController.stop();
                                   },
-                                  child: _buildPeekingCardFace(
+                                  onPanUpdate: (details) {
+                                    if (widget.semesterEnded || isLocked) return;
+                                    setState(() {
+                                      final double dampDy = details.delta.dy > 0
+                                          ? details.delta.dy * 0.35 // Rubber-band resistance on down pull
+                                          : details.delta.dy;
+                                      _dragOffset += Offset(details.delta.dx, dampDy);
+                                    });
+                                  },
+                                  onPanEnd: (details) {
+                                    if (widget.semesterEnded || isLocked) return;
+                                    final velocity = details.velocity.pixelsPerSecond;
+                                    final dx = _dragOffset.dx;
+                                    final dy = _dragOffset.dy;
+                                    final vx = velocity.dx;
+                                    final vy = velocity.dy;
+
+                                    final rightStatus = swipeProvider.rightAction == SwipeAction.present
+                                        ? AttendanceStatus.attended
+                                        : AttendanceStatus.absent;
+                                    final leftStatus = swipeProvider.leftAction == SwipeAction.present
+                                        ? AttendanceStatus.attended
+                                        : AttendanceStatus.absent;
+
+                                    // Horizontal swipe right (Present or Absent per setting)
+                                    if (dx > 65 || (vx > 300 && dx > 15)) {
+                                      _triggerAction(rightStatus, initialVelocity: velocity);
+                                    }
+                                    // Horizontal swipe left (Opposite per setting)
+                                    else if (dx < -65 || (vx < -300 && dx < -15)) {
+                                      _triggerAction(leftStatus, initialVelocity: velocity);
+                                    }
+                                    // Upward swipe (Cancelled / Holiday)
+                                    else if (dy < -50 || (vy < -300 && dy < -15)) {
+                                      _triggerAction(AttendanceStatus.cancelled, initialVelocity: velocity);
+                                    }
+                                    // Smooth spring reset
+                                    else {
+                                      _resetPosition();
+                                    }
+                                  },
+                                  child: _buildActiveCardFace(
                                     subject: subject,
                                     slot: slot,
+                                    attendance: attendance,
+                                    isLocked: isLocked,
+                                    dragOffset: currentDrag,
                                     width: centerCardWidth,
                                     height: centerCardHeight,
-                                    isLeft: isLeftWing,
+                                    periodNumber: activeIndex + 1,
+                                    totalPeriods: count,
+                                    swipeProvider: swipeProvider,
                                   ),
                                 ),
                               ),
                             ),
                           ),
                         );
-                      }
+                      }),
 
-                      // Active Card with pan gesture detector
-                      return Transform.translate(
-                        offset: cardOffset,
-                        child: Transform.rotate(
-                          angle: cardRot,
-                          child: Transform.scale(
-                            scale: cardScale,
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onPanStart: (details) {
-                                if (widget.semesterEnded || isLocked) return;
-                                _flyAnimController.stop();
-                              },
-                              onPanUpdate: (details) {
-                                if (widget.semesterEnded || isLocked) return;
-                                setState(() {
-                                  _dragOffset += details.delta;
-                                });
-                              },
-                              onPanEnd: (details) {
-                                if (widget.semesterEnded || isLocked) return;
-                                final velocity = details.velocity.pixelsPerSecond;
-
-                                // Swipe right (Attended): dx > 50 or fast flick velocity.dx > 220
-                                if (_dragOffset.dx > 50 || (velocity.dx > 220 && _dragOffset.dx > 15)) {
-                                  _triggerAction(AttendanceStatus.attended);
-                                }
-                                // Swipe left (Missed): dx < -50 or fast flick velocity.dx < -220
-                                if (_dragOffset.dx < -50 || (velocity.dx < -220 && _dragOffset.dx < -15)) {
-                                  _triggerAction(AttendanceStatus.absent);
-                                }
-                                // Swipe up (Cancelled): dy < -45 or fast flick velocity.dy < -220
-                                if (_dragOffset.dy < -45 || (velocity.dy < -220 && _dragOffset.dy < -15)) {
-                                  _triggerAction(AttendanceStatus.cancelled);
-                                } else {
-                                  _resetPosition();
-                                }
-                              },
-                              child: _buildActiveCardFace(
-                                subject: subject,
-                                slot: slot,
-                                attendance: attendance,
-                                isLocked: isLocked,
-                                dragOffset: cardOffset - Offset(baseDx, baseDy),
-                                width: centerCardWidth,
-                                height: centerCardHeight,
-                                periodNumber: activeIndex + 1,
-                                totalPeriods: count,
+                      // Dismissing card overlay flying smoothly away
+                      if (_dismissingSubject != null && _dismissAnimController.isAnimating)
+                        RepaintBoundary(
+                          child: Transform.translate(
+                            offset: _dismissOffsetAnim.value,
+                            child: Transform.rotate(
+                              angle: _dismissRotAnim.value,
+                              child: Opacity(
+                                opacity: _dismissOpacityAnim.value,
+                                child: _buildDismissingCardFace(
+                                  subject: _dismissingSubject!,
+                                  slot: _dismissingSlot!,
+                                  width: centerCardWidth,
+                                  height: centerCardHeight,
+                                  status: _dismissingStatus!,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      );
-                    }).toList(),
+                    ],
                   );
                 },
               ),
@@ -1869,7 +1981,120 @@ class _StackedCardDeckState extends State<StackedCardDeck>
     );
   }
 
-  // --- Peeking Background Card Face (Shows Subject Name & Time on Exposed Edge!) ---
+  // --- Dismissing Card Snapshot (Renders fluidly while flying out) ---
+  Widget _buildDismissingCardFace({
+    required Subject subject,
+    required TimeSlot slot,
+    required double width,
+    required double height,
+    required AttendanceStatus status,
+  }) {
+    final rs = widget.rs;
+    final isDarkMode = widget.isDarkMode;
+
+    final Color glowColor = status == AttendanceStatus.attended
+        ? const Color(0xFF10B981)
+        : (status == AttendanceStatus.cancelled ? const Color(0xFFF59E0B) : const Color(0xFFEF4444));
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(rs.scale(28)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+        child: Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDarkMode
+                  ? [
+                      const Color(0xFF222432).withValues(alpha: 0.92),
+                      const Color(0xFF151620).withValues(alpha: 0.95),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.95),
+                      const Color(0xFFF8FAFC).withValues(alpha: 0.96),
+                    ],
+            ),
+            borderRadius: BorderRadius.circular(rs.scale(28)),
+            border: Border.all(color: glowColor.withValues(alpha: 0.8), width: 1.6),
+            boxShadow: [
+              BoxShadow(
+                color: glowColor.withValues(alpha: 0.35),
+                blurRadius: 36,
+                spreadRadius: -2,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: rs.insetsSymmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: subject.color.withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(rs.scale(10)),
+                        border: Border.all(color: subject.color.withValues(alpha: 0.5), width: 0.8),
+                      ),
+                      child: Text(
+                        subject.displayAcronym,
+                        style: GoogleFonts.inter(
+                          fontSize: rs.font(11.5),
+                          fontWeight: FontWeight.w800,
+                          color: subject.color,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: rs.insetsSymmetric(horizontal: 8, vertical: 3.5),
+                      decoration: BoxDecoration(
+                        color: glowColor.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(rs.scale(10)),
+                        border: Border.all(color: glowColor.withValues(alpha: 0.4), width: 0.8),
+                      ),
+                      child: Text(
+                        status == AttendanceStatus.attended
+                            ? '✓ PRESENT'
+                            : (status == AttendanceStatus.cancelled ? '⏸ HOLIDAY' : '✕ ABSENT'),
+                        style: GoogleFonts.inter(
+                          fontSize: rs.font(10.5),
+                          fontWeight: FontWeight.w800,
+                          color: glowColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: rs.height(14)),
+                Text(
+                  subject.name,
+                  style: GoogleFonts.inter(
+                    fontSize: rs.font(23),
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.6,
+                    color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
+                    height: 1.2,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const Spacer(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- Peeking Background Card Face (Layered Frosted Glass Wings) ---
   Widget _buildPeekingCardFace({
     required Subject subject,
     required TimeSlot slot,
@@ -1886,65 +2111,94 @@ class _StackedCardDeckState extends State<StackedCardDeck>
     final hasRoom = room != null && room.isNotEmpty;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(rs.scale(26)),
+      borderRadius: BorderRadius.circular(rs.scale(28)),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
           width: width,
           height: height,
           decoration: BoxDecoration(
-            color: isDarkMode
-                ? const Color(0xFF141416).withValues(alpha: 0.82)
-                : Colors.white.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(rs.scale(26)),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDarkMode
+                  ? [
+                      const Color(0xFF1E202A).withValues(alpha: 0.88),
+                      const Color(0xFF14151D).withValues(alpha: 0.92),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.90),
+                      const Color(0xFFF1F5F9).withValues(alpha: 0.92),
+                    ],
+            ),
+            borderRadius: BorderRadius.circular(rs.scale(28)),
             border: Border.all(
               color: isDarkMode
                   ? Colors.white.withValues(alpha: 0.16)
-                  : Colors.black.withValues(alpha: 0.12),
+                  : Colors.black.withValues(alpha: 0.10),
               width: 1.0,
             ),
             boxShadow: [
               BoxShadow(
-                color: subject.color.withValues(alpha: isDarkMode ? 0.18 : 0.12),
-                blurRadius: 22,
+                color: subject.color.withValues(alpha: isDarkMode ? 0.22 : 0.14),
+                blurRadius: 28,
                 spreadRadius: -4,
-                offset: Offset(isLeft ? -4 : 4, 6),
+                offset: Offset(isLeft ? -6 : 6, 8),
               ),
             ],
           ),
           child: Stack(
             children: [
+              // Top gloss line
               Positioned(
-                left: isLeft ? rs.scale(14) : null,
-                right: !isLeft ? rs.scale(14) : null,
-                top: rs.scale(16),
-                bottom: rs.scale(16),
-                width: width * 0.46,
+                top: 0,
+                left: 20,
+                right: 20,
+                height: 1,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        isDarkMode ? Colors.white.withValues(alpha: 0.25) : Colors.white,
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: isLeft ? rs.scale(16) : null,
+                right: !isLeft ? rs.scale(16) : null,
+                top: rs.scale(18),
+                bottom: rs.scale(18),
+                width: width * 0.44,
                 child: Column(
                   crossAxisAlignment: isLeft ? CrossAxisAlignment.start : CrossAxisAlignment.end,
                   children: [
                     // Acronym Node
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: subject.color.withValues(alpha: 0.22),
                         borderRadius: BorderRadius.circular(rs.scale(10)),
+                        border: Border.all(color: subject.color.withValues(alpha: 0.45), width: 0.8),
                       ),
                       child: Text(
                         subject.displayAcronym,
                         style: GoogleFonts.inter(
-                          fontSize: rs.font(10.5),
+                          fontSize: rs.font(11),
                           fontWeight: FontWeight.w800,
                           color: subject.color,
                         ),
                       ),
                     ),
-                    SizedBox(height: rs.height(8)),
+                    SizedBox(height: rs.height(9)),
                     // Time indicator
                     Text(
                       slot.formatTimeRange(widget.timeFormatProvider.timeFormat),
                       style: GoogleFonts.inter(
-                        fontSize: rs.font(11),
+                        fontSize: rs.font(11.5),
                         fontWeight: FontWeight.w600,
                         color: isDarkMode ? Colors.white70 : Colors.black54,
                       ),
@@ -1952,14 +2206,14 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                       overflow: TextOverflow.ellipsis,
                       textAlign: isLeft ? TextAlign.left : TextAlign.right,
                     ),
-                    SizedBox(height: rs.height(4)),
+                    SizedBox(height: rs.height(5)),
                     // Subject Name
                     Text(
                       subject.name,
                       style: GoogleFonts.inter(
-                        fontSize: rs.font(15),
+                        fontSize: rs.font(16),
                         fontWeight: FontWeight.w800,
-                        letterSpacing: -0.3,
+                        letterSpacing: -0.4,
                         color: isDarkMode ? Colors.white : Colors.black87,
                         height: 1.2,
                       ),
@@ -1972,7 +2226,7 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                       Text(
                         'Rm $room',
                         style: GoogleFonts.inter(
-                          fontSize: rs.font(10.5),
+                          fontSize: rs.font(11),
                           color: isDarkMode ? Colors.white54 : Colors.black45,
                         ),
                         maxLines: 1,
@@ -1983,28 +2237,29 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                     const Spacer(),
                     // Hint to tap
                     Container(
-                      padding: rs.insetsSymmetric(horizontal: 7, vertical: 3),
+                      padding: rs.insetsSymmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(rs.scale(8)),
+                        borderRadius: BorderRadius.circular(rs.scale(10)),
+                        border: Border.all(color: isDarkMode ? Colors.white12 : Colors.black12, width: 0.6),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (isLeft)
-                            Icon(Icons.arrow_back_rounded, size: rs.scale(11), color: isDarkMode ? Colors.white54 : Colors.black54),
-                          if (isLeft) SizedBox(width: rs.width(3)),
+                            Icon(Icons.arrow_back_rounded, size: rs.scale(11), color: isDarkMode ? Colors.white70 : Colors.black54),
+                          if (isLeft) SizedBox(width: rs.width(4)),
                           Text(
-                            'Tap',
+                            'Peek',
                             style: GoogleFonts.inter(
-                              fontSize: rs.font(10),
-                              fontWeight: FontWeight.w600,
-                              color: isDarkMode ? Colors.white60 : Colors.black54,
+                              fontSize: rs.font(10.5),
+                              fontWeight: FontWeight.w700,
+                              color: isDarkMode ? Colors.white70 : Colors.black87,
                             ),
                           ),
-                          if (!isLeft) SizedBox(width: rs.width(3)),
+                          if (!isLeft) SizedBox(width: rs.width(4)),
                           if (!isLeft)
-                            Icon(Icons.arrow_forward_rounded, size: rs.scale(11), color: isDarkMode ? Colors.white54 : Colors.black54),
+                            Icon(Icons.arrow_forward_rounded, size: rs.scale(11), color: isDarkMode ? Colors.white70 : Colors.black54),
                         ],
                       ),
                     ),
@@ -2018,7 +2273,7 @@ class _StackedCardDeckState extends State<StackedCardDeck>
     );
   }
 
-  // --- Active Front Card Face ---
+  // --- Active Front Card Face (Rich Glassmorphic Design) ---
   Widget _buildActiveCardFace({
     required Subject subject,
     required TimeSlot slot,
@@ -2029,58 +2284,103 @@ class _StackedCardDeckState extends State<StackedCardDeck>
     required double height,
     required int periodNumber,
     required int totalPeriods,
+    required SwipeActionProvider swipeProvider,
   }) {
     final rs = widget.rs;
     final isDarkMode = widget.isDarkMode;
 
-    // Effective room / block
     final effectiveLocId = subject.getEffectiveLocationId(slot);
     final locConfig = effectiveLocId != null ? widget.locationById[effectiveLocId] : null;
     final room = subject.getEffectiveRoom(slot) ?? locConfig?.name;
     final block = subject.getEffectiveBlock(slot) ?? locConfig?.block;
     final hasRoom = room != null && room.isNotEmpty;
 
-    // Real-time drag stamp opacity (scaled to 50px threshold)
-    final double rightSwipeRatio = (dragOffset.dx / 50).clamp(0.0, 1.0);
-    final double leftSwipeRatio = (-dragOffset.dx / 50).clamp(0.0, 1.0);
-    final double upSwipeRatio = (-dragOffset.dy / 45).clamp(0.0, 1.0);
+    // Real-time drag stamp opacity
+    final double rightSwipeRatio = (dragOffset.dx / 60.0).clamp(0.0, 1.0);
+    final double leftSwipeRatio = (-dragOffset.dx / 60.0).clamp(0.0, 1.0);
+    final double upSwipeRatio = (-dragOffset.dy / 50.0).clamp(0.0, 1.0);
+
+    final rightAction = swipeProvider.rightAction;
+    final leftAction = swipeProvider.leftAction;
+    final bool rightIsPresent = rightAction == SwipeAction.present;
+
+    // Dynamic Reactive Border Color
+    final Color borderColor;
+    if (rightSwipeRatio > 0.18) {
+      borderColor = (rightIsPresent ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.90);
+    } else if (leftSwipeRatio > 0.18) {
+      borderColor = (rightIsPresent ? const Color(0xFFEF4444) : const Color(0xFF10B981)).withValues(alpha: 0.90);
+    } else if (upSwipeRatio > 0.18) {
+      borderColor = const Color(0xFFF59E0B).withValues(alpha: 0.90);
+    } else {
+      borderColor = isDarkMode ? Colors.white.withValues(alpha: 0.18) : Colors.black.withValues(alpha: 0.10);
+    }
+
+    final borderWidth = (rightSwipeRatio > 0.18 || leftSwipeRatio > 0.18 || upSwipeRatio > 0.18) ? 1.6 : 1.0;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(rs.scale(26)),
+      borderRadius: BorderRadius.circular(rs.scale(28)),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
         child: Container(
           width: width,
           height: height,
           decoration: BoxDecoration(
-            color: isDarkMode
-                ? const Color(0xFF141416).withValues(alpha: 0.88)
-                : Colors.white.withValues(alpha: 0.90),
-            borderRadius: BorderRadius.circular(rs.scale(26)),
-            border: Border.all(
-              color: rightSwipeRatio > 0.25
-                  ? const Color(0xFF10B981).withValues(alpha: 0.85)
-                  : (leftSwipeRatio > 0.25
-                      ? const Color(0xFFEF4444).withValues(alpha: 0.85)
-                      : (upSwipeRatio > 0.25
-                          ? const Color(0xFFF59E0B).withValues(alpha: 0.85)
-                          : (isDarkMode ? Colors.white.withValues(alpha: 0.16) : Colors.black.withValues(alpha: 0.10)))),
-              width: (rightSwipeRatio > 0.25 || leftSwipeRatio > 0.25 || upSwipeRatio > 0.25) ? 1.5 : 0.9,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDarkMode
+                  ? [
+                      const Color(0xFF222432).withValues(alpha: 0.92),
+                      const Color(0xFF151620).withValues(alpha: 0.95),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.95),
+                      const Color(0xFFF8FAFC).withValues(alpha: 0.96),
+                    ],
             ),
+            borderRadius: BorderRadius.circular(rs.scale(28)),
+            border: Border.all(color: borderColor, width: borderWidth),
             boxShadow: [
+              // Ambient colored aura
               BoxShadow(
-                color: subject.color.withValues(alpha: isDarkMode ? 0.22 : 0.14),
+                color: subject.color.withValues(alpha: isDarkMode ? 0.28 : 0.16),
                 blurRadius: 36,
-                spreadRadius: -6,
+                spreadRadius: -4,
+                offset: const Offset(0, 10),
+              ),
+              // Deep contact shadow
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDarkMode ? 0.45 : 0.08),
+                blurRadius: 22,
                 offset: const Offset(0, 8),
               ),
             ],
           ),
           child: Stack(
             children: [
+              // Specular top highlight sheen
+              Positioned(
+                top: 0,
+                left: 20,
+                right: 20,
+                height: 1.2,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        isDarkMode ? Colors.white.withValues(alpha: 0.35) : Colors.white.withValues(alpha: 0.8),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
               // Card Content
               Padding(
-                padding: rs.insetsSymmetric(horizontal: 18, vertical: 13),
+                padding: rs.insetsSymmetric(horizontal: 20, vertical: 15),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -2091,82 +2391,99 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.all(7),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: subject.color.withValues(alpha: 0.18),
-                                shape: BoxShape.circle,
+                                color: subject.color.withValues(alpha: 0.22),
+                                borderRadius: BorderRadius.circular(rs.scale(10)),
+                                border: Border.all(color: subject.color.withValues(alpha: 0.5), width: 0.8),
                               ),
                               child: Text(
                                 subject.displayAcronym,
                                 style: GoogleFonts.inter(
-                                  fontSize: rs.font(11),
+                                  fontSize: rs.font(11.5),
                                   fontWeight: FontWeight.w800,
                                   color: subject.color,
                                 ),
                               ),
                             ),
                             SizedBox(width: rs.width(8)),
-                            Text(
-                              slot.formatTimeRange(widget.timeFormatProvider.timeFormat),
-                              style: GoogleFonts.inter(
-                                fontSize: rs.font(12.5),
-                                fontWeight: FontWeight.w600,
-                                color: isDarkMode ? Colors.white70 : Colors.black54,
+                            Container(
+                              padding: rs.insetsSymmetric(horizontal: 8, vertical: 3.5),
+                              decoration: BoxDecoration(
+                                color: isDarkMode ? Colors.white.withValues(alpha: 0.07) : Colors.black.withValues(alpha: 0.04),
+                                borderRadius: BorderRadius.circular(rs.scale(10)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.schedule_rounded, size: rs.scale(12), color: isDarkMode ? Colors.white60 : Colors.black54),
+                                  SizedBox(width: rs.width(4)),
+                                  Text(
+                                    slot.formatTimeRange(widget.timeFormatProvider.timeFormat),
+                                    style: GoogleFonts.inter(
+                                      fontSize: rs.font(11.5),
+                                      fontWeight: FontWeight.w600,
+                                      color: isDarkMode ? Colors.white70 : Colors.black87,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                         Container(
-                          padding: rs.insetsSymmetric(horizontal: 8, vertical: 3.5),
+                          padding: rs.insetsSymmetric(horizontal: 9, vertical: 4),
                           decoration: BoxDecoration(
                             color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(rs.scale(12)),
+                            border: Border.all(color: isDarkMode ? Colors.white12 : Colors.black12, width: 0.6),
                           ),
                           child: Text(
-                            '$periodNumber of $totalPeriods',
+                            'PERIOD $periodNumber OF $totalPeriods',
                             style: GoogleFonts.inter(
-                              fontSize: rs.font(10.5),
-                              fontWeight: FontWeight.w600,
-                              color: isDarkMode ? Colors.white60 : Colors.black54,
+                              fontSize: rs.font(10),
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.6,
+                              color: isDarkMode ? Colors.white70 : Colors.black54,
                             ),
                           ),
                         ),
                       ],
                     ),
 
-                    SizedBox(height: rs.height(10)),
+                    SizedBox(height: rs.height(11)),
 
-                    // Subject Full Name (Image 1 style)
+                    // Subject Full Name Hero
                     Text(
                       subject.name,
                       style: GoogleFonts.inter(
-                        fontSize: rs.font(22),
+                        fontSize: rs.font(23),
                         fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                        color: isDarkMode ? Colors.white : Colors.black87,
-                        height: 1.22,
+                        letterSpacing: -0.6,
+                        color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
+                        height: 1.2,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
 
-                    SizedBox(height: rs.height(5)),
+                    SizedBox(height: rs.height(6)),
 
                     // Location / Room details
                     if (hasRoom)
                       Row(
                         children: [
                           Icon(
-                            Icons.location_on_outlined,
+                            Icons.location_on_rounded,
                             size: rs.scale(13),
-                            color: isDarkMode ? Colors.white54 : Colors.black45,
+                            color: subject.color,
                           ),
                           SizedBox(width: rs.width(4)),
                           Text(
                             'Room $room${block != null && block.isNotEmpty ? " • $block" : ""}',
                             style: GoogleFonts.inter(
                               fontSize: rs.font(12),
-                              color: isDarkMode ? Colors.white54 : Colors.black54,
+                              fontWeight: FontWeight.w500,
+                              color: isDarkMode ? Colors.white60 : Colors.black54,
                             ),
                           ),
                         ],
@@ -2176,46 +2493,85 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                       Padding(
                         padding: EdgeInsets.only(top: rs.height(4)),
                         child: Text(
-                          '🔒 Locked by manual count update',
+                          '🔒 Locked by manual count override',
                           style: GoogleFonts.inter(fontSize: rs.font(11), color: const Color(0xFFF59E0B)),
                         ),
                       ),
 
                     const Spacer(),
 
-                    // Current Marked Status Pill (if already decided)
+                    // Current Marked Status Pill
                     if (attendance != null)
                       Container(
-                        margin: EdgeInsets.only(bottom: rs.height(8)),
-                        padding: rs.insetsSymmetric(horizontal: 10, vertical: 4),
+                        margin: EdgeInsets.only(bottom: rs.height(9)),
+                        padding: rs.insetsSymmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(rs.scale(10)),
-                        ),
-                        child: Text(
-                          'Currently marked: ${attendance.status == AttendanceStatus.attended ? "Attended ✓" : (attendance.status == AttendanceStatus.absent || attendance.status == AttendanceStatus.plannedAbsent ? "Missed ✕" : "Cancelled ⊘")}',
-                          style: GoogleFonts.inter(
-                            fontSize: rs.font(11),
-                            fontWeight: FontWeight.w600,
-                            color: isDarkMode ? Colors.white70 : Colors.black87,
+                          color: attendance.status == AttendanceStatus.attended
+                              ? const Color(0xFF10B981).withValues(alpha: 0.16)
+                              : (attendance.status == AttendanceStatus.cancelled
+                                  ? const Color(0xFFF59E0B).withValues(alpha: 0.16)
+                                  : const Color(0xFFEF4444).withValues(alpha: 0.16)),
+                          borderRadius: BorderRadius.circular(rs.scale(12)),
+                          border: Border.all(
+                            color: attendance.status == AttendanceStatus.attended
+                                ? const Color(0xFF10B981).withValues(alpha: 0.35)
+                                : (attendance.status == AttendanceStatus.cancelled
+                                    ? const Color(0xFFF59E0B).withValues(alpha: 0.35)
+                                    : const Color(0xFFEF4444).withValues(alpha: 0.35)),
+                            width: 0.8,
                           ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              attendance.status == AttendanceStatus.attended
+                                  ? Icons.check_circle_rounded
+                                  : (attendance.status == AttendanceStatus.cancelled
+                                      ? Icons.pause_circle_rounded
+                                      : Icons.cancel_rounded),
+                              size: rs.scale(13),
+                              color: attendance.status == AttendanceStatus.attended
+                                  ? const Color(0xFF10B981)
+                                  : (attendance.status == AttendanceStatus.cancelled
+                                      ? const Color(0xFFF59E0B)
+                                      : const Color(0xFFEF4444)),
+                            ),
+                            SizedBox(width: rs.width(5)),
+                            Text(
+                              'Marked: ${attendance.status == AttendanceStatus.attended ? "Present" : (attendance.status == AttendanceStatus.cancelled ? "Holiday" : "Absent")}',
+                              style: GoogleFonts.inter(
+                                fontSize: rs.font(11.5),
+                                fontWeight: FontWeight.w700,
+                                color: attendance.status == AttendanceStatus.attended
+                                    ? const Color(0xFF10B981)
+                                    : (attendance.status == AttendanceStatus.cancelled
+                                        ? const Color(0xFFF59E0B)
+                                        : const Color(0xFFEF4444)),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
 
-                    // Directional Swipe Guidance (Image 1 style)
+                    // Directional Swipe Guidance
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.arrow_back_rounded, size: rs.scale(13), color: const Color(0xFFEF4444)),
+                            Icon(
+                              Icons.arrow_back_rounded,
+                              size: rs.scale(13),
+                              color: leftAction == SwipeAction.present ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                            ),
                             SizedBox(width: rs.width(4)),
                             Text(
-                              'Missed',
+                              leftAction == SwipeAction.present ? 'Present' : 'Absent',
                               style: GoogleFonts.inter(
                                 fontSize: rs.font(11),
                                 fontWeight: FontWeight.w700,
-                                color: const Color(0xFFEF4444),
+                                color: leftAction == SwipeAction.present ? const Color(0xFF10B981) : const Color(0xFFEF4444),
                               ),
                             ),
                           ],
@@ -2225,7 +2581,7 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                           children: [
                             Icon(Icons.keyboard_arrow_up_rounded, size: rs.scale(14), color: const Color(0xFFF59E0B)),
                             Text(
-                              'Cancelled',
+                              'Cancel',
                               style: GoogleFonts.inter(
                                 fontSize: rs.font(10),
                                 fontWeight: FontWeight.w600,
@@ -2237,28 +2593,32 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                         Row(
                           children: [
                             Text(
-                              'Attended',
+                              rightAction == SwipeAction.present ? 'Present' : 'Absent',
                               style: GoogleFonts.inter(
                                 fontSize: rs.font(11),
                                 fontWeight: FontWeight.w700,
-                                color: const Color(0xFF10B981),
+                                color: rightAction == SwipeAction.present ? const Color(0xFF10B981) : const Color(0xFFEF4444),
                               ),
                             ),
                             SizedBox(width: rs.width(4)),
-                            Icon(Icons.arrow_forward_rounded, size: rs.scale(13), color: const Color(0xFF10B981)),
+                            Icon(
+                              Icons.arrow_forward_rounded,
+                              size: rs.scale(13),
+                              color: rightAction == SwipeAction.present ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                            ),
                           ],
                         ),
                       ],
                     ),
 
-                    SizedBox(height: rs.height(9)),
+                    SizedBox(height: rs.height(10)),
 
-                    // Bottom 3 Interactive Action Buttons (for 1-tap marking)
+                    // Bottom 3 Polished Glass Action Buttons
                     Row(
                       children: [
                         Expanded(
                           child: _buildCardActionBtn(
-                            title: 'Missed',
+                            title: 'Absent',
                             icon: Icons.close_rounded,
                             color: const Color(0xFFEF4444),
                             onTap: () => _triggerAction(AttendanceStatus.absent),
@@ -2280,7 +2640,7 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                         SizedBox(width: rs.width(8)),
                         Expanded(
                           child: _buildCardActionBtn(
-                            title: 'Attend',
+                            title: 'Present',
                             icon: Icons.check_rounded,
                             color: const Color(0xFF10B981),
                             onTap: () => _triggerAction(AttendanceStatus.attended),
@@ -2294,26 +2654,43 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                 ),
               ),
 
-              // Dynamic Swipe Feedback Stamps
+              // Dynamic Glowing Swipe Feedback Stamps
               if (rightSwipeRatio > 0.05)
                 Positioned(
                   top: rs.height(20),
                   right: rs.width(18),
                   child: Opacity(
                     opacity: rightSwipeRatio,
-                    child: Container(
-                      padding: rs.insetsSymmetric(horizontal: 12, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF10B981),
-                        borderRadius: BorderRadius.circular(rs.scale(12)),
-                      ),
-                      child: Text(
-                        'ATTENDED ✓',
-                        style: GoogleFonts.inter(
-                          fontSize: rs.font(11.5),
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: 0.8,
+                    child: Transform.rotate(
+                      angle: 0.12,
+                      child: Container(
+                        padding: rs.insetsSymmetric(horizontal: 14, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: (rightIsPresent ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.95),
+                          borderRadius: BorderRadius.circular(rs.scale(14)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (rightIsPresent ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.5),
+                              blurRadius: 18,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(rightIsPresent ? Icons.check_rounded : Icons.close_rounded, size: rs.scale(14), color: Colors.white),
+                            SizedBox(width: rs.width(5)),
+                            Text(
+                              rightIsPresent ? 'PRESENT' : 'ABSENT',
+                              style: GoogleFonts.inter(
+                                fontSize: rs.font(12),
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -2326,19 +2703,36 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                   left: rs.width(18),
                   child: Opacity(
                     opacity: leftSwipeRatio,
-                    child: Container(
-                      padding: rs.insetsSymmetric(horizontal: 12, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEF4444),
-                        borderRadius: BorderRadius.circular(rs.scale(12)),
-                      ),
-                      child: Text(
-                        'MISSED ✕',
-                        style: GoogleFonts.inter(
-                          fontSize: rs.font(11.5),
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: 0.8,
+                    child: Transform.rotate(
+                      angle: -0.12,
+                      child: Container(
+                        padding: rs.insetsSymmetric(horizontal: 14, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: (rightIsPresent ? const Color(0xFFEF4444) : const Color(0xFF10B981)).withValues(alpha: 0.95),
+                          borderRadius: BorderRadius.circular(rs.scale(14)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (rightIsPresent ? const Color(0xFFEF4444) : const Color(0xFF10B981)).withValues(alpha: 0.5),
+                              blurRadius: 18,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(rightIsPresent ? Icons.close_rounded : Icons.check_rounded, size: rs.scale(14), color: Colors.white),
+                            SizedBox(width: rs.width(5)),
+                            Text(
+                              rightIsPresent ? 'ABSENT' : 'PRESENT',
+                              style: GoogleFonts.inter(
+                                fontSize: rs.font(12),
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -2354,19 +2748,33 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                     child: Opacity(
                       opacity: upSwipeRatio,
                       child: Container(
-                        padding: rs.insetsSymmetric(horizontal: 12, vertical: 5),
+                        padding: rs.insetsSymmetric(horizontal: 14, vertical: 6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF59E0B),
-                          borderRadius: BorderRadius.circular(rs.scale(12)),
+                          color: const Color(0xFFF59E0B).withValues(alpha: 0.95),
+                          borderRadius: BorderRadius.circular(rs.scale(14)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
+                              blurRadius: 18,
+                              spreadRadius: 1,
+                            ),
+                          ],
                         ),
-                        child: Text(
-                          'CANCELLED ⊘',
-                          style: GoogleFonts.inter(
-                            fontSize: rs.font(11.5),
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            letterSpacing: 0.8,
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.pause_rounded, size: rs.scale(14), color: Colors.white),
+                            SizedBox(width: rs.width(5)),
+                            Text(
+                              'CANCELLED',
+                              style: GoogleFonts.inter(
+                                fontSize: rs.font(12),
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -2394,26 +2802,26 @@ class _StackedCardDeckState extends State<StackedCardDeck>
           HapticFeedback.lightImpact();
           onTap();
         },
-        borderRadius: BorderRadius.circular(rs.scale(14)),
+        borderRadius: BorderRadius.circular(rs.scale(16)),
         child: Container(
-          padding: EdgeInsets.symmetric(vertical: rs.height(7.5)),
+          padding: EdgeInsets.symmetric(vertical: rs.height(9)),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: isDarkMode ? 0.14 : 0.09),
-            borderRadius: BorderRadius.circular(rs.scale(14)),
+            color: color.withValues(alpha: isDarkMode ? 0.15 : 0.10),
+            borderRadius: BorderRadius.circular(rs.scale(16)),
             border: Border.all(
-              color: color.withValues(alpha: isDarkMode ? 0.35 : 0.25),
-              width: 0.8,
+              color: color.withValues(alpha: isDarkMode ? 0.40 : 0.28),
+              width: 0.9,
             ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: rs.scale(13), color: color),
-              SizedBox(width: rs.width(4)),
+              Icon(icon, size: rs.scale(14), color: color),
+              SizedBox(width: rs.width(5)),
               Text(
                 title,
                 style: GoogleFonts.inter(
-                  fontSize: rs.font(11),
+                  fontSize: rs.font(11.5),
                   fontWeight: FontWeight.w700,
                   color: color,
                 ),
@@ -2588,7 +2996,9 @@ class AccordionPeekWindow extends StatelessWidget {
     required VoidCallback onTap,
     required ResponsiveScale rs,
     required bool isDarkMode,
+    Color? activeColor,
   }) {
+    final Color tint = activeColor ?? (isDarkMode ? Colors.white : Colors.black);
     return InkWell(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -2599,14 +3009,14 @@ class AccordionPeekWindow extends StatelessWidget {
         padding: EdgeInsets.symmetric(vertical: rs.height(8)),
         decoration: BoxDecoration(
           color: isActive
-              ? (isDarkMode ? Colors.white : Colors.black)
-              : (isDarkMode ? const Color(0xFF1C1C1E) : Colors.black.withValues(alpha: 0.05)),
+              ? tint.withValues(alpha: isDarkMode ? 0.20 : 0.12)
+              : (isDarkMode ? const Color(0xFF1C1E26) : Colors.black.withValues(alpha: 0.05)),
           borderRadius: BorderRadius.circular(rs.scale(16)),
           border: Border.all(
             color: isActive
-                ? (isDarkMode ? Colors.white : Colors.black)
-                : (isDarkMode ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08)),
-            width: 0.8,
+                ? tint.withValues(alpha: isDarkMode ? 0.60 : 0.45)
+                : (isDarkMode ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.08)),
+            width: 0.9,
           ),
         ),
         child: Row(
@@ -2615,9 +3025,7 @@ class AccordionPeekWindow extends StatelessWidget {
             Icon(
               icon,
               size: rs.scale(13),
-              color: isActive
-                  ? (isDarkMode ? Colors.black : Colors.white)
-                  : (isDarkMode ? Colors.white70 : Colors.black87),
+              color: isActive ? tint : (isDarkMode ? Colors.white70 : Colors.black87),
             ),
             SizedBox(width: rs.width(5)),
             Text(
@@ -2625,9 +3033,7 @@ class AccordionPeekWindow extends StatelessWidget {
               style: GoogleFonts.inter(
                 fontSize: rs.font(11.5),
                 fontWeight: FontWeight.w700,
-                color: isActive
-                    ? (isDarkMode ? Colors.black : Colors.white)
-                    : (isDarkMode ? Colors.white : Colors.black87),
+                color: isActive ? tint : (isDarkMode ? Colors.white : Colors.black87),
               ),
             ),
           ],
@@ -2642,6 +3048,7 @@ class AccordionPeekWindow extends StatelessWidget {
     int attendedCount = 0;
     int absentCount = 0;
     int cancelledCount = 0;
+
     for (final s in displayClasses) {
       final slotKey = s.schedule.first.slotKey;
       final rec = attendanceProvider.getAttendanceForSubjectOnDate(s.id, targetDate, slotKey: slotKey);
@@ -2655,29 +3062,39 @@ class AccordionPeekWindow extends StatelessWidget {
         }
       }
     }
-    final bool allAttended = displayClasses.isNotEmpty && attendedCount == displayClasses.length;
-    final bool allAbsent = displayClasses.isNotEmpty && absentCount == displayClasses.length;
-    final bool allCancelled = displayClasses.isNotEmpty && cancelledCount == displayClasses.length;
 
+    final int totalClasses = displayClasses.length;
+    final int remainingCount = totalClasses - attendedCount - absentCount - cancelledCount;
+    final bool allAttended = totalClasses > 0 && attendedCount == totalClasses;
+    final bool allAbsent = totalClasses > 0 && absentCount == totalClasses;
+    final bool allCancelled = totalClasses > 0 && cancelledCount == totalClasses;
+
+    // --- Collapsed State: Sleek Frosted Glass Dock Pill ---
     if (!isExpanded) {
-      // Collapsed Peek Handle Pill (Rests gracefully above bottom dock)
       return ClipRRect(
         borderRadius: BorderRadius.circular(rs.scale(22)),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
             margin: rs.insetsSymmetric(horizontal: 16),
             decoration: BoxDecoration(
               color: isDarkMode
-                  ? const Color(0xFF141416).withValues(alpha: 0.92)
+                  ? const Color(0xFF141620).withValues(alpha: 0.92)
                   : Colors.white.withValues(alpha: 0.94),
               borderRadius: BorderRadius.circular(rs.scale(22)),
               border: Border.all(
                 color: isDarkMode
                     ? Colors.white.withValues(alpha: 0.16)
                     : Colors.black.withValues(alpha: 0.10),
-                width: 0.8,
+                width: 0.9,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDarkMode ? 0.35 : 0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: InkWell(
               onTap: onToggleExpand,
@@ -2714,7 +3131,7 @@ class AccordionPeekWindow extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            '${displayClasses.length} classes scheduled today • Tap to view',
+                            '$totalClasses classes scheduled • Tap to peek timeline',
                             style: GoogleFonts.inter(
                               fontSize: rs.font(10.5),
                               color: isDarkMode ? Colors.white54 : Colors.black54,
@@ -2728,9 +3145,13 @@ class AccordionPeekWindow extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(rs.scale(12)),
+                        border: Border.all(
+                          color: isDarkMode ? Colors.white12 : Colors.black12,
+                          width: 0.6,
+                        ),
                       ),
                       child: Text(
-                        '${activeCardIndex + 1}/${displayClasses.length}',
+                        'P${activeCardIndex + 1}/$totalClasses',
                         style: GoogleFonts.inter(
                           fontSize: rs.font(10.5),
                           fontWeight: FontWeight.w700,
@@ -2747,28 +3168,38 @@ class AccordionPeekWindow extends StatelessWidget {
       );
     }
 
-    // Expanded Structured iOS Style Sheet (Matching attached screenshot)
+    // --- Expanded State: Structured App-Type Timeline Rail Sheet ---
     return ClipRRect(
       borderRadius: BorderRadius.circular(rs.scale(24)),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
         child: Container(
           decoration: BoxDecoration(
-            color: isDarkMode
-                ? const Color(0xFF141416).withValues(alpha: 0.96)
-                : Colors.white.withValues(alpha: 0.98),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: isDarkMode
+                  ? [
+                      const Color(0xFF161822).withValues(alpha: 0.96),
+                      const Color(0xFF10121A).withValues(alpha: 0.98),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.97),
+                      const Color(0xFFF8FAFC).withValues(alpha: 0.98),
+                    ],
+            ),
             borderRadius: BorderRadius.circular(rs.scale(24)),
             border: Border.all(
               color: isDarkMode
                   ? Colors.white.withValues(alpha: 0.16)
                   : Colors.black.withValues(alpha: 0.10),
-              width: 0.8,
+              width: 0.9,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: isDarkMode ? 0.6 : 0.2),
-                blurRadius: 32,
-                offset: const Offset(0, -6),
+                color: Colors.black.withValues(alpha: isDarkMode ? 0.60 : 0.18),
+                blurRadius: 36,
+                offset: const Offset(0, -8),
               ),
             ],
           ),
@@ -2796,23 +3227,35 @@ class AccordionPeekWindow extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.calendar_today_rounded, size: rs.scale(14), color: isDarkMode ? Colors.white70 : Colors.black87),
+                              Icon(
+                                Icons.calendar_today_rounded,
+                                size: rs.scale(14),
+                                color: isDarkMode ? Colors.white70 : Colors.black87,
+                              ),
                               SizedBox(width: rs.width(8)),
                               Text(
                                 'DAY TIMETABLE',
                                 style: GoogleFonts.inter(
-                                  fontSize: rs.font(12),
-                                  fontWeight: FontWeight.w700,
+                                  fontSize: rs.font(12.5),
+                                  fontWeight: FontWeight.w800,
                                   letterSpacing: 0.8,
                                   color: isDarkMode ? Colors.white : Colors.black87,
                                 ),
                               ),
                               SizedBox(width: rs.width(6)),
-                              Text(
-                                '(${displayClasses.length})',
-                                style: GoogleFonts.inter(
-                                  fontSize: rs.font(11),
-                                  color: isDarkMode ? Colors.white54 : Colors.black54,
+                              Container(
+                                padding: rs.insetsSymmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                                  borderRadius: BorderRadius.circular(rs.scale(10)),
+                                ),
+                                child: Text(
+                                  '$totalClasses Periods',
+                                  style: GoogleFonts.inter(
+                                    fontSize: rs.font(10.5),
+                                    fontWeight: FontWeight.w600,
+                                    color: isDarkMode ? Colors.white70 : Colors.black54,
+                                  ),
                                 ),
                               ),
                             ],
@@ -2836,9 +3279,106 @@ class AccordionPeekWindow extends StatelessWidget {
                 ),
               ),
 
-              // Quick Day Batch Actions (Structured Screenshot Style)
+              // Day Progress Rail Bar (Visual segmented breakdown)
+              if (totalClasses > 0)
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: rs.width(16), vertical: rs.height(2)),
+                  child: Column(
+                    children: [
+                      // Segmented Bar
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(rs.scale(6)),
+                        child: Container(
+                          height: rs.scale(5),
+                          color: isDarkMode ? Colors.white12 : Colors.black12,
+                          child: Row(
+                            children: [
+                              if (attendedCount > 0)
+                                Expanded(
+                                  flex: attendedCount,
+                                  child: Container(color: const Color(0xFF10B981)),
+                                ),
+                              if (absentCount > 0)
+                                Expanded(
+                                  flex: absentCount,
+                                  child: Container(color: const Color(0xFFEF4444)),
+                                ),
+                              if (cancelledCount > 0)
+                                Expanded(
+                                  flex: cancelledCount,
+                                  child: Container(color: const Color(0xFFF59E0B)),
+                                ),
+                              if (remainingCount > 0)
+                                Expanded(
+                                  flex: remainingCount,
+                                  child: Container(
+                                    color: isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: rs.height(6)),
+                      // Progress Metrics Summary
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              if (attendedCount > 0) ...[
+                                Text(
+                                  '✓ $attendedCount Attended',
+                                  style: GoogleFonts.inter(
+                                    fontSize: rs.font(10.5),
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF10B981),
+                                  ),
+                                ),
+                                SizedBox(width: rs.width(8)),
+                              ],
+                              if (absentCount > 0) ...[
+                                Text(
+                                  '✕ $absentCount Missed',
+                                  style: GoogleFonts.inter(
+                                    fontSize: rs.font(10.5),
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFFEF4444),
+                                  ),
+                                ),
+                                SizedBox(width: rs.width(8)),
+                              ],
+                              if (cancelledCount > 0) ...[
+                                Text(
+                                  '⏸ $cancelledCount Holiday',
+                                  style: GoogleFonts.inter(
+                                    fontSize: rs.font(10.5),
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFFF59E0B),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          Text(
+                            remainingCount > 0 ? '$remainingCount remaining' : 'All periods marked',
+                            style: GoogleFonts.inter(
+                              fontSize: rs.font(10.5),
+                              fontWeight: FontWeight.w500,
+                              color: isDarkMode ? Colors.white54 : Colors.black45,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+              SizedBox(height: rs.height(6)),
+
+              // Batch Day Action Capsules
               Padding(
-                padding: EdgeInsets.fromLTRB(rs.width(14), rs.height(2), rs.width(14), rs.height(10)),
+                padding: EdgeInsets.symmetric(horizontal: rs.width(14)),
                 child: Row(
                   children: [
                     Expanded(
@@ -2846,6 +3386,7 @@ class AccordionPeekWindow extends StatelessWidget {
                         icon: Icons.pause_rounded,
                         label: 'Holiday',
                         isActive: allCancelled,
+                        activeColor: const Color(0xFFF59E0B),
                         onTap: onMarkDayHoliday,
                         rs: rs,
                         isDarkMode: isDarkMode,
@@ -2857,6 +3398,7 @@ class AccordionPeekWindow extends StatelessWidget {
                         icon: Icons.remove_rounded,
                         label: 'Skip Day',
                         isActive: allAbsent,
+                        activeColor: const Color(0xFFEF4444),
                         onTap: onMarkDayAbsent,
                         rs: rs,
                         isDarkMode: isDarkMode,
@@ -2866,8 +3408,9 @@ class AccordionPeekWindow extends StatelessWidget {
                     Expanded(
                       child: _buildDayActionCapsule(
                         icon: Icons.check_rounded,
-                        label: 'Present',
+                        label: 'All Present',
                         isActive: allAttended,
+                        activeColor: const Color(0xFF10B981),
                         onTap: onMarkDayPresent,
                         rs: rs,
                         isDarkMode: isDarkMode,
@@ -2877,19 +3420,20 @@ class AccordionPeekWindow extends StatelessWidget {
                 ),
               ),
 
+              SizedBox(height: rs.height(8)),
+
               Divider(
                 height: 1,
                 thickness: 0.6,
                 color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
               ),
 
-              // Scrollable Structured Timeline List (Matching Screenshot)
+              // Scrollable Timeline Rail List
               Expanded(
-                child: ListView.separated(
-                  padding: rs.insetsSymmetric(horizontal: 14, vertical: 10),
+                child: ListView.builder(
+                  padding: EdgeInsets.fromLTRB(rs.width(12), rs.height(8), rs.width(12), rs.height(14)),
                   physics: const BouncingScrollPhysics(),
-                  itemCount: displayClasses.length,
-                  separatorBuilder: (context, index) => SizedBox(height: rs.height(8)),
+                  itemCount: totalClasses,
                   itemBuilder: (context, idx) {
                     final subject = displayClasses[idx];
                     final slot = subject.schedule.first;
@@ -2933,246 +3477,447 @@ class AccordionPeekWindow extends StatelessWidget {
                     final locConfig = effectiveLocId != null ? locationById[effectiveLocId] : null;
                     final room = subject.getEffectiveRoom(slot) ?? locConfig?.name;
 
-                    final monogram = subject.displayAcronym.isNotEmpty
-                        ? subject.displayAcronym.substring(0, 1).toUpperCase()
-                        : (subject.name.isNotEmpty ? subject.name.substring(0, 1).toUpperCase() : '•');
+                    // Node Theme Colors
+                    final Color nodeColor = isAttended
+                        ? const Color(0xFF10B981)
+                        : (isAbsent ? const Color(0xFFEF4444) : (isHoliday ? const Color(0xFFF59E0B) : (isDarkMode ? const Color(0xFF272935) : const Color(0xFFE2E8F0))));
 
-                    return Padding(
-                      padding: EdgeInsets.symmetric(vertical: rs.height(2)),
-                      child: SwipeableCard(
-                        key: ValueKey('peek_swipe_${subject.id}_$slotKey'),
-                        rs: rs,
-                        borderRadius: BorderRadius.circular(rs.scale(18)),
-                        swipeRightBackground: _buildScheduleSwipeBackground(
-                          action: rightSwipeAction,
-                          alignment: Alignment.centerLeft,
-                          rs: rs,
-                          isUnmarking: isUnmarkingRight,
-                        ),
-                        swipeLeftBackground: _buildScheduleSwipeBackground(
-                          action: leftSwipeAction,
-                          alignment: Alignment.centerRight,
-                          rs: rs,
-                          isUnmarking: isUnmarkingLeft,
-                        ),
-                        onSwipeRight: () => _handleScheduleSwipeAction(
-                          context: context,
-                          action: rightSwipeAction,
-                          isUnmarking: isUnmarkingRight,
-                          subject: subject,
-                          slotKey: slotKey,
-                          targetDate: targetDate,
-                          subjectProvider: subjectProvider,
-                          isLocked: isLocked,
-                          semesterEnded: semesterEnded,
-                          isFutureDate: isFutureDate,
-                        ),
-                        onSwipeLeft: () => _handleScheduleSwipeAction(
-                          context: context,
-                          action: leftSwipeAction,
-                          isUnmarking: isUnmarkingLeft,
-                          subject: subject,
-                          slotKey: slotKey,
-                          targetDate: targetDate,
-                          subjectProvider: subjectProvider,
-                          isLocked: isLocked,
-                          semesterEnded: semesterEnded,
-                          isFutureDate: isFutureDate,
-                        ),
-                        child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => onSummonPeriod(idx),
-                        borderRadius: BorderRadius.circular(rs.scale(18)),
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: rs.height(2)),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              // Left: Circular Timeline Node (matching screenshot circle 'B')
-                              Container(
-                                width: rs.scale(36),
-                                height: rs.scale(36),
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.black.withValues(alpha: 0.08),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: isCurrent
-                                        ? (isDarkMode ? Colors.white60 : Colors.black54)
-                                        : (isDarkMode ? Colors.white12 : Colors.black12),
-                                    width: isCurrent ? 1.5 : 0.8,
-                                  ),
-                                ),
-                                child: Text(
-                                  monogram,
-                                  style: GoogleFonts.inter(
-                                    fontSize: rs.font(12.5),
-                                    fontWeight: FontWeight.w800,
-                                    color: isDarkMode ? Colors.white : Colors.black87,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: rs.width(10)),
+                    final IconData? nodeIcon = isAttended
+                        ? Icons.check_rounded
+                        : (isAbsent ? Icons.close_rounded : (isHoliday ? Icons.pause_rounded : null));
 
-                              // Right: Obsidian Card (matching screenshot)
-                              Expanded(
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: rs.width(14),
-                                    vertical: rs.height(11),
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isDarkMode
-                                        ? const Color(0xFF1C1C1E)
-                                        : Colors.white,
-                                    borderRadius: BorderRadius.circular(rs.scale(18)),
-                                    border: Border.all(
-                                      color: isCurrent
-                                          ? (isDarkMode ? Colors.white38 : Colors.black38)
-                                          : (isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06)),
-                                      width: isCurrent ? 1.2 : 0.8,
+                    return IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // 1. Left: Time Column (Structured Time Rail)
+                          SizedBox(
+                            width: rs.scale(58),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: rs.height(10)),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    slot.startTime.format(context),
+                                    style: GoogleFonts.inter(
+                                      fontSize: rs.font(11.5),
+                                      fontWeight: FontWeight.w700,
+                                      color: isDarkMode ? Colors.white : Colors.black87,
                                     ),
+                                    maxLines: 1,
                                   ),
-                                  child: Row(
-                                    children: [
-                                      // Title and time range • duration
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              subject.name,
-                                              style: GoogleFonts.inter(
-                                                fontSize: rs.font(15),
-                                                fontWeight: FontWeight.w700,
-                                                color: isDarkMode ? Colors.white : Colors.black87,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            SizedBox(height: rs.height(3)),
-                                            Text(
-                                              '${slot.formatTimeRange(timeFormatProvider.timeFormat)}${durationStr.isNotEmpty ? " • $durationStr" : ""}${room != null && room.isNotEmpty ? " • Room $room" : ""}',
-                                              style: GoogleFonts.inter(
-                                                fontSize: rs.font(11.5),
-                                                fontWeight: FontWeight.w500,
-                                                color: isDarkMode ? Colors.white54 : Colors.black54,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
+                                  Text(
+                                    slot.endTime.format(context),
+                                    style: GoogleFonts.inter(
+                                      fontSize: rs.font(10),
+                                      fontWeight: FontWeight.w500,
+                                      color: isDarkMode ? Colors.white54 : Colors.black45,
+                                    ),
+                                    maxLines: 1,
+                                  ),
+                                  if (durationStr.isNotEmpty) ...[
+                                    SizedBox(height: rs.height(4)),
+                                    Container(
+                                      padding: rs.insetsSymmetric(horizontal: 5, vertical: 1.5),
+                                      decoration: BoxDecoration(
+                                        color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                                        borderRadius: BorderRadius.circular(rs.scale(6)),
+                                      ),
+                                      child: Text(
+                                        durationStr,
+                                        style: GoogleFonts.inter(
+                                          fontSize: rs.font(9.5),
+                                          fontWeight: FontWeight.w600,
+                                          color: isDarkMode ? Colors.white60 : Colors.black54,
                                         ),
                                       ),
-                                      SizedBox(width: rs.width(8)),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
 
-                                      // Status capsule: [ ✓ Present ]
-                                      InkWell(
-                                        onTap: () {
-                                          HapticFeedback.selectionClick();
-                                          if (isAttended) {
-                                            subjectProvider.unmarkAttendance(subject.id, targetDate, slotKey: slotKey);
-                                          } else {
-                                            subjectProvider.markAttendance(subject.id, targetDate, AttendanceStatus.attended, slotKey: slotKey);
-                                          }
-                                        },
-                                        borderRadius: BorderRadius.circular(rs.scale(16)),
-                                        child: Container(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: rs.width(10),
-                                            vertical: rs.height(6),
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: isAttended
-                                                ? (isDarkMode ? Colors.white : Colors.black)
-                                                : (isAbsent
-                                                    ? const Color(0xFFEF4444).withValues(alpha: 0.18)
-                                                    : (isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05))),
-                                            borderRadius: BorderRadius.circular(rs.scale(16)),
-                                            border: Border.all(
-                                              color: isAttended
-                                                  ? (isDarkMode ? Colors.white : Colors.black)
-                                                  : (isAbsent
-                                                      ? const Color(0xFFEF4444).withValues(alpha: 0.4)
-                                                      : (isDarkMode ? Colors.white12 : Colors.black12)),
-                                              width: 0.8,
+                          SizedBox(width: rs.width(8)),
+
+                          // 2. Central Continuous Timeline Rail with Period Node
+                          SizedBox(
+                            width: rs.scale(32),
+                            child: Column(
+                              children: [
+                                // Top connecting line
+                                Container(
+                                  width: 1.6,
+                                  height: rs.height(10),
+                                  color: idx == 0
+                                      ? Colors.transparent
+                                      : (isDarkMode ? Colors.white12 : Colors.black12),
+                                ),
+                                // Glowing Circular Period Node
+                                Container(
+                                  width: rs.scale(30),
+                                  height: rs.scale(30),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: nodeColor,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: isCurrent
+                                          ? subject.color
+                                          : (isDarkMode ? Colors.white24 : Colors.black12),
+                                      width: isCurrent ? 2.0 : 1.0,
+                                    ),
+                                    boxShadow: isCurrent
+                                        ? [
+                                            BoxShadow(
+                                              color: subject.color.withValues(alpha: 0.5),
+                                              blurRadius: 10,
+                                              spreadRadius: 1,
                                             ),
+                                          ]
+                                        : null,
+                                  ),
+                                  child: nodeIcon != null
+                                      ? Icon(nodeIcon, size: rs.scale(15), color: Colors.white)
+                                      : Text(
+                                          'P${idx + 1}',
+                                          style: GoogleFonts.inter(
+                                            fontSize: rs.font(10.5),
+                                            fontWeight: FontWeight.w800,
+                                            color: isDarkMode ? Colors.white70 : Colors.black87,
                                           ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
+                                        ),
+                                ),
+                                // Bottom connecting line
+                                Expanded(
+                                  child: Container(
+                                    width: 1.6,
+                                    color: idx == totalClasses - 1
+                                        ? Colors.transparent
+                                        : (isDarkMode ? Colors.white12 : Colors.black12),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          SizedBox(width: rs.width(8)),
+
+                          // 3. Right: Structured Period Glass Card
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: rs.height(5)),
+                              child: SwipeableCard(
+                                key: ValueKey('peek_timeline_${subject.id}_${slotKey}_$idx'),
+                                rs: rs,
+                                borderRadius: BorderRadius.circular(rs.scale(18)),
+                                swipeRightBackground: _buildScheduleSwipeBackground(
+                                  action: rightSwipeAction,
+                                  alignment: Alignment.centerLeft,
+                                  rs: rs,
+                                  isUnmarking: isUnmarkingRight,
+                                ),
+                                swipeLeftBackground: _buildScheduleSwipeBackground(
+                                  action: leftSwipeAction,
+                                  alignment: Alignment.centerRight,
+                                  rs: rs,
+                                  isUnmarking: isUnmarkingLeft,
+                                ),
+                                onSwipeRight: () => _handleScheduleSwipeAction(
+                                  context: context,
+                                  action: rightSwipeAction,
+                                  isUnmarking: isUnmarkingRight,
+                                  subject: subject,
+                                  slotKey: slotKey,
+                                  targetDate: targetDate,
+                                  subjectProvider: subjectProvider,
+                                  isLocked: isLocked,
+                                  semesterEnded: semesterEnded,
+                                  isFutureDate: isFutureDate,
+                                ),
+                                onSwipeLeft: () => _handleScheduleSwipeAction(
+                                  context: context,
+                                  action: leftSwipeAction,
+                                  isUnmarking: isUnmarkingLeft,
+                                  subject: subject,
+                                  slotKey: slotKey,
+                                  targetDate: targetDate,
+                                  subjectProvider: subjectProvider,
+                                  isLocked: isLocked,
+                                  semesterEnded: semesterEnded,
+                                  isFutureDate: isFutureDate,
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () => onSummonPeriod(idx),
+                                    borderRadius: BorderRadius.circular(rs.scale(18)),
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: rs.width(13),
+                                        vertical: rs.height(10),
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isDarkMode
+                                            ? const Color(0xFF1B1D27).withValues(alpha: 0.95)
+                                            : Colors.white,
+                                        borderRadius: BorderRadius.circular(rs.scale(18)),
+                                        border: Border.all(
+                                          color: isCurrent
+                                              ? subject.color.withValues(alpha: 0.55)
+                                              : (isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06)),
+                                          width: isCurrent ? 1.4 : 0.8,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: isDarkMode ? 0.25 : 0.04),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          // Header row: Acronym + Room + Active badge
+                                          Row(
                                             children: [
-                                              Icon(
-                                                isAttended
-                                                    ? Icons.check_rounded
-                                                    : (isAbsent ? Icons.close_rounded : Icons.radio_button_unchecked_rounded),
-                                                size: rs.scale(13),
-                                                color: isAttended
-                                                    ? (isDarkMode ? Colors.black : Colors.white)
-                                                    : (isAbsent ? const Color(0xFFEF4444) : (isDarkMode ? Colors.white60 : Colors.black54)),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 2.5),
+                                                decoration: BoxDecoration(
+                                                  color: subject.color.withValues(alpha: 0.20),
+                                                  borderRadius: BorderRadius.circular(rs.scale(8)),
+                                                  border: Border.all(
+                                                    color: subject.color.withValues(alpha: 0.45),
+                                                    width: 0.7,
+                                                  ),
+                                                ),
+                                                child: Text(
+                                                  subject.displayAcronym,
+                                                  style: GoogleFonts.inter(
+                                                    fontSize: rs.font(10.5),
+                                                    fontWeight: FontWeight.w800,
+                                                    color: subject.color,
+                                                  ),
+                                                ),
                                               ),
-                                              SizedBox(width: rs.width(4)),
-                                              Text(
-                                                isAttended ? 'Present' : (isAbsent ? 'Absent' : 'Mark'),
-                                                style: GoogleFonts.inter(
-                                                  fontSize: rs.font(11.5),
-                                                  fontWeight: FontWeight.w700,
-                                                  color: isAttended
-                                                      ? (isDarkMode ? Colors.black : Colors.white)
-                                                      : (isAbsent ? const Color(0xFFEF4444) : (isDarkMode ? Colors.white70 : Colors.black87)),
+                                              if (room != null && room.isNotEmpty) ...[
+                                                SizedBox(width: rs.width(6)),
+                                                Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(Icons.location_on_rounded, size: rs.scale(11), color: isDarkMode ? Colors.white54 : Colors.black45),
+                                                    SizedBox(width: rs.width(2)),
+                                                    Text(
+                                                      'Rm $room',
+                                                      style: GoogleFonts.inter(
+                                                        fontSize: rs.font(10.5),
+                                                        fontWeight: FontWeight.w500,
+                                                        color: isDarkMode ? Colors.white60 : Colors.black54,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                              const Spacer(),
+                                              if (isCurrent)
+                                                Container(
+                                                  padding: rs.insetsSymmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: subject.color.withValues(alpha: 0.15),
+                                                    borderRadius: BorderRadius.circular(rs.scale(8)),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Container(
+                                                        width: 5,
+                                                        height: 5,
+                                                        decoration: BoxDecoration(
+                                                          color: subject.color,
+                                                          shape: BoxShape.circle,
+                                                        ),
+                                                      ),
+                                                      SizedBox(width: rs.width(4)),
+                                                      Text(
+                                                        'Active in Deck',
+                                                        style: GoogleFonts.inter(
+                                                          fontSize: rs.font(9.5),
+                                                          fontWeight: FontWeight.w700,
+                                                          color: subject.color,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+
+                                          SizedBox(height: rs.height(6)),
+
+                                          // Subject Full Name
+                                          Text(
+                                            subject.name,
+                                            style: GoogleFonts.inter(
+                                              fontSize: rs.font(14.5),
+                                              fontWeight: FontWeight.w700,
+                                              color: isDarkMode ? Colors.white : Colors.black87,
+                                              height: 1.2,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+
+                                          SizedBox(height: rs.height(8)),
+
+                                          // Interactive Quick Attendance Action Row
+                                          Row(
+                                            children: [
+                                              // Present Button
+                                              InkWell(
+                                                onTap: () {
+                                                  HapticFeedback.selectionClick();
+                                                  if (isAttended) {
+                                                    subjectProvider.unmarkAttendance(subject.id, targetDate, slotKey: slotKey);
+                                                  } else {
+                                                    subjectProvider.markAttendance(subject.id, targetDate, AttendanceStatus.attended, slotKey: slotKey);
+                                                  }
+                                                },
+                                                borderRadius: BorderRadius.circular(rs.scale(12)),
+                                                child: Container(
+                                                  padding: EdgeInsets.symmetric(horizontal: rs.width(9), vertical: rs.height(5)),
+                                                  decoration: BoxDecoration(
+                                                    color: isAttended
+                                                        ? const Color(0xFF10B981).withValues(alpha: 0.20)
+                                                        : (isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
+                                                    borderRadius: BorderRadius.circular(rs.scale(12)),
+                                                    border: Border.all(
+                                                      color: isAttended
+                                                          ? const Color(0xFF10B981).withValues(alpha: 0.6)
+                                                          : (isDarkMode ? Colors.white12 : Colors.black12),
+                                                      width: 0.8,
+                                                    ),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.check_rounded,
+                                                        size: rs.scale(12),
+                                                        color: isAttended ? const Color(0xFF10B981) : (isDarkMode ? Colors.white60 : Colors.black54),
+                                                      ),
+                                                      SizedBox(width: rs.width(4)),
+                                                      Text(
+                                                        isAttended ? 'Present' : 'Present',
+                                                        style: GoogleFonts.inter(
+                                                          fontSize: rs.font(11),
+                                                          fontWeight: FontWeight.w700,
+                                                          color: isAttended ? const Color(0xFF10B981) : (isDarkMode ? Colors.white70 : Colors.black87),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+
+                                              SizedBox(width: rs.width(6)),
+
+                                              // Absent Button
+                                              InkWell(
+                                                onTap: () {
+                                                  HapticFeedback.selectionClick();
+                                                  if (isAbsent) {
+                                                    subjectProvider.unmarkAttendance(subject.id, targetDate, slotKey: slotKey);
+                                                  } else {
+                                                    subjectProvider.markAttendance(subject.id, targetDate, AttendanceStatus.absent, slotKey: slotKey);
+                                                  }
+                                                },
+                                                borderRadius: BorderRadius.circular(rs.scale(12)),
+                                                child: Container(
+                                                  padding: EdgeInsets.symmetric(horizontal: rs.width(9), vertical: rs.height(5)),
+                                                  decoration: BoxDecoration(
+                                                    color: isAbsent
+                                                        ? const Color(0xFFEF4444).withValues(alpha: 0.20)
+                                                        : (isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
+                                                    borderRadius: BorderRadius.circular(rs.scale(12)),
+                                                    border: Border.all(
+                                                      color: isAbsent
+                                                          ? const Color(0xFFEF4444).withValues(alpha: 0.6)
+                                                          : (isDarkMode ? Colors.white12 : Colors.black12),
+                                                      width: 0.8,
+                                                    ),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.close_rounded,
+                                                        size: rs.scale(12),
+                                                        color: isAbsent ? const Color(0xFFEF4444) : (isDarkMode ? Colors.white60 : Colors.black54),
+                                                      ),
+                                                      SizedBox(width: rs.width(4)),
+                                                      Text(
+                                                        'Absent',
+                                                        style: GoogleFonts.inter(
+                                                          fontSize: rs.font(11),
+                                                          fontWeight: FontWeight.w700,
+                                                          color: isAbsent ? const Color(0xFFEF4444) : (isDarkMode ? Colors.white70 : Colors.black87),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+
+                                              const Spacer(),
+
+                                              // Holiday/Pause Button
+                                              InkWell(
+                                                onTap: () {
+                                                  HapticFeedback.selectionClick();
+                                                  if (isHoliday) {
+                                                    subjectProvider.unmarkAttendance(subject.id, targetDate, slotKey: slotKey);
+                                                  } else {
+                                                    subjectProvider.markAttendance(subject.id, targetDate, AttendanceStatus.cancelled, slotKey: slotKey);
+                                                  }
+                                                },
+                                                borderRadius: BorderRadius.circular(rs.scale(12)),
+                                                child: Container(
+                                                  padding: EdgeInsets.all(rs.scale(6)),
+                                                  decoration: BoxDecoration(
+                                                    color: isHoliday
+                                                        ? const Color(0xFFF59E0B).withValues(alpha: 0.20)
+                                                        : (isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
+                                                    shape: BoxShape.circle,
+                                                    border: Border.all(
+                                                      color: isHoliday ? const Color(0xFFF59E0B) : (isDarkMode ? Colors.white12 : Colors.black12),
+                                                      width: 0.8,
+                                                    ),
+                                                  ),
+                                                  child: Icon(
+                                                    Icons.pause_rounded,
+                                                    size: rs.scale(13),
+                                                    color: isHoliday ? const Color(0xFFF59E0B) : (isDarkMode ? Colors.white54 : Colors.black45),
+                                                  ),
                                                 ),
                                               ),
                                             ],
                                           ),
-                                        ),
+                                        ],
                                       ),
-                                      SizedBox(width: rs.width(6)),
-
-                                      // Pause / Cancelled circle icon: [ ⏸ ]
-                                      InkWell(
-                                        onTap: () {
-                                          HapticFeedback.selectionClick();
-                                          if (isHoliday) {
-                                            subjectProvider.unmarkAttendance(subject.id, targetDate, slotKey: slotKey);
-                                          } else {
-                                            subjectProvider.markAttendance(subject.id, targetDate, AttendanceStatus.cancelled, slotKey: slotKey);
-                                          }
-                                        },
-                                        borderRadius: BorderRadius.circular(rs.scale(16)),
-                                        child: Container(
-                                          width: rs.scale(28),
-                                          height: rs.scale(28),
-                                          alignment: Alignment.center,
-                                          decoration: BoxDecoration(
-                                            color: isHoliday
-                                                ? const Color(0xFFF59E0B).withValues(alpha: 0.20)
-                                                : (isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
-                                            shape: BoxShape.circle,
-                                            border: Border.all(
-                                              color: isHoliday ? const Color(0xFFF59E0B) : (isDarkMode ? Colors.white12 : Colors.black12),
-                                              width: 0.8,
-                                            ),
-                                          ),
-                                          child: Icon(
-                                            Icons.pause_rounded,
-                                            size: rs.scale(14),
-                                            color: isHoliday ? const Color(0xFFF59E0B) : (isDarkMode ? Colors.white54 : Colors.black45),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                                    ),
                                   ),
                                 ),
                               ),
-                            ],
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                    ),
-                  ),
-                );
-              },
+                    );
+                  },
                 ),
               ),
             ],

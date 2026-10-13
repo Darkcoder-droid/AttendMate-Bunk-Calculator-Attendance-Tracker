@@ -42,7 +42,7 @@ class _SwipeableCardState extends State<SwipeableCard> with SingleTickerProvider
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 450),
+      duration: const Duration(milliseconds: 320),
     );
     _animation = _controller.drive(Tween<double>(begin: 0.0, end: 0.0));
   }
@@ -63,9 +63,17 @@ class _SwipeableCardState extends State<SwipeableCard> with SingleTickerProvider
   }
 
   void _onHorizontalDragUpdate(DragUpdateDetails details) {
+    final delta = details.primaryDelta ?? 0.0;
     setState(() {
-      _dragOffset += details.primaryDelta ?? 0.0;
-      _dragOffset = _dragOffset.clamp(-_maxDragDistance, _maxDragDistance);
+      final raw = _dragOffset + delta;
+      final absRaw = raw.abs();
+      if (absRaw > _maxDragDistance) {
+        final over = absRaw - _maxDragDistance;
+        final dampened = _maxDragDistance + (over * 0.25);
+        _dragOffset = (raw >= 0 ? 1 : -1) * dampened.clamp(0.0, _maxDragDistance * 1.35);
+      } else {
+        _dragOffset = raw;
+      }
     });
   }
 
@@ -78,10 +86,11 @@ class _SwipeableCardState extends State<SwipeableCard> with SingleTickerProvider
       activeBackground = widget.swipeLeftBackground;
     }
 
-    final threshold = _maxDragDistance * 0.5;
-    if (_dragOffset >= threshold) {
+    final vx = details.velocity.pixelsPerSecond.dx;
+    final threshold = _maxDragDistance * 0.45;
+    if (_dragOffset >= threshold || (vx > 350 && _dragOffset > 20)) {
       widget.onSwipeRight();
-    } else if (_dragOffset <= -threshold) {
+    } else if (_dragOffset <= -threshold || (vx < -350 && _dragOffset < -20)) {
       widget.onSwipeLeft();
     }
 
@@ -90,7 +99,7 @@ class _SwipeableCardState extends State<SwipeableCard> with SingleTickerProvider
 
     _animation = _controller.drive(
       Tween<double>(begin: _startOffset, end: 0.0).chain(
-        CurveTween(curve: Curves.easeOutQuint),
+        CurveTween(curve: Curves.easeOutCubic),
       ),
     );
     
