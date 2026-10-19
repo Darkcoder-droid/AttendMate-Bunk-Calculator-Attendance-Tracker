@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -126,22 +125,25 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
             key: _leavePlannerAddKey,
             child: Padding(
               padding: EdgeInsets.only(bottom: rs.scale(80)),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(rs.scale(26)),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: isDarkMode
-                          ? const Color(0xFF1B1B22).withValues(alpha: 0.85)
-                          : Colors.white.withValues(alpha: 0.90),
-                      borderRadius: BorderRadius.circular(rs.scale(26)),
-                      border: Border.all(
-                        color: theme.colorScheme.primary.withValues(alpha: isDarkMode ? 0.35 : 0.25),
-                        width: 1.0,
-                      ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDarkMode
+                      ? const Color(0xFF1B1B22)
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(rs.scale(26)),
+                  border: Border.all(
+                    color: theme.colorScheme.primary.withValues(alpha: isDarkMode ? 0.40 : 0.28),
+                    width: 1.0,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDarkMode ? 0.30 : 0.08),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
                     ),
-                    child: Material(
+                  ],
+                ),
+                child: Material(
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: subjects.isEmpty ? null : () => _showAddLeaveDialog(context, subjects),
@@ -177,8 +179,6 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
                   ),
                 ),
               ),
-            ),
-          ),
           body: _isLoading
               ? const Center(child: CircularProgressIndicator.adaptive())
               : _leaves.isEmpty
@@ -364,26 +364,27 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(rs.scale(28)),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                child: Container(
-                  padding: rs.insetsAll(22),
-                  decoration: BoxDecoration(
-                    color: isDarkMode ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.60),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isDarkMode ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08),
-                      width: 1.0,
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.event_available_outlined,
-                    size: rs.scale(44),
-                    color: theme.colorScheme.primary,
-                  ),
+            Container(
+              padding: rs.insetsAll(22),
+              decoration: BoxDecoration(
+                color: isDarkMode ? const Color(0xFF16161E) : Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isDarkMode ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08),
+                  width: 1.0,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDarkMode ? 0.20 : 0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.event_available_outlined,
+                size: rs.scale(44),
+                color: theme.colorScheme.primary,
               ),
             ),
             SizedBox(height: rs.height(22)),
