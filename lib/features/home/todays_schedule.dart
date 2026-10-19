@@ -2149,14 +2149,12 @@ class _StackedCardDeckState extends State<StackedCardDeck>
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: isDarkMode
-            ? const Color(0xFF14141C).withValues(alpha: 0.70)
-            : Colors.white.withValues(alpha: 0.78),
+        color: isDarkMode ? const Color(0xFF141418) : Colors.white,
         borderRadius: BorderRadius.circular(rs.scale(28)),
         border: Border.all(
           color: isDarkMode
               ? Colors.white.withValues(alpha: 0.16)
-              : Colors.white.withValues(alpha: 0.60),
+              : Colors.black.withValues(alpha: 0.10),
           width: 1.0,
         ),
         boxShadow: [
@@ -2267,14 +2265,12 @@ class _StackedCardDeckState extends State<StackedCardDeck>
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: isDarkMode
-            ? const Color(0xFF14141C).withValues(alpha: 0.70)
-            : Colors.white.withValues(alpha: 0.78),
+        color: isDarkMode ? const Color(0xFF141418) : Colors.white,
         borderRadius: BorderRadius.circular(rs.scale(28)),
         border: Border.all(
           color: isDarkMode
-              ? Colors.white.withValues(alpha: 0.16)
-              : Colors.white.withValues(alpha: 0.60),
+              ? Colors.white.withValues(alpha: 0.14)
+              : Colors.black.withValues(alpha: 0.08),
           width: 1.0,
         ),
         boxShadow: [
@@ -2387,16 +2383,14 @@ class _StackedCardDeckState extends State<StackedCardDeck>
     } else {
       borderColor = isDarkMode
           ? Colors.white.withValues(alpha: 0.16)
-          : Colors.white.withValues(alpha: 0.60);
+          : Colors.black.withValues(alpha: 0.10);
     }
 
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: isDarkMode
-            ? const Color(0xFF14141C).withValues(alpha: 0.70)
-            : Colors.white.withValues(alpha: 0.78),
+        color: isDarkMode ? const Color(0xFF141418) : Colors.white,
         borderRadius: BorderRadius.circular(rs.scale(28)),
         border: Border.all(color: borderColor, width: 1.0),
         boxShadow: [
