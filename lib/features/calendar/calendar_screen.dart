@@ -1483,22 +1483,18 @@ class _CalendarScreenState extends State<CalendarScreen>
                     });
                     _showDayDetailsDialog(context, dayInfo);
                   },
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(rs.scale(16)),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(
-                        margin: EdgeInsets.only(bottom: rs.height(8)),
-                        padding: EdgeInsets.symmetric(horizontal: rs.width(14), vertical: rs.height(10)),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? (isDark
-                                  ? Colors.white.withValues(alpha: 0.16)
-                                  : Colors.black.withValues(alpha: 0.08))
-                              : (isDark
-                                  ? const Color(0xFF141417).withValues(alpha: 0.28)
-                                  : Colors.white.withValues(alpha: 0.38)),
-                          borderRadius: BorderRadius.circular(rs.scale(16)),
+                  child: Container(
+                    margin: EdgeInsets.only(bottom: rs.height(8)),
+                    padding: EdgeInsets.symmetric(horizontal: rs.width(14), vertical: rs.height(10)),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? (isDark
+                              ? Colors.white.withValues(alpha: 0.16)
+                              : Colors.black.withValues(alpha: 0.08))
+                          : (isDark
+                              ? const Color(0xFF16161C)
+                              : Colors.white),
+                      borderRadius: BorderRadius.circular(rs.scale(16)),
                           border: Border.all(
                             color: isSelected
                                 ? (isDark ? Colors.white : Colors.black)
@@ -1580,10 +1576,8 @@ class _CalendarScreenState extends State<CalendarScreen>
                           ],
                         ),
                       ),
-                    ),
-                  ),
-                );
-              },
+                    );
+                  },
             ),
           ),
         ],
