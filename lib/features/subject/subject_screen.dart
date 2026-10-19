@@ -640,22 +640,23 @@ class _SubjectCardItemState extends State<_SubjectCardItem>
 
     return Padding(
       padding: EdgeInsets.only(bottom: rs.height(10)),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(rs.scale(18)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            decoration: BoxDecoration(
-              color: isDarkMode
-                  ? Colors.white.withValues(alpha: 0.05)
-                  : Colors.white.withValues(alpha: 0.65),
-              borderRadius: BorderRadius.circular(rs.scale(18)),
-              border: Border.all(
-                color: isDarkMode ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.07),
-                width: 0.8,
-              ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDarkMode ? const Color(0xFF141418) : Colors.white,
+          borderRadius: BorderRadius.circular(rs.scale(18)),
+          border: Border.all(
+            color: isDarkMode ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.07),
+            width: 0.8,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDarkMode ? 0.20 : 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-            child: Column(
+          ],
+        ),
+        child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Tappable Header Row
@@ -1015,8 +1016,6 @@ class _SubjectCardItemState extends State<_SubjectCardItem>
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
+        );
+      }
+    }
