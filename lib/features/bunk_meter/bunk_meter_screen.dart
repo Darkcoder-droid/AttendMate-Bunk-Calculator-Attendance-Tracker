@@ -1424,16 +1424,17 @@ class _BunkMeterSubjectCardState extends State<_BunkMeterSubjectCard>
             ),
             // Expandable Telemetry Console
             ClipRect(
-              child: AnimatedBuilder(
-                animation: _controller.view,
-                builder: (context, child) {
-                  return Align(
-                    alignment: Alignment.topCenter,
-                    heightFactor: _heightFactor.value,
-                    child: child,
-                  );
-                },
-                child: Padding(
+              child: RepaintBoundary(
+                child: AnimatedBuilder(
+                  animation: _controller.view,
+                  builder: (context, child) {
+                    return Align(
+                      alignment: Alignment.topCenter,
+                      heightFactor: _heightFactor.value,
+                      child: child,
+                    );
+                  },
+                  child: Padding(
                   padding: EdgeInsets.fromLTRB(rs.scale(15), 0, rs.scale(15), rs.scale(15)),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1534,6 +1535,7 @@ class _BunkMeterSubjectCardState extends State<_BunkMeterSubjectCard>
                 ),
               ),
             ),
+          ),
           ],
         ),
       ),

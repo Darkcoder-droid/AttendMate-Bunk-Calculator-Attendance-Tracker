@@ -889,16 +889,17 @@ class _SubjectCardItemState extends State<_SubjectCardItem>
 
                 // Collapsible Schedule Slots Details
                 ClipRect(
-                  child: AnimatedBuilder(
-                    animation: _controller.view,
-                    builder: (context, child) {
-                      return Align(
-                        alignment: Alignment.topCenter,
-                        heightFactor: _heightFactor.value,
-                        child: child,
-                      );
-                    },
-                    child: Padding(
+                  child: RepaintBoundary(
+                    child: AnimatedBuilder(
+                      animation: _controller.view,
+                      builder: (context, child) {
+                        return Align(
+                          alignment: Alignment.topCenter,
+                          heightFactor: _heightFactor.value,
+                          child: child,
+                        );
+                      },
+                      child: Padding(
                       padding: EdgeInsets.only(
                         left: rs.width(14),
                         right: rs.width(14),
@@ -1010,6 +1011,7 @@ class _SubjectCardItemState extends State<_SubjectCardItem>
                     ),
                   ),
                 ),
+              ),
               ],
             ),
           ),
