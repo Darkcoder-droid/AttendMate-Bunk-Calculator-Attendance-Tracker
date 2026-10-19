@@ -1529,6 +1529,7 @@ class StackedCardDeck extends StatefulWidget {
 class _StackedCardDeckState extends State<StackedCardDeck>
     with TickerProviderStateMixin {
   Offset _dragOffset = Offset.zero;
+  bool _isSwipeUpLocked = false;
 
   // Dedicated Dismissal Animation (Card flies off smoothly without ever teleporting back)
   late AnimationController _dismissAnimController;
@@ -1658,8 +1659,8 @@ class _StackedCardDeckState extends State<StackedCardDeck>
         targetRot = -0.28;
         break;
       case AttendanceStatus.cancelled:
-        final bool flyUp = _dragOffset.dy < -15;
-        targetFly = Offset(_dragOffset.dx * 0.3, flyUp ? -screenHeight * 1.30 : screenHeight * 1.30);
+        final bool flyUp = _isSwipeUpLocked || _dragOffset.dy < -15;
+        targetFly = Offset(0.0, flyUp ? -screenHeight * 1.30 : screenHeight * 1.30);
         targetRot = 0.0;
         break;
     }
@@ -1719,6 +1720,7 @@ class _StackedCardDeckState extends State<StackedCardDeck>
       if (mounted) {
         setState(() {
           _dragOffset = Offset.zero;
+          _isSwipeUpLocked = false;
         });
         _snapAnimController.reset();
       }
@@ -1834,7 +1836,9 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                         } else if (isCurrentActive) {
                           final double liveRot = _snapAnimController.isAnimating
                               ? _snapRotAnim.value
-                              : (currentDrag.dx / (screenWidth * 0.75)) * 0.28;
+                              : (_isSwipeUpLocked
+                                  ? 0.0
+                                  : (currentDrag.dx / (screenWidth * 0.75)) * 0.28);
                           cardOffset = Offset(baseDx + currentDrag.dx, baseDy + currentDrag.dy);
                           cardRot = baseRot + liveRot;
                           cardOpacity = 1.0;
@@ -1906,11 +1910,25 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                                     onPanStart: (details) {
                                       if (widget.semesterEnded || isLocked) return;
                                       _snapAnimController.stop();
+                                      _isSwipeUpLocked = false;
                                     },
                                     onPanUpdate: (details) {
                                       if (widget.semesterEnded || isLocked) return;
                                       setState(() {
-                                        _dragOffset += details.delta;
+                                        if (_isSwipeUpLocked) {
+                                          // Pure upward motion; zero horizontal deviation
+                                          final nextDy = _dragOffset.dy + details.delta.dy;
+                                          _dragOffset = Offset(0.0, math.min(0.0, nextDy));
+                                        } else {
+                                          final candidate = _dragOffset + details.delta;
+                                          // Lock onto vertical axis when upward movement is established
+                                          if (candidate.dy < -10.0 && candidate.dy.abs() >= candidate.dx.abs() * 0.7) {
+                                            _isSwipeUpLocked = true;
+                                            _dragOffset = Offset(0.0, math.min(0.0, candidate.dy));
+                                          } else {
+                                            _dragOffset = candidate;
+                                          }
+                                        }
                                       });
                                     },
                                     onPanEnd: (details) {
@@ -1928,20 +1946,35 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                                           ? AttendanceStatus.attended
                                           : AttendanceStatus.absent;
 
-                                      // Horizontal swipe right (Present or Absent per setting)
-                                      if (dx > 60 || (vx > 280 && dx > 15)) {
+                                      // 1. Swipe UP (Cancelled / Holiday):
+                                      // If locked onto vertical up or upward movement clearly established,
+                                      // register Class Cancel without letting slight lateral deviation interfere.
+                                      final bool isSwipeUp = _isSwipeUpLocked ||
+                                          (dy < -38 && dy.abs() >= dx.abs() * 0.65) ||
+                                          (vy < -220 && dy < -12);
+
+                                      if (isSwipeUp) {
+                                        _isSwipeUpLocked = false;
+                                        _triggerAction(AttendanceStatus.cancelled, initialVelocity: velocity);
+                                      }
+                                      // 2. Horizontal swipe right (Present or Absent per setting)
+                                      else if (dx > 55 || (vx > 260 && dx > 15)) {
+                                        _isSwipeUpLocked = false;
                                         _triggerAction(rightStatus, initialVelocity: velocity);
                                       }
-                                      // Horizontal swipe left (Opposite per setting)
-                                      else if (dx < -60 || (vx < -280 && dx < -15)) {
+                                      // 3. Horizontal swipe left (Opposite per setting)
+                                      else if (dx < -55 || (vx < -260 && dx < -15)) {
+                                        _isSwipeUpLocked = false;
                                         _triggerAction(leftStatus, initialVelocity: velocity);
                                       }
-                                      // Vertical swipe down or up (Cancelled / Holiday)
-                                      else if (dy.abs() > 48 || (vy.abs() > 280 && dy.abs() > 15)) {
+                                      // 4. Downward vertical swipe (Cancelled / Holiday)
+                                      else if (dy > 50 || (vy > 260 && dy > 15)) {
+                                        _isSwipeUpLocked = false;
                                         _triggerAction(AttendanceStatus.cancelled, initialVelocity: velocity);
                                       }
                                       // Smooth spring reset
                                       else {
+                                        _isSwipeUpLocked = false;
                                         _resetPosition();
                                       }
                                     },

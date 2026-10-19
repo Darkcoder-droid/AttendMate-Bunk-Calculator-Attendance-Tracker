@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -179,25 +178,28 @@ class _SemesterScreenState extends State<SemesterScreen> {
         children: [
           KeyedSubtree(
             key: _setupFormKey,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(rs.scale(26)),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                child: Container(
-                  padding: EdgeInsets.all(rs.scale(20)),
-                  decoration: BoxDecoration(
-                    color: theme.brightness == Brightness.dark
-                        ? const Color(0xFF0F0F14).withValues(alpha: 0.40)
-                        : Colors.white.withValues(alpha: 0.58),
-                    borderRadius: BorderRadius.circular(rs.scale(26)),
-                    border: Border.all(
-                      color: theme.brightness == Brightness.dark
-                          ? Colors.white.withValues(alpha: 0.16)
-                          : Colors.black.withValues(alpha: 0.08),
-                      width: 1.0,
-                    ),
+            child: Container(
+              padding: EdgeInsets.all(rs.scale(20)),
+              decoration: BoxDecoration(
+                color: theme.brightness == Brightness.dark
+                    ? const Color(0xFF14141A)
+                    : Colors.white,
+                borderRadius: BorderRadius.circular(rs.scale(26)),
+                border: Border.all(
+                  color: theme.brightness == Brightness.dark
+                      ? Colors.white.withValues(alpha: 0.14)
+                      : Colors.black.withValues(alpha: 0.08),
+                  width: 1.0,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: theme.brightness == Brightness.dark ? 0.30 : 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                  child: Form(
+                ],
+              ),
+              child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -385,7 +387,7 @@ class _SemesterScreenState extends State<SemesterScreen> {
                           onChanged: (val) {
                             final newTarget = val.roundToDouble();
                             if (newTarget != _targetPercentage) {
-                              HapticFeedback.vibrate();
+                              HapticFeedback.selectionClick();
                               setState(() {
                                 _targetPercentage = newTarget;
                                 _targetPercentageController.text = newTarget.toStringAsFixed(0);
@@ -440,11 +442,9 @@ class _SemesterScreenState extends State<SemesterScreen> {
               ),
             ),
           ),
-        ),
+        ],
       ),
-    ],
-  ),
-);
+    );
   }
 
   Widget _buildSemesterDetails() {
@@ -561,25 +561,28 @@ class _SemesterScreenState extends State<SemesterScreen> {
     final endDateStr = DateFormat.yMMMd().format(semester.endDate);
 
     if (!semesterProvider.hasSemesterStarted || subjects.isEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(rs.scale(18)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: Container(
-            padding: EdgeInsets.all(rs.scale(18)),
-            decoration: BoxDecoration(
-              color: isDarkMode
-                  ? const Color(0xFF0F0F14).withValues(alpha: 0.40)
-                  : Colors.white.withValues(alpha: 0.58),
-              borderRadius: BorderRadius.circular(rs.scale(18)),
-              border: Border.all(
-                color: isDarkMode
-                    ? Colors.white.withValues(alpha: 0.16)
-                    : Colors.black.withValues(alpha: 0.08),
-                width: 1.0,
-              ),
+      return Container(
+        padding: EdgeInsets.all(rs.scale(18)),
+        decoration: BoxDecoration(
+          color: isDarkMode
+              ? const Color(0xFF14141A)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(rs.scale(18)),
+          border: Border.all(
+            color: isDarkMode
+                ? Colors.white.withValues(alpha: 0.14)
+                : Colors.black.withValues(alpha: 0.08),
+            width: 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDarkMode ? 0.30 : 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            child: Column(
+          ],
+        ),
+        child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
@@ -620,9 +623,7 @@ class _SemesterScreenState extends State<SemesterScreen> {
                 ),
               ],
             ),
-          ),
-        ),
-      );
+          );
     }
 
     final targetPercentage = semester.targetPercentage;
@@ -697,25 +698,28 @@ class _SemesterScreenState extends State<SemesterScreen> {
 
     final targetRatio = (targetPercentage / 100).clamp(0.0, 1.0);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(rs.scale(20)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Container(
-          padding: EdgeInsets.all(rs.scale(18)),
-          decoration: BoxDecoration(
-            color: isDarkMode
-                ? const Color(0xFF0F0F14).withValues(alpha: 0.40)
-                : Colors.white.withValues(alpha: 0.58),
-            borderRadius: BorderRadius.circular(rs.scale(20)),
-            border: Border.all(
-              color: isDarkMode
-                  ? Colors.white.withValues(alpha: 0.16)
-                  : Colors.black.withValues(alpha: 0.08),
-              width: 1.0,
-            ),
+    return Container(
+      padding: EdgeInsets.all(rs.scale(18)),
+      decoration: BoxDecoration(
+        color: isDarkMode
+            ? const Color(0xFF14141A)
+            : Colors.white,
+        borderRadius: BorderRadius.circular(rs.scale(20)),
+        border: Border.all(
+          color: isDarkMode
+              ? Colors.white.withValues(alpha: 0.14)
+              : Colors.black.withValues(alpha: 0.08),
+          width: 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDarkMode ? 0.30 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          child: Column(
+        ],
+      ),
+      child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Top Row: Semester Span & High-contrast Status Pill
@@ -953,9 +957,7 @@ class _SemesterScreenState extends State<SemesterScreen> {
               ],
             ],
           ),
-        ),
-      ),
-    );
+        );
   }
 
   void _showProjectedAttendanceDetailDialog({
@@ -1493,31 +1495,36 @@ class _SemesterScreenState extends State<SemesterScreen> {
     final effectiveEndDate = _endDate ?? semester.endDate;
     final effectiveTarget = _targetPercentage ?? semester.targetPercentage;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(rs.scale(18)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Container(
-          decoration: BoxDecoration(
+    return RepaintBoundary(
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDarkMode
+              ? const Color(0xFF14141A)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(rs.scale(18)),
+          border: Border.all(
             color: isDarkMode
-                ? const Color(0xFF0F0F14).withValues(alpha: 0.40)
-                : Colors.white.withValues(alpha: 0.58),
-            borderRadius: BorderRadius.circular(rs.scale(18)),
-            border: Border.all(
-              color: isDarkMode
-                  ? Colors.white.withValues(alpha: 0.16)
-                  : Colors.black.withValues(alpha: 0.08),
-              width: 1.0,
-            ),
+                ? Colors.white.withValues(alpha: 0.14)
+                : Colors.black.withValues(alpha: 0.08),
+            width: 1.0,
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(rs.scale(18)),
-            child: ExpansionTile(
-              expansionAnimationStyle: const AnimationStyle(
-                duration: Duration(milliseconds: 280),
-                curve: Curves.easeOutCubic,
-                reverseCurve: Curves.easeInCubic,
-              ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDarkMode ? 0.30 : 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(rs.scale(18)),
+          child: ExpansionTile(
+            maintainState: true,
+            expansionAnimationStyle: const AnimationStyle(
+              duration: Duration(milliseconds: 260),
+              curve: Curves.easeOutCubic,
+              reverseCurve: Curves.easeInCubic,
+            ),
               shape: const Border(),
               collapsedShape: const Border(),
               initiallyExpanded: false,
@@ -1686,17 +1693,20 @@ class _SemesterScreenState extends State<SemesterScreen> {
                           onChanged: (val) {
                             final newTarget = val.roundToDouble();
                             if (newTarget != effectiveTarget) {
-                              HapticFeedback.vibrate();
+                              HapticFeedback.selectionClick();
                               setState(() {
                                 _targetPercentage = newTarget;
                                 _targetPercentageController.text = newTarget.toStringAsFixed(0);
                               });
-                              _saveSemesterParameters(
-                                startDate: effectiveStartDate,
-                                endDate: effectiveEndDate,
-                                targetPercentage: newTarget,
-                              );
                             }
+                          },
+                          onChangeEnd: (val) {
+                            final newTarget = val.roundToDouble();
+                            _saveSemesterParameters(
+                              startDate: effectiveStartDate,
+                              endDate: effectiveEndDate,
+                              targetPercentage: newTarget,
+                            );
                           },
                         ),
                       ],
@@ -1708,7 +1718,6 @@ class _SemesterScreenState extends State<SemesterScreen> {
           ],
         ),
       ),
-        ),
       ),
     );
   }
