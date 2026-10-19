@@ -565,13 +565,13 @@ class _SemesterScreenState extends State<SemesterScreen> {
         padding: EdgeInsets.all(rs.scale(18)),
         decoration: BoxDecoration(
           color: isDarkMode
-              ? const Color(0xFF14141A)
-              : Colors.white,
+              ? const Color(0xFF14141C).withValues(alpha: 0.65)
+              : Colors.white.withValues(alpha: 0.75),
           borderRadius: BorderRadius.circular(rs.scale(18)),
           border: Border.all(
             color: isDarkMode
                 ? Colors.white.withValues(alpha: 0.14)
-                : Colors.black.withValues(alpha: 0.08),
+                : Colors.white.withValues(alpha: 0.60),
             width: 1.0,
           ),
           boxShadow: [
@@ -702,13 +702,13 @@ class _SemesterScreenState extends State<SemesterScreen> {
       padding: EdgeInsets.all(rs.scale(18)),
       decoration: BoxDecoration(
         color: isDarkMode
-            ? const Color(0xFF14141A)
-            : Colors.white,
+            ? const Color(0xFF14141C).withValues(alpha: 0.65)
+            : Colors.white.withValues(alpha: 0.75),
         borderRadius: BorderRadius.circular(rs.scale(20)),
         border: Border.all(
           color: isDarkMode
               ? Colors.white.withValues(alpha: 0.14)
-              : Colors.black.withValues(alpha: 0.08),
+              : Colors.white.withValues(alpha: 0.60),
           width: 1.0,
         ),
         boxShadow: [
@@ -1499,13 +1499,13 @@ class _SemesterScreenState extends State<SemesterScreen> {
       child: Container(
         decoration: BoxDecoration(
           color: isDarkMode
-              ? const Color(0xFF14141A)
-              : Colors.white,
+              ? const Color(0xFF14141C).withValues(alpha: 0.65)
+              : Colors.white.withValues(alpha: 0.75),
           borderRadius: BorderRadius.circular(rs.scale(18)),
           border: Border.all(
             color: isDarkMode
                 ? Colors.white.withValues(alpha: 0.14)
-                : Colors.black.withValues(alpha: 0.08),
+                : Colors.white.withValues(alpha: 0.60),
             width: 1.0,
           ),
           boxShadow: [
