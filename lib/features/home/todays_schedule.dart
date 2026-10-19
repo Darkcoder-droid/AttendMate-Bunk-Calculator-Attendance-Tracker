@@ -1756,12 +1756,13 @@ class _StackedCardDeckState extends State<StackedCardDeck>
               top: topOffset,
               width: screenWidth,
               height: cardBoxHeight,
-              child: AnimatedBuilder(
-                animation: Listenable.merge([
-                  _dismissAnimController,
-                  _snapAnimController,
-                  _indexAnimController,
-                ]),
+              child: RepaintBoundary(
+                child: AnimatedBuilder(
+                  animation: Listenable.merge([
+                    _dismissAnimController,
+                    _snapAnimController,
+                    _indexAnimController,
+                  ]),
                 builder: (context, _) {
                   final currentAnimatedIndex = _currentAnimatedIndex;
 
@@ -1988,6 +1989,7 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                 },
               ),
             ),
+          ),
             if (count > 1) ...[
               // Left Cycling Arrow (<)
               Positioned(
@@ -4242,36 +4244,38 @@ class DayOverSummaryView extends StatelessWidget {
               child: Row(
                 children: [
                   // Circular Progress Donut Ring with Dynamic Rising Percentage
-                  TweenAnimationBuilder<double>(
-                    tween: Tween<double>(begin: 0.0, end: overallPercentage),
-                    duration: const Duration(milliseconds: 950),
-                    curve: Curves.easeOutCubic,
-                    builder: (context, animatedPercentage, _) {
-                      return SizedBox(
-                        width: rs.scale(82),
-                        height: rs.scale(82),
-                        child: CustomPaint(
-                          painter: CircularAttendanceRingPainter(
-                            percentage: (animatedPercentage / 100.0).clamp(0.0, 1.0),
-                            ringColor: isSafe ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                            trackColor: isDarkMode
-                                ? Colors.white.withValues(alpha: 0.08)
-                                : Colors.black.withValues(alpha: 0.06),
-                            strokeWidth: 8.0,
-                          ),
-                          child: Center(
-                            child: Text(
-                              '${animatedPercentage.toStringAsFixed(0)}%',
-                              style: GoogleFonts.inter(
-                                fontSize: rs.font(18),
-                                fontWeight: FontWeight.w800,
-                                color: isDarkMode ? Colors.white : Colors.black87,
+                  RepaintBoundary(
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween<double>(begin: 0.0, end: overallPercentage),
+                      duration: const Duration(milliseconds: 950),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, animatedPercentage, _) {
+                        return SizedBox(
+                          width: rs.scale(82),
+                          height: rs.scale(82),
+                          child: CustomPaint(
+                            painter: CircularAttendanceRingPainter(
+                              percentage: (animatedPercentage / 100.0).clamp(0.0, 1.0),
+                              ringColor: isSafe ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                              trackColor: isDarkMode
+                                  ? Colors.white.withValues(alpha: 0.08)
+                                  : Colors.black.withValues(alpha: 0.06),
+                              strokeWidth: 8.0,
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${animatedPercentage.toStringAsFixed(0)}%',
+                                style: GoogleFonts.inter(
+                                  fontSize: rs.font(18),
+                                  fontWeight: FontWeight.w800,
+                                  color: isDarkMode ? Colors.white : Colors.black87,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                   SizedBox(width: rs.width(16)),
                   // Metrics & Status Details
