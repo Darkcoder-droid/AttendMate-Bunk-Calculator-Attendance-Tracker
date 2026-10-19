@@ -26,6 +26,11 @@ public final class GeneratedPluginRegistrant {
       Log.e(TAG, "Error registering plugin device_calendar_plus_android, to.bullet.device_calendar_plus_android.DeviceCalendarPlusAndroidPlugin", e);
     }
     try {
+      flutterEngine.getPlugins().add(new com.ajinasokan.flutterdisplaymode.DisplayModePlugin());
+    } catch (Exception e) {
+      Log.e(TAG, "Error registering plugin flutter_displaymode, com.ajinasokan.flutterdisplaymode.DisplayModePlugin", e);
+    }
+    try {
       flutterEngine.getPlugins().add(new com.dexterous.flutterlocalnotifications.FlutterLocalNotificationsPlugin());
     } catch (Exception e) {
       Log.e(TAG, "Error registering plugin flutter_local_notifications, com.dexterous.flutterlocalnotifications.FlutterLocalNotificationsPlugin", e);

@@ -10,6 +10,7 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'ambient_theme_provider.dart';
+import 'refresh_rate_provider.dart';
 
 import 'package:workmanager/workmanager.dart';
 import '../../services/backup_service.dart';
@@ -672,6 +673,7 @@ class _MoreScreenState extends State<MoreScreen> {
     );
 
     final ambientProvider = Provider.of<AmbientThemeProvider>(context);
+    final refreshRateProvider = Provider.of<RefreshRateProvider>(context);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 140),
@@ -681,6 +683,8 @@ class _MoreScreenState extends State<MoreScreen> {
           isDarkMode: isDarkMode,
           children: [
             _buildAmbientThemeControl(context, ambientProvider, isDarkMode),
+            _buildTileDivider(isDarkMode),
+            _buildRefreshRateControl(context, refreshRateProvider, isDarkMode),
             _buildTileDivider(isDarkMode),
             ListTile(
               leading: _buildLeadingIcon(Icons.schedule_outlined, isDarkMode),
@@ -2060,6 +2064,528 @@ class _MoreScreenState extends State<MoreScreen> {
                                   color: accent,
                                 ),
                             ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRefreshRateControl(
+    BuildContext context,
+    RefreshRateProvider refreshRateProvider,
+    bool isDarkMode,
+  ) {
+    final selectedOption = refreshRateProvider.selectedOption;
+    final isSupported = refreshRateProvider.isSupportedOnPlatform;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Row
+          Row(
+            children: [
+              _buildLeadingIcon(
+                Icons.speed_rounded,
+                isDarkMode,
+                accentColor: const Color(0xFF10B981),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Screen Refresh Rate',
+                      style: GoogleFonts.roboto(fontWeight: FontWeight.w600, fontSize: 14.5),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      refreshRateProvider.statusSubtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: Icon(
+                  Icons.tune_rounded,
+                  size: 19,
+                  color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70),
+                ),
+                tooltip: 'Refresh Rate Details',
+                onPressed: () => _showRefreshRateModal(context, refreshRateProvider, isDarkMode),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // 4-Segment Refresh Rate Selector
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: isDarkMode
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : Colors.black.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isDarkMode
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.black.withValues(alpha: 0.06),
+                width: 0.8,
+              ),
+            ),
+            child: Row(
+              children: [
+                for (final option in RefreshRateOption.values) ...[
+                  if (option != RefreshRateOption.values.first)
+                    const SizedBox(width: 4),
+                  Expanded(
+                    child: _buildRefreshRateSegmentButton(
+                      option: option,
+                      isSelected: selectedOption == option,
+                      isHardwareSupported: refreshRateProvider.isOptionSupported(option),
+                      isDarkMode: isDarkMode,
+                      activeColor: const Color(0xFF10B981),
+                      onTap: () async {
+                        if (!isSupported) {
+                          ScaffoldMessenger.of(context).showReplacingSnackBar(
+                            const SnackBar(
+                              content: Text('Refresh rate is managed automatically by your operating system.'),
+                            ),
+                          );
+                          return;
+                        }
+
+                        if (!refreshRateProvider.isOptionSupported(option)) {
+                          final supportedRates = refreshRateProvider.availableRefreshRates;
+                          final ratesStr = supportedRates.isEmpty
+                              ? '60 Hz'
+                              : supportedRates.map((r) => '$r Hz').join(', ');
+                          ScaffoldMessenger.of(context).showReplacingSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'This display panel does not support ${option.label}. Supported: $ratesStr',
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+
+                        HapticFeedback.selectionClick();
+                        final success = await refreshRateProvider.setOption(option);
+                        if (!success && context.mounted) {
+                          ScaffoldMessenger.of(context).showReplacingSnackBar(
+                            SnackBar(
+                              content: Text('Could not switch to ${option.label}. Restored default.'),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRefreshRateSegmentButton({
+    required RefreshRateOption option,
+    required bool isSelected,
+    required bool isHardwareSupported,
+    required bool isDarkMode,
+    required Color activeColor,
+    required VoidCallback onTap,
+  }) {
+    final IconData icon = switch (option) {
+      RefreshRateOption.deviceDefault => Icons.auto_mode_rounded,
+      RefreshRateOption.hz60 => Icons.battery_saver_rounded,
+      RefreshRateOption.hz90 => Icons.speed_rounded,
+      RefreshRateOption.hz120 => Icons.bolt_rounded,
+    };
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDarkMode
+                  ? Colors.white.withValues(alpha: 0.16)
+                  : Colors.white)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: isSelected
+              ? Border.all(
+                  color: isDarkMode
+                      ? Colors.white.withValues(alpha: 0.22)
+                      : Colors.black.withValues(alpha: 0.10),
+                  width: 0.8,
+                )
+              : null,
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDarkMode ? 0.35 : 0.08),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Opacity(
+          opacity: isHardwareSupported ? 1.0 : 0.38,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color: isSelected
+                    ? activeColor
+                    : (isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                option.label,
+                style: GoogleFonts.inter(
+                  fontSize: 11.5,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected
+                      ? (isDarkMode ? Colors.white : Colors.black)
+                      : (isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showRefreshRateModal(
+    BuildContext context,
+    RefreshRateProvider refreshRateProvider,
+    bool isDarkMode,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: isDarkMode
+          ? Colors.black.withValues(alpha: 0.6)
+          : Colors.black.withValues(alpha: 0.3),
+      builder: (ctx) {
+        final activeHz = refreshRateProvider.activeMode?.refreshRate;
+        final isPlatformSupported = refreshRateProvider.isSupportedOnPlatform;
+        final availableRates = refreshRateProvider.availableRefreshRates;
+
+        return Container(
+          decoration: BoxDecoration(
+            color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Drag Handle
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: isDarkMode
+                            ? Colors.white.withValues(alpha: 0.2)
+                            : Colors.black.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Title Row
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withValues(alpha: isDarkMode ? 0.2 : 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.speed_rounded,
+                          size: 20,
+                          color: Color(0xFF10B981),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Display & Refresh Rate',
+                              style: GoogleFonts.inter(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w700,
+                                color: isDarkMode ? Colors.white : Colors.black,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Customize screen frame rate or use device default',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDarkMode
+                                    ? const Color(0xFF8E8E93)
+                                    : const Color(0xFF6C6C70),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.close_rounded,
+                          size: 20,
+                          color: isDarkMode ? Colors.white70 : Colors.black54,
+                        ),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Hardware Status Card
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isDarkMode
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.black.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isDarkMode
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.black.withValues(alpha: 0.06),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Hardware Display Detection',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDarkMode ? Colors.white70 : Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                isPlatformSupported
+                                    ? (availableRates.isNotEmpty
+                                        ? 'Supported modes: ${availableRates.map((r) => '$r Hz').join(', ')}'
+                                        : 'Querying display modes...')
+                                    : 'Managed automatically by OS display compositor',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (activeHz != null && activeHz > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.16),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              '${activeHz.round()} Hz Active',
+                              style: GoogleFonts.inter(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF10B981),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Options List
+                  ...RefreshRateOption.values.map((option) {
+                    final isSelected = refreshRateProvider.selectedOption == option;
+                    final isHardwareSupported = refreshRateProvider.isOptionSupported(option);
+
+                    final IconData icon = switch (option) {
+                      RefreshRateOption.deviceDefault => Icons.auto_mode_rounded,
+                      RefreshRateOption.hz60 => Icons.battery_saver_rounded,
+                      RefreshRateOption.hz90 => Icons.speed_rounded,
+                      RefreshRateOption.hz120 => Icons.bolt_rounded,
+                    };
+
+                    const Color accent = Color(0xFF10B981);
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: GestureDetector(
+                        onTap: () async {
+                          if (!isPlatformSupported) {
+                            ScaffoldMessenger.of(context).showReplacingSnackBar(
+                              const SnackBar(
+                                content: Text('Refresh rate is managed automatically by your operating system.'),
+                              ),
+                            );
+                            return;
+                          }
+
+                          if (!isHardwareSupported) {
+                            ScaffoldMessenger.of(context).showReplacingSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'This display does not support ${option.label}. Supported: ${availableRates.map((r) => '$r Hz').join(', ')}',
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+
+                          HapticFeedback.selectionClick();
+                          await refreshRateProvider.setOption(option);
+                          if (ctx.mounted) {
+                            Navigator.pop(ctx);
+                          }
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 160),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? (isDarkMode
+                                    ? Colors.white.withValues(alpha: 0.12)
+                                    : Colors.black.withValues(alpha: 0.08))
+                                : (isDarkMode
+                                    ? Colors.white.withValues(alpha: 0.04)
+                                    : Colors.black.withValues(alpha: 0.03)),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isSelected
+                                  ? (isDarkMode ? Colors.white : Colors.black)
+                                  : (isDarkMode
+                                      ? Colors.white.withValues(alpha: 0.10)
+                                      : Colors.black.withValues(alpha: 0.06)),
+                              width: isSelected ? 1.4 : 0.8,
+                            ),
+                          ),
+                          child: Opacity(
+                            opacity: isHardwareSupported ? 1.0 : 0.4,
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 38,
+                                  height: 38,
+                                  decoration: BoxDecoration(
+                                    color: accent.withValues(alpha: isDarkMode ? 0.22 : 0.16),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: accent.withValues(alpha: 0.35),
+                                      width: 0.8,
+                                    ),
+                                  ),
+                                  child: Icon(icon, size: 18, color: accent),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(
+                                            option.title,
+                                            style: GoogleFonts.inter(
+                                              fontSize: 14,
+                                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                                              color: isDarkMode ? Colors.white : Colors.black,
+                                            ),
+                                          ),
+                                          if (!isHardwareSupported) ...[
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              '(Unsupported)',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w500,
+                                                color: Colors.red.withValues(alpha: 0.8),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        option.description,
+                                        style: TextStyle(
+                                          fontSize: 11.5,
+                                          color: isDarkMode
+                                              ? const Color(0xFF8E8E93)
+                                              : const Color(0xFF6C6C70),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (isSelected)
+                                  const Icon(
+                                    Icons.check_circle_rounded,
+                                    size: 20,
+                                    color: accent,
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
                       ),

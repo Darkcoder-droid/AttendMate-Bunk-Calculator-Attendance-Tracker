@@ -25,6 +25,7 @@ import '../calendar/calendar_screen.dart';
 import '../import/unified_import_screen.dart';
 import '../planner/leave_planner_screen.dart';
 import '../settings/more_screen.dart';
+import '../settings/refresh_rate_provider.dart';
 import '../semester/semester_provider.dart';
 import '../semester/semester_screen.dart';
 import '../subject/add_subject_screen.dart';
@@ -215,6 +216,10 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      try {
+        Provider.of<RefreshRateProvider>(context, listen: false).refreshDisplayModes();
+      } catch (_) {}
+
       try {
         final backupService = BackupService();
         backupService.getScheduledBackupTargetTime().then((scheduledTarget) {

@@ -16,6 +16,7 @@ import 'features/semester/semester_provider.dart';
 import 'features/settings/time_format_provider.dart';
 import 'features/settings/swipe_action_provider.dart';
 import 'features/settings/ambient_theme_provider.dart';
+import 'features/settings/refresh_rate_provider.dart';
 import 'features/subject/subject_provider.dart';
 import 'features/tutorial/tutorial_controller.dart';
 import 'package:geolocator/geolocator.dart';
@@ -650,12 +651,17 @@ Future<void> main() async {
   final attendanceProvider = AttendanceProvider();
   final timeFormatProvider = TimeFormatProvider();
   final swipeActionProvider = SwipeActionProvider();
+  final refreshRateProvider = RefreshRateProvider();
+
+  // Initialize display refresh rate according to saved preference (defaults to device default)
+  unawaited(refreshRateProvider.init());
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
         ChangeNotifierProvider(create: (context) => AmbientThemeProvider()),
+        ChangeNotifierProvider(create: (context) => refreshRateProvider),
         ChangeNotifierProvider(create: (context) => timeFormatProvider),
         ChangeNotifierProvider(create: (context) => swipeActionProvider),
         ChangeNotifierProvider(create: (context) => SemesterProvider()),
