@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -60,6 +59,7 @@ class _BunkMeterScreenState extends State<BunkMeterScreen> {
   @override
   Widget build(BuildContext context) {
     final rs = context.rs;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final tutorialController = Provider.of<TutorialController>(context, listen: false);
     tutorialController.registerKey('appbar_bunk_calculator', _bunkCalculatorKey);
     tutorialController.registerKey('appbar_leave_planner', _leavePlannerKey);
@@ -185,23 +185,25 @@ class _BunkMeterScreenState extends State<BunkMeterScreen> {
         // Search field (Tesla x Nothing Obsidian Capsule)
         Builder(
           builder: (context) {
-            final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-            final searchBg = isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.white.withValues(alpha: 0.60);
+            final searchBg = isDarkMode ? const Color(0xFF14141A) : Colors.white;
             final searchBorder = isDarkMode ? Colors.white.withValues(alpha: 0.14) : Colors.black.withValues(alpha: 0.08);
 
             return Padding(
               padding: rs.insetsSymmetric(horizontal: 16, vertical: 8),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(rs.scale(28)),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: searchBg,
-                      borderRadius: BorderRadius.circular(rs.scale(28)),
-                      border: Border.all(color: searchBorder, width: 0.9),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: searchBg,
+                  borderRadius: BorderRadius.circular(rs.scale(28)),
+                  border: Border.all(color: searchBorder, width: 0.9),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDarkMode ? 0.20 : 0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
-                    child: TextField(
+                  ],
+                ),
+                child: TextField(
                       controller: _searchController,
                       style: GoogleFonts.inter(
                         fontSize: rs.font(13.5),
@@ -249,8 +251,6 @@ class _BunkMeterScreenState extends State<BunkMeterScreen> {
                       ),
                     ),
                   ),
-                ),
-              ),
             );
           },
         ),
@@ -258,12 +258,11 @@ class _BunkMeterScreenState extends State<BunkMeterScreen> {
         Builder(
           builder: (context) {
             final theme = Theme.of(context);
-            final isDarkMode = theme.brightness == Brightness.dark;
             final cardBg = isDarkMode
-                ? Colors.white.withValues(alpha: 0.06)
-                : Colors.white.withValues(alpha: 0.65);
+                ? const Color(0xFF14141A)
+                : Colors.white;
             final cardBorder = isDarkMode
-                ? Colors.white.withValues(alpha: 0.12)
+                ? Colors.white.withValues(alpha: 0.14)
                 : Colors.black.withValues(alpha: 0.08);
             final textColor = isDarkMode ? Colors.white : const Color(0xFF1C1C1E);
 
@@ -286,79 +285,85 @@ class _BunkMeterScreenState extends State<BunkMeterScreen> {
                   Expanded(
                     child: KeyedSubtree(
                       key: _bunkCalculatorKey,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(rs.scale(22)),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                          child: Material(
-                            color: cardBg,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(rs.scale(22)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: isDarkMode ? 0.20 : 0.03),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: cardBg,
+                          borderRadius: BorderRadius.circular(rs.scale(22)),
+                          child: InkWell(
                             borderRadius: BorderRadius.circular(rs.scale(22)),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(rs.scale(22)),
-                              onTap: () {
-                                if (tutorialController.isActive && tutorialController.currentStepIndex == 20) {
-                                  tutorialController.nextStep();
-                                }
-                                showModalBottomSheet(
-                                  context: context,
-                                  isScrollControlled: true,
-                                  barrierColor: isDarkMode
-                                      ? Colors.black.withValues(alpha: 0.65)
-                                      : Colors.black38,
-                                  backgroundColor: Colors.transparent,
-                                  sheetAnimationStyle: AnimationStyle(
-                                    duration: const Duration(milliseconds: 320),
-                                    reverseDuration: const Duration(milliseconds: 250),
-                                    curve: Curves.easeOutCubic,
-                                    reverseCurve: Curves.easeInCubic,
-                                  ),
-                                  builder: (ctx) => WhatIfCalculatorSheet(
-                                    subjects: subjects,
-                                    recordsBySubject: recordsBySubject,
-                                    semester: semester,
-                                  ),
-                                );
-                              },
-                              child: Container(
-                                padding: rs.insetsSymmetric(vertical: 12, horizontal: 14),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(rs.scale(22)),
-                                  border: Border.all(color: cardBorder, width: 0.8),
+                            onTap: () {
+                              if (tutorialController.isActive && tutorialController.currentStepIndex == 20) {
+                                tutorialController.nextStep();
+                              }
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                barrierColor: isDarkMode
+                                    ? Colors.black.withValues(alpha: 0.65)
+                                    : Colors.black38,
+                                backgroundColor: Colors.transparent,
+                                sheetAnimationStyle: AnimationStyle(
+                                  duration: const Duration(milliseconds: 320),
+                                  reverseDuration: const Duration(milliseconds: 250),
+                                  curve: Curves.easeOutCubic,
+                                  reverseCurve: Curves.easeInCubic,
                                 ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(7),
-                                      decoration: BoxDecoration(
-                                        color: calcBadgeBg,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: calcIconColor.withValues(alpha: 0.25),
-                                          width: 0.8,
-                                        ),
-                                      ),
-                                      child: Icon(
-                                        Icons.calculate_outlined,
-                                        color: calcIconColor,
-                                        size: rs.scale(16),
+                                builder: (ctx) => WhatIfCalculatorSheet(
+                                  subjects: subjects,
+                                  recordsBySubject: recordsBySubject,
+                                  semester: semester,
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: rs.insetsSymmetric(vertical: 12, horizontal: 14),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(rs.scale(22)),
+                                border: Border.all(color: cardBorder, width: 0.8),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(7),
+                                    decoration: BoxDecoration(
+                                      color: calcBadgeBg,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: calcIconColor.withValues(alpha: 0.25),
+                                        width: 0.8,
                                       ),
                                     ),
-                                    SizedBox(width: rs.width(8)),
-                                    Flexible(
-                                      child: Text(
-                                        'Bunk Calculator',
-                                        style: GoogleFonts.inter(
-                                          fontSize: rs.font(12.5),
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: 0.2,
-                                          color: textColor,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
+                                    child: Icon(
+                                      Icons.calculate_outlined,
+                                      color: calcIconColor,
+                                      size: rs.scale(16),
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                  SizedBox(width: rs.width(8)),
+                                  Flexible(
+                                    child: Text(
+                                      'Bunk Calculator',
+                                      style: GoogleFonts.inter(
+                                        fontSize: rs.font(12.5),
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.2,
+                                        color: textColor,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -370,34 +375,41 @@ class _BunkMeterScreenState extends State<BunkMeterScreen> {
                   Expanded(
                     child: KeyedSubtree(
                       key: _leavePlannerKey,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(rs.scale(22)),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                          child: Material(
-                            color: cardBg,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(rs.scale(22)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: isDarkMode ? 0.20 : 0.03),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: cardBg,
+                          borderRadius: BorderRadius.circular(rs.scale(22)),
+                          child: InkWell(
                             borderRadius: BorderRadius.circular(rs.scale(22)),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(rs.scale(22)),
-                              onTap: () async {
-                                if (tutorialController.isActive && tutorialController.currentStepIndex == 22) {
-                                  tutorialController.nextStep();
-                                }
-                                await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => const LeavePlannerScreen()),
-                                );
-                                _loadPlannedLeaves();
-                              },
-                              child: Container(
-                                padding: rs.insetsSymmetric(vertical: 12, horizontal: 14),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(rs.scale(22)),
-                                  border: Border.all(color: cardBorder, width: 0.8),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
+                            onTap: () async {
+                              if (tutorialController.isActive && tutorialController.currentStepIndex == 22) {
+                                tutorialController.nextStep();
+                              }
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const LeavePlannerScreen()),
+                              );
+                              _loadPlannedLeaves();
+                            },
+                            child: Container(
+                              padding: rs.insetsSymmetric(vertical: 12, horizontal: 14),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(rs.scale(22)),
+                                border: Border.all(color: cardBorder, width: 0.8),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
                                     Container(
                                       padding: const EdgeInsets.all(7),
                                       decoration: BoxDecoration(
@@ -435,7 +447,6 @@ class _BunkMeterScreenState extends State<BunkMeterScreen> {
                         ),
                       ),
                     ),
-                  ),
                 ],
               ),
             );
@@ -1836,18 +1847,21 @@ class _ManualCountUpdateSheetState extends State<_ManualCountUpdateSheet> {
     final dateStr =
         '${widget.effectiveFrom.day}/${widget.effectiveFrom.month}/${widget.effectiveFrom.year}';
 
-    return ClipRRect(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(rs.scale(32))),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
-        child: Container(
-          decoration: BoxDecoration(
-            color: sheetBg,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(rs.scale(32))),
-            border: Border(
-              top: BorderSide(color: borderColor, width: 0.9),
-            ),
+    return Container(
+      decoration: BoxDecoration(
+        color: sheetBg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(rs.scale(32))),
+        border: Border(
+          top: BorderSide(color: borderColor, width: 0.9),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
           ),
+        ],
+      ),
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom + rs.height(28),
             left: rs.width(20),
@@ -2254,8 +2268,6 @@ class _ManualCountUpdateSheetState extends State<_ManualCountUpdateSheet> {
               ],
             ),
           ),
-        ),
-      ),
-    );
+        );
   }
 }
