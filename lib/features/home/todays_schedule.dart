@@ -2069,30 +2069,24 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                   ),
                 ],
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(buttonSize / 2),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isDarkMode
-                          ? const Color(0xFF141418).withValues(alpha: 0.80)
-                          : Colors.white.withValues(alpha: 0.85),
-                      border: Border.all(
-                        color: isDarkMode
-                            ? Colors.white.withValues(alpha: 0.16)
-                            : Colors.black.withValues(alpha: 0.10),
-                        width: 0.9,
-                      ),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        icon,
-                        size: rs.scale(22),
-                        color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
-                      ),
-                    ),
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isDarkMode
+                      ? const Color(0xFF141418)
+                      : Colors.white,
+                  border: Border.all(
+                    color: isDarkMode
+                        ? Colors.white.withValues(alpha: 0.16)
+                        : Colors.black.withValues(alpha: 0.10),
+                    width: 0.9,
+                  ),
+                ),
+                child: Center(
+                  child: Icon(
+                    icon,
+                    size: rs.scale(22),
+                    color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
                   ),
                 ),
               ),
@@ -2122,7 +2116,14 @@ class _StackedCardDeckState extends State<StackedCardDeck>
       width: width,
       height: height,
       decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF141418) : Colors.white,
         borderRadius: BorderRadius.circular(rs.scale(28)),
+        border: Border.all(
+          color: isDarkMode
+              ? Colors.white.withValues(alpha: 0.16)
+              : Colors.black.withValues(alpha: 0.10),
+          width: 1.0,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDarkMode ? 0.28 : 0.06),
@@ -2131,115 +2132,85 @@ class _StackedCardDeckState extends State<StackedCardDeck>
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(rs.scale(28)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: isDarkMode
-                    ? [
-                        const Color(0xFF18181D).withValues(alpha: 0.82),
-                        const Color(0xFF0F0F12).withValues(alpha: 0.88),
-                      ]
-                    : [
-                        Colors.white.withValues(alpha: 0.90),
-                        const Color(0xFFF8F9FA).withValues(alpha: 0.82),
-                      ],
-              ),
-              borderRadius: BorderRadius.circular(rs.scale(28)),
-              border: Border.all(
-                color: isDarkMode
-                    ? Colors.white.withValues(alpha: 0.16)
-                    : Colors.black.withValues(alpha: 0.10),
-                width: 1.0,
-              ),
-            ),
-            child: Padding(
-              padding: rs.insetsSymmetric(horizontal: 22, vertical: 22),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: subject.color,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: subject.color.withValues(alpha: 0.5),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(width: rs.width(7)),
-                          Text(
-                            slot.startTime.format(context),
-                            style: GoogleFonts.inter(
-                              fontSize: rs.font(13.5),
-                              fontWeight: FontWeight.w600,
-                              color: isDarkMode ? Colors.white70 : Colors.black54,
-                            ),
+      child: Padding(
+        padding: rs.insetsSymmetric(horizontal: 22, vertical: 22),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: subject.color,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: subject.color.withValues(alpha: 0.5),
+                            blurRadius: 4,
                           ),
                         ],
                       ),
-                      Container(
-                    width: rs.scale(28),
-                    height: rs.scale(28),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.18),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: statusColor.withValues(alpha: 0.45), width: 1.2),
                     ),
-                    child: Center(
-                      child: Icon(
-                        status == AttendanceStatus.attended
-                            ? Icons.check_rounded
-                            : (status == AttendanceStatus.cancelled
-                                ? Icons.pause_rounded
-                                : Icons.close_rounded),
-                        size: rs.scale(16),
-                        color: statusColor,
+                    SizedBox(width: rs.width(7)),
+                    Text(
+                      slot.startTime.format(context),
+                      style: GoogleFonts.inter(
+                        fontSize: rs.font(13.5),
+                        fontWeight: FontWeight.w600,
+                        color: isDarkMode ? Colors.white70 : Colors.black54,
                       ),
                     ),
-                  ),
-                ],
-              ),
-              SizedBox(height: rs.height(14)),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  subject.name,
-                  style: GoogleFonts.inter(
-                    fontSize: rs.font(24),
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.6,
-                    color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
-                    height: 1.15,
-                  ),
-                  maxLines: 1,
+                  ],
                 ),
+                Container(
+                  width: rs.scale(28),
+                  height: rs.scale(28),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.18),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: statusColor.withValues(alpha: 0.45), width: 1.2),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      status == AttendanceStatus.attended
+                          ? Icons.check_rounded
+                          : (status == AttendanceStatus.cancelled
+                              ? Icons.pause_rounded
+                              : Icons.close_rounded),
+                      size: rs.scale(16),
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: rs.height(14)),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                subject.name,
+                style: GoogleFonts.inter(
+                  fontSize: rs.font(24),
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.6,
+                  color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
+                  height: 1.15,
+                ),
+                maxLines: 1,
               ),
-              const Spacer(),
-            ],
-          ),
+            ),
+            const Spacer(),
+          ],
         ),
       ),
-    ),
-  ),
-);
-}
+    );
+  }
 
   // --- Stacked Background Card Face (Deck Stack Depth Layer) ---
   Widget _buildStackedDeckCardFace({
@@ -2261,7 +2232,14 @@ class _StackedCardDeckState extends State<StackedCardDeck>
       width: width,
       height: height,
       decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF141418) : Colors.white,
         borderRadius: BorderRadius.circular(rs.scale(28)),
+        border: Border.all(
+          color: isDarkMode
+              ? Colors.white.withValues(alpha: 0.14)
+              : Colors.black.withValues(alpha: 0.08),
+          width: 1.0,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDarkMode ? 0.25 : 0.05),
@@ -2270,95 +2248,65 @@ class _StackedCardDeckState extends State<StackedCardDeck>
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(rs.scale(28)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: isDarkMode
-                    ? [
-                        const Color(0xFF18181D).withValues(alpha: 0.82),
-                        const Color(0xFF0F0F12).withValues(alpha: 0.88),
-                      ]
-                    : [
-                        Colors.white.withValues(alpha: 0.90),
-                        const Color(0xFFF8F9FA).withValues(alpha: 0.82),
-                      ],
-              ),
-              borderRadius: BorderRadius.circular(rs.scale(28)),
-              border: Border.all(
-                color: isDarkMode
-                    ? Colors.white.withValues(alpha: 0.14)
-                    : Colors.black.withValues(alpha: 0.08),
-                width: 1.0,
+      child: Padding(
+        padding: rs.insetsSymmetric(horizontal: 22, vertical: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                subject.name,
+                style: GoogleFonts.inter(
+                  fontSize: rs.font(24),
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.6,
+                  color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
+                  height: 1.15,
+                ),
+                maxLines: 1,
               ),
             ),
-            child: Padding(
-              padding: rs.insetsSymmetric(horizontal: 22, vertical: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
+            SizedBox(height: rs.height(7)),
+            Row(
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: subject.color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                SizedBox(width: rs.width(7)),
+                Text(
+                  slot.startTime.format(context),
+                  style: GoogleFonts.inter(
+                    fontSize: rs.font(14),
+                    fontWeight: FontWeight.w600,
+                    color: isDarkMode ? Colors.white70 : Colors.black54,
+                  ),
+                ),
+                if (hasRoom) ...[
+                  SizedBox(width: rs.width(6)),
+                  Flexible(
                     child: Text(
-                      subject.name,
+                      '• Rm $room${block != null && block.isNotEmpty ? " • $block" : ""}',
                       style: GoogleFonts.inter(
-                        fontSize: rs.font(24),
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.6,
-                        color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
-                        height: 1.15,
+                        fontSize: rs.font(13),
+                        fontWeight: FontWeight.w500,
+                        color: isDarkMode ? Colors.white54 : Colors.black45,
                       ),
                       maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  SizedBox(height: rs.height(7)),
-                  Row(
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: subject.color,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      SizedBox(width: rs.width(7)),
-                      Text(
-                        slot.startTime.format(context),
-                        style: GoogleFonts.inter(
-                          fontSize: rs.font(14),
-                          fontWeight: FontWeight.w600,
-                          color: isDarkMode ? Colors.white70 : Colors.black54,
-                        ),
-                      ),
-                      if (hasRoom) ...[
-                        SizedBox(width: rs.width(6)),
-                        Flexible(
-                          child: Text(
-                            '• Rm $room${block != null && block.isNotEmpty ? " • $block" : ""}',
-                            style: GoogleFonts.inter(
-                              fontSize: rs.font(13),
-                              fontWeight: FontWeight.w500,
-                              color: isDarkMode ? Colors.white54 : Colors.black45,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
                 ],
-              ),
+              ],
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -2407,40 +2355,20 @@ class _StackedCardDeckState extends State<StackedCardDeck>
       width: width,
       height: height,
       decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF141418) : Colors.white,
         borderRadius: BorderRadius.circular(rs.scale(28)),
+        border: Border.all(color: borderColor, width: 1.0),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDarkMode ? 0.35 : 0.08),
-            blurRadius: 20,
+            blurRadius: 16,
             spreadRadius: -2,
             offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(rs.scale(28)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: isDarkMode
-                    ? [
-                        const Color(0xFF18181D).withValues(alpha: 0.82),
-                        const Color(0xFF0F0F12).withValues(alpha: 0.88),
-                      ]
-                    : [
-                        Colors.white.withValues(alpha: 0.90),
-                        const Color(0xFFF8F9FA).withValues(alpha: 0.82),
-                      ],
-              ),
-              borderRadius: BorderRadius.circular(rs.scale(28)),
-              border: Border.all(color: borderColor, width: 1.0),
-            ),
-            child: Stack(
-              children: [
+      child: Stack(
+        children: [
                 // Card Content
                 Padding(
                   padding: rs.insetsSymmetric(horizontal: 22, vertical: 20),
@@ -2834,12 +2762,9 @@ class _StackedCardDeckState extends State<StackedCardDeck>
               ),
             ],
           ),
-        ),
-      ),
-    ),
-  );
-}
-}
+        );
+      }
+    }
 
 // --- Schedule Item Swipe Helpers (Left/Right swipe to mark Present/Absent) ---
 Widget _buildScheduleSwipeBackground({
@@ -4105,53 +4030,47 @@ class DayOverSummaryView extends StatelessWidget {
     required String label,
     required VoidCallback onTap,
   }) {
-    return ClipRRect(
+    return InkWell(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       borderRadius: BorderRadius.circular(rs.scale(16)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            onTap();
-          },
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: rs.height(9)),
+        decoration: BoxDecoration(
+          color: isDarkMode
+              ? Colors.white.withValues(alpha: 0.07)
+              : Colors.white.withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(rs.scale(16)),
-          child: Container(
-            padding: EdgeInsets.symmetric(vertical: rs.height(9)),
-            decoration: BoxDecoration(
-              color: isDarkMode
-                  ? Colors.white.withValues(alpha: 0.07)
-                  : Colors.white.withValues(alpha: 0.60),
-              borderRadius: BorderRadius.circular(rs.scale(16)),
-              border: Border.all(
-                color: isDarkMode
-                    ? Colors.white.withValues(alpha: 0.16)
-                    : Colors.black.withValues(alpha: 0.08),
-                width: 0.9,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDarkMode ? 0.15 : 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: rs.scale(14), color: isDarkMode ? Colors.white : Colors.black87),
-                SizedBox(width: rs.width(5)),
-                Text(
-                  label,
-                  style: GoogleFonts.inter(
-                    fontSize: rs.font(11.5),
-                    fontWeight: FontWeight.w600,
-                    color: isDarkMode ? Colors.white : Colors.black87,
-                  ),
-                ),
-              ],
-            ),
+          border: Border.all(
+            color: isDarkMode
+                ? Colors.white.withValues(alpha: 0.16)
+                : Colors.black.withValues(alpha: 0.08),
+            width: 0.9,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDarkMode ? 0.15 : 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: rs.scale(14), color: isDarkMode ? Colors.white : Colors.black87),
+            SizedBox(width: rs.width(5)),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: rs.font(11.5),
+                fontWeight: FontWeight.w600,
+                color: isDarkMode ? Colors.white : Colors.black87,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -4215,17 +4134,13 @@ class DayOverSummaryView extends StatelessWidget {
 
         SizedBox(height: rs.height(16)),
 
-        // Daily Summary & Victory Card (Glass theme)
-        ClipRRect(
-          borderRadius: BorderRadius.circular(rs.scale(24)),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-            child: Container(
-              padding: rs.insetsAll(18),
-              decoration: BoxDecoration(
-                color: isDarkMode
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : Colors.white.withValues(alpha: 0.65),
+        // Daily Summary & Victory Card
+        Container(
+          padding: rs.insetsAll(18),
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? const Color(0xFF16161C)
+                : Colors.white,
                 borderRadius: BorderRadius.circular(rs.scale(24)),
                 border: Border.all(
                   color: isDarkMode
@@ -4339,8 +4254,6 @@ class DayOverSummaryView extends StatelessWidget {
                 ],
               ),
             ),
-          ),
-        ),
 
         // Quick Day Actions
         if (!semesterEnded && !isFutureDate) ...[
@@ -4665,25 +4578,21 @@ class DayOverSummaryView extends StatelessWidget {
                           semesterEnded: semesterEnded,
                           isFutureDate: isFutureDate,
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(rs.scale(18)),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: () => onModifyItem(subject, slot, slotKey, attendance),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => onModifyItem(subject, slot, slotKey, attendance),
+                            borderRadius: BorderRadius.circular(rs.scale(18)),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: rs.width(13),
+                                vertical: rs.height(10),
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDarkMode
+                                    ? const Color(0xFF16161C)
+                                    : Colors.white,
                                 borderRadius: BorderRadius.circular(rs.scale(18)),
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: rs.width(13),
-                                    vertical: rs.height(10),
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isDarkMode
-                                        ? Colors.white.withValues(alpha: 0.07)
-                                        : Colors.white.withValues(alpha: 0.75),
-                                    borderRadius: BorderRadius.circular(rs.scale(18)),
                                     border: Border.all(
                                       color: isDarkMode
                                           ? Colors.white.withValues(alpha: 0.10)
@@ -4957,8 +4866,6 @@ class DayOverSummaryView extends StatelessWidget {
                             ),
                           ),
                         ),
-                      ),
-                    ),
                   ),
                 ],
               ),
