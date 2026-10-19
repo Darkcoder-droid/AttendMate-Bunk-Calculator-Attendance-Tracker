@@ -1546,21 +1546,17 @@ class _LocationManagerScreenState extends State<LocationManagerScreen> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDarkMode
-                  ? (isInRange
-                      ? const Color(0xFF14241B).withValues(alpha: 0.70)
-                      : const Color(0xFF13131B).withValues(alpha: 0.60))
-                  : (isInRange
-                      ? Colors.green.shade50.withValues(alpha: 0.85)
-                      : Colors.white.withValues(alpha: 0.72)),
-              borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDarkMode
+              ? (isInRange
+                  ? const Color(0xFF14241B)
+                  : const Color(0xFF141418))
+              : (isInRange
+                  ? Colors.green.shade50
+                  : Colors.white),
+          borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isInRange
                     ? Colors.green.withValues(alpha: 0.6)
@@ -1965,10 +1961,8 @@ class _LocationManagerScreenState extends State<LocationManagerScreen> {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
+        );
+      }
 
   // ── Empty State ────────────────────────────────────────────────────────────
   Widget _buildEmptyState({
