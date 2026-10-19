@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -47,13 +48,14 @@ class AttendMateDock extends StatelessWidget {
 
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
 
+    // Premium translucent frosted liquid glass floating dock
     final dockBgColor = isDark
-        ? const Color(0xFF14141A)
-        : Colors.white;
+        ? const Color(0xFF141416).withValues(alpha: 0.32) // Translucent frosted obsidian
+        : Colors.white.withValues(alpha: 0.42); // Translucent frosted white
 
     final dockBorderColor = isDark
-        ? Colors.white.withValues(alpha: 0.14)
-        : Colors.black.withValues(alpha: 0.08);
+        ? Colors.white.withValues(alpha: 0.18)
+        : Colors.black.withValues(alpha: 0.10);
 
     final selectedColor = isDark ? Colors.white : Colors.black;
     final unselectedColor = isDark
@@ -63,34 +65,38 @@ class AttendMateDock extends StatelessWidget {
     return RepaintBoundary(
       child: Container(
         color: Colors.transparent,
-        padding: EdgeInsets.only(
-          left: horizontalMargin,
-          right: horizontalMargin,
-          bottom: math.max(bottomPadding, minBottomPadding),
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(36.0),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.10),
-                blurRadius: 20.0,
-                spreadRadius: 0.0,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Container(
-            height: 64.0,
-            decoration: BoxDecoration(
-              color: dockBgColor,
-              borderRadius: BorderRadius.circular(36.0),
-              border: Border.all(
-                color: dockBorderColor,
-                width: 0.9,
-              ),
+      padding: EdgeInsets.only(
+        left: horizontalMargin,
+        right: horizontalMargin,
+        bottom: math.max(bottomPadding, minBottomPadding),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(36.0),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.10),
+              blurRadius: 24.0,
+              spreadRadius: 0.0,
+              offset: const Offset(0, 8),
             ),
-            child: Row(
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(36.0),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
+            child: Container(
+              height: 64.0,
+              decoration: BoxDecoration(
+                color: dockBgColor,
+                borderRadius: BorderRadius.circular(36.0),
+                border: Border.all(
+                  color: dockBorderColor,
+                  width: 0.9,
+                ),
+              ),
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -160,7 +166,9 @@ class AttendMateDock extends StatelessWidget {
             ),
           ),
         ),
-      );
+      ),
+    ),
+  );
   }
 }
 
