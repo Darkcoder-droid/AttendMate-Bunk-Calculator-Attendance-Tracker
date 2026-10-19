@@ -1,5 +1,5 @@
 import 'dart:math' as math;
-import 'dart:ui';
+import 'dart:ui' show lerpDouble;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -638,30 +638,33 @@ class _CalendarScreenState extends State<CalendarScreen>
             );
           }).toList();
         },
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(rs.scale(16)),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: rs.width(9),
-                vertical: rs.height(6),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: rs.width(9),
+            vertical: rs.height(6),
+          ),
+          decoration: BoxDecoration(
+            color: _selectedStateFilter != null
+                ? (filterColor?.withValues(alpha: isDark ? 0.22 : 0.12) ??
+                    (isDark ? const Color(0xFF1E1E26) : const Color(0xFFEEEEF2)))
+                : (isDark ? const Color(0xFF1A1A22) : const Color(0xFFF2F2F6)),
+            borderRadius: BorderRadius.circular(rs.scale(16)),
+            border: Border.all(
+              color: _selectedStateFilter != null
+                  ? (filterColor?.withValues(alpha: 0.55) ??
+                      (isDark ? Colors.white.withValues(alpha: 0.20) : Colors.black.withValues(alpha: 0.12)))
+                  : (isDark ? Colors.white.withValues(alpha: 0.14) : Colors.black.withValues(alpha: 0.09)),
+              width: 0.8,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.03),
+                blurRadius: 6,
+                offset: const Offset(0, 1.5),
               ),
-              decoration: BoxDecoration(
-                color: _selectedStateFilter != null
-                    ? (filterColor?.withValues(alpha: isDark ? 0.16 : 0.10) ??
-                        (isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)))
-                    : (isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
-                borderRadius: BorderRadius.circular(rs.scale(16)),
-                border: Border.all(
-                  color: _selectedStateFilter != null
-                      ? (filterColor?.withValues(alpha: 0.45) ??
-                          (isDark ? Colors.white.withValues(alpha: 0.14) : Colors.black.withValues(alpha: 0.09)))
-                      : (isDark ? Colors.white.withValues(alpha: 0.14) : Colors.black.withValues(alpha: 0.09)),
-                  width: 0.8,
-                ),
-              ),
-              child: Row(
+            ],
+          ),
+          child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (_selectedStateFilter != null && filterColor != null) ...[
@@ -720,8 +723,6 @@ class _CalendarScreenState extends State<CalendarScreen>
               ),
             ),
           ),
-        ),
-      ),
     );
   }
 
@@ -825,28 +826,31 @@ class _CalendarScreenState extends State<CalendarScreen>
             );
           }).toList();
         },
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(rs.scale(16)),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: rs.width(10),
-                vertical: rs.height(6),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: rs.width(10),
+            vertical: rs.height(6),
+          ),
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0xFF1A1A22)
+                : const Color(0xFFF2F2F6),
+            borderRadius: BorderRadius.circular(rs.scale(16)),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.14)
+                  : Colors.black.withValues(alpha: 0.09),
+              width: 0.8,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.03),
+                blurRadius: 6,
+                offset: const Offset(0, 1.5),
               ),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.06)
-                    : Colors.black.withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(rs.scale(16)),
-                border: Border.all(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.14)
-                      : Colors.black.withValues(alpha: 0.09),
-                  width: 0.8,
-                ),
-              ),
-              child: Row(
+            ],
+          ),
+          child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
@@ -874,8 +878,6 @@ class _CalendarScreenState extends State<CalendarScreen>
               ),
             ),
           ),
-        ),
-      ),
     );
   }
 
@@ -1036,31 +1038,34 @@ class _CalendarScreenState extends State<CalendarScreen>
           onTap: () {
             _setGranularityWithAnimation(TimelineGranularity.month, targetMonth: monthDate);
           },
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(rs.scale(20)),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-              child: Container(
-                padding: EdgeInsets.all(rs.scale(14)),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? (isDark
-                          ? Colors.white.withValues(alpha: 0.14)
-                          : Colors.black.withValues(alpha: 0.08))
-                      : (isDark
-                          ? const Color(0xFF0F0F14).withValues(alpha: 0.45)
-                          : Colors.white.withValues(alpha: 0.58)),
-                  borderRadius: BorderRadius.circular(rs.scale(20)),
-                  border: Border.all(
-                    color: isSelected
-                        ? (isDark ? Colors.white : Colors.black)
-                        : (isDark
-                            ? Colors.white.withValues(alpha: 0.14)
-                            : Colors.black.withValues(alpha: 0.08)),
-                    width: isSelected ? 1.4 : 1.0,
-                  ),
+          child: Container(
+            padding: EdgeInsets.all(rs.scale(14)),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? (isDark
+                      ? const Color(0xFF22222E)
+                      : const Color(0xFFEBEBF2))
+                  : (isDark
+                      ? const Color(0xFF14141A)
+                      : Colors.white),
+              borderRadius: BorderRadius.circular(rs.scale(20)),
+              border: Border.all(
+                color: isSelected
+                    ? (isDark ? Colors.white : Colors.black)
+                    : (isDark
+                        ? Colors.white.withValues(alpha: 0.14)
+                        : Colors.black.withValues(alpha: 0.08)),
+                width: isSelected ? 1.4 : 1.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-                child: Column(
+              ],
+            ),
+            child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Row(
@@ -1125,11 +1130,9 @@ class _CalendarScreenState extends State<CalendarScreen>
                   ],
                 ),
               ),
-            ),
-          ),
+            );
+          },
         );
-      },
-    );
   }
 
   // ==========================================
@@ -1781,25 +1784,28 @@ class _CalendarScreenState extends State<CalendarScreen>
       initialPage: initialPageIndex < 0 ? 0 : initialPageIndex,
     );
 
-    return ClipRRect(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(rs.scale(28))),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Container(
-          height: MediaQuery.of(context).size.height * 0.88,
-          decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF0C0C12).withValues(alpha: 0.68)
-                : Colors.white.withValues(alpha: 0.76),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(rs.scale(28))),
-            border: Border.all(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.16)
-                  : Colors.black.withValues(alpha: 0.10),
-              width: 1.0,
-            ),
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.88,
+      decoration: BoxDecoration(
+        color: isDark
+            ? const Color(0xFF121218)
+            : Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(rs.scale(28))),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.16)
+              : Colors.black.withValues(alpha: 0.10),
+          width: 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, -6),
           ),
-          child: Column(
+        ],
+      ),
+      child: Column(
             children: [
               SizedBox(height: rs.height(10)),
               Container(
@@ -2074,8 +2080,6 @@ class _CalendarScreenState extends State<CalendarScreen>
               ),
             ],
           ),
-        ),
-      ),
     );
   }
 
@@ -2141,26 +2145,29 @@ class _CalendarScreenState extends State<CalendarScreen>
     final room = timeSlot != null ? subject.getEffectiveRoom(timeSlot) : null;
     final timeStr = timeSlot != null ? timeSlot.formatTimeRange(timeFormatProvider.timeFormat) : '';
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(rs.scale(16)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          margin: EdgeInsets.only(bottom: rs.height(8)),
-          padding: EdgeInsets.symmetric(horizontal: rs.width(14), vertical: rs.height(10)),
-          decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF14141A).withValues(alpha: 0.45)
-                : Colors.white.withValues(alpha: 0.65),
-            borderRadius: BorderRadius.circular(rs.scale(16)),
-            border: Border.all(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.14)
-                  : Colors.black.withValues(alpha: 0.08),
-              width: 0.9,
-            ),
+    return Container(
+      margin: EdgeInsets.only(bottom: rs.height(8)),
+      padding: EdgeInsets.symmetric(horizontal: rs.width(14), vertical: rs.height(10)),
+      decoration: BoxDecoration(
+        color: isDark
+            ? const Color(0xFF181820)
+            : const Color(0xFFF8F8FC),
+        borderRadius: BorderRadius.circular(rs.scale(16)),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.12)
+              : Colors.black.withValues(alpha: 0.07),
+          width: 0.9,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
-          child: Row(
+        ],
+      ),
+      child: Row(
             children: [
               Container(
                 width: rs.scale(36),
@@ -2267,8 +2274,6 @@ class _CalendarScreenState extends State<CalendarScreen>
                 }),
             ],
           ),
-        ),
-      ),
     );
   }
 
