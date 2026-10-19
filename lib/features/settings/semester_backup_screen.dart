@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -542,28 +541,29 @@ class _SemesterBackupScreenState extends State<SemesterBackupScreen> {
     EdgeInsetsGeometry? padding,
     Color? borderColor,
   }) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            color: isDarkMode
-                ? const Color(0xFF0F0F16).withValues(alpha: 0.60)
-                : Colors.white.withValues(alpha: 0.72),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: borderColor ??
-                  (isDarkMode
-                      ? Colors.white.withValues(alpha: 0.14)
-                      : Colors.black.withValues(alpha: 0.08)),
-              width: 1.0,
-            ),
-          ),
-          child: child,
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: isDarkMode
+            ? const Color(0xFF14141A)
+            : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: borderColor ??
+              (isDarkMode
+                  ? Colors.white.withValues(alpha: 0.14)
+                  : Colors.black.withValues(alpha: 0.08)),
+          width: 1.0,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDarkMode ? 0.25 : 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
+      child: child,
     );
   }
 
