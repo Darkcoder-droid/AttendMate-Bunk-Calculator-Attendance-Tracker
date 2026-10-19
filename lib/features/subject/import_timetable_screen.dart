@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -89,7 +90,7 @@ class _ImportTimetableScreenState extends State<ImportTimetableScreen> {
     super.dispose();
   }
 
-  void _parseAndValidateInput() {
+  Future<void> _parseAndValidateInput() async {
     final inputText = _inputTextController.text.trim();
     
     if (inputText.isEmpty) {
@@ -115,7 +116,9 @@ class _ImportTimetableScreenState extends State<ImportTimetableScreen> {
       final subjectProvider = Provider.of<SubjectProvider>(context, listen: false);
       final usedColors = subjectProvider.subjects.map((s) => s.color).toSet();
       
-      final subjects = TimetableImportUtils.parseInputToSubjects(inputText, usedColors);
+      final subjects = await Isolate.run(() => TimetableImportUtils.parseInputToSubjects(inputText, usedColors));
+      if (!mounted) return;
+
       final midSemesterChanges = _isMidSemesterUpdate
           ? _buildMidSemesterChangePreview(subjects)
           : <_MidSemesterChangePreview>[];
@@ -126,6 +129,7 @@ class _ImportTimetableScreenState extends State<ImportTimetableScreen> {
         _errorMessage = null;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
         _importedSubjects = null;
