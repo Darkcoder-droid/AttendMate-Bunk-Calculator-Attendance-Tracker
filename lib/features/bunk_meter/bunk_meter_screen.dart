@@ -1096,7 +1096,7 @@ class _BunkMeterSubjectCardState extends State<_BunkMeterSubjectCard>
   Widget build(BuildContext context) {
     final rs = context.rs;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDarkMode ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.55);
+    final cardBg = isDarkMode ? const Color(0xFF141418) : Colors.white;
     final cardBorder = isDarkMode ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08);
     final recessedBg = isDarkMode ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03);
     final innerBorder = isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06);
@@ -1119,19 +1119,22 @@ class _BunkMeterSubjectCardState extends State<_BunkMeterSubjectCard>
 
     return Padding(
       padding: EdgeInsets.only(bottom: rs.scale(12)),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(rs.scale(24)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(rs.scale(24)),
-              border: Border.all(color: cardBorder, width: 0.8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(rs.scale(24)),
+          border: Border.all(color: cardBorder, width: 0.8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDarkMode ? 0.20 : 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
-            child: Material(
-              color: Colors.transparent,
-              child: Column(
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             InkWell(
@@ -1540,10 +1543,8 @@ class _BunkMeterSubjectCardState extends State<_BunkMeterSubjectCard>
         ),
       ),
     ),
-  ),
-),
-);
-  }
+  );
+}
 }
 
 class _SubjectAttendanceSnapshot {
