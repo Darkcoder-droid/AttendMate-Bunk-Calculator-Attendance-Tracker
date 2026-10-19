@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -762,37 +763,45 @@ class _HomeScreenState extends State<HomeScreen>
         : 0.92;
 
     // Cache the heavy semester content so it is NOT rebuilt on every frame tick of the animation
-    final cachedModalContent = Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF141416) : Colors.white,
-        borderRadius: BorderRadius.circular(rs.scale(28)),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.14)
-              : Colors.black.withValues(alpha: 0.10),
-          width: 0.9,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(
-              alpha: isDark ? 0.45 : 0.14,
+    final cachedModalContent = ClipRRect(
+      borderRadius: BorderRadius.circular(rs.scale(28)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0xFF121218).withValues(alpha: 0.72)
+                : Colors.white.withValues(alpha: 0.78),
+            borderRadius: BorderRadius.circular(rs.scale(28)),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.16)
+                  : Colors.white.withValues(alpha: 0.60),
+              width: 0.9,
             ),
-            blurRadius: 32.0,
-            spreadRadius: 0.0,
-            offset: const Offset(0, 8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(
+                  alpha: isDark ? 0.45 : 0.14,
+                ),
+                blurRadius: 32.0,
+                spreadRadius: 0.0,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Material(
-        color: Colors.transparent,
-        child: Column(
-          children: [
-            _buildSemesterModalHeader(context, isDark),
-            const Expanded(
-              child: SemesterScreen(),
+          clipBehavior: Clip.antiAlias,
+          child: Material(
+            color: Colors.transparent,
+            child: Column(
+              children: [
+                _buildSemesterModalHeader(context, isDark),
+                const Expanded(
+                  child: SemesterScreen(),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
