@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -104,25 +105,22 @@ class _SubjectScreenState extends State<SubjectScreen> {
             horizontal: rs.width(14),
             vertical: rs.height(4),
           ),
-          child: Container(
-            decoration: BoxDecoration(
-              color: isDarkMode
-                  ? const Color(0xFF14141A)
-                  : Colors.white,
-              borderRadius: BorderRadius.circular(rs.scale(28)),
-              border: Border.all(
-                color: isDarkMode ? Colors.white.withValues(alpha: 0.14) : Colors.black.withValues(alpha: 0.08),
-                width: 0.9,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDarkMode ? 0.20 : 0.03),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(rs.scale(28)),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDarkMode
+                      ? Colors.white.withValues(alpha: 0.06)
+                      : Colors.white.withValues(alpha: 0.60),
+                  borderRadius: BorderRadius.circular(rs.scale(28)),
+                  border: Border.all(
+                    color: isDarkMode ? Colors.white.withValues(alpha: 0.14) : Colors.black.withValues(alpha: 0.08),
+                    width: 0.9,
+                  ),
                 ),
-              ],
-            ),
-            child: TextField(
+                child: TextField(
                   style: GoogleFonts.inter(
                     fontSize: rs.font(13.5),
                     color: isDarkMode ? Colors.white : Colors.black87,
@@ -171,6 +169,8 @@ class _SubjectScreenState extends State<SubjectScreen> {
                 ),
               ),
             ),
+          ),
+        ),
 
         // List of Subjects
         Expanded(
@@ -363,11 +363,15 @@ class _SubjectScreenState extends State<SubjectScreen> {
     return Container(
       padding: EdgeInsets.all(rs.scale(24)),
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF131316) : Colors.white,
+        color: isDarkMode
+            ? const Color(0xFF14141C).withValues(alpha: 0.65)
+            : Colors.white.withValues(alpha: 0.75),
         borderRadius: BorderRadius.circular(rs.scale(20)),
         border: Border.all(
-          color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
-          width: 0.8,
+          color: isDarkMode
+              ? Colors.white.withValues(alpha: 0.14)
+              : Colors.white.withValues(alpha: 0.60),
+          width: 0.9,
         ),
       ),
       child: Column(
@@ -458,11 +462,15 @@ class _SubjectScreenState extends State<SubjectScreen> {
     return Container(
       padding: EdgeInsets.all(rs.scale(16)),
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF131316) : Colors.white,
+        color: isDarkMode
+            ? const Color(0xFF14141C).withValues(alpha: 0.65)
+            : Colors.white.withValues(alpha: 0.75),
         borderRadius: BorderRadius.circular(rs.scale(18)),
         border: Border.all(
-          color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
-          width: 0.8,
+          color: isDarkMode
+              ? Colors.white.withValues(alpha: 0.14)
+              : Colors.white.withValues(alpha: 0.60),
+          width: 0.9,
         ),
       ),
       child: Column(
@@ -642,17 +650,21 @@ class _SubjectCardItemState extends State<_SubjectCardItem>
       padding: EdgeInsets.only(bottom: rs.height(10)),
       child: Container(
         decoration: BoxDecoration(
-          color: isDarkMode ? const Color(0xFF141418) : Colors.white,
+          color: isDarkMode
+              ? const Color(0xFF14141C).withValues(alpha: 0.65)
+              : Colors.white.withValues(alpha: 0.75),
           borderRadius: BorderRadius.circular(rs.scale(18)),
           border: Border.all(
-            color: isDarkMode ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.07),
-            width: 0.8,
+            color: isDarkMode
+                ? Colors.white.withValues(alpha: 0.14)
+                : Colors.white.withValues(alpha: 0.60),
+            width: 0.9,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDarkMode ? 0.20 : 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: Colors.black.withValues(alpha: isDarkMode ? 0.22 : 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),

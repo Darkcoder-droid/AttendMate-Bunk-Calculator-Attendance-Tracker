@@ -1312,8 +1312,12 @@ class _AddSubjectScreenState extends State<AddSubjectScreen> {
 
   Widget _buildColorRow(ColorScheme colorScheme, bool isDark) {
     final usedColorValues = _getUsedColorValuesForCurrentMode();
-    final cardBg = isDark ? const Color(0xFF131316) : const Color(0xFFF6F6F8);
-    final cardBorder = isDark ? const Color(0xFF222227) : const Color(0xFFE5E5EB);
+    final cardBg = isDark
+        ? const Color(0xFF14141C).withValues(alpha: 0.65)
+        : Colors.white.withValues(alpha: 0.75);
+    final cardBorder = isDark
+        ? Colors.white.withValues(alpha: 0.14)
+        : Colors.white.withValues(alpha: 0.60);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1405,8 +1409,12 @@ class _AddSubjectScreenState extends State<AddSubjectScreen> {
   }
 
   Widget _buildSpecialClassSection(ColorScheme colorScheme, bool isDark) {
-    final cardBg = isDark ? const Color(0xFF131316) : const Color(0xFFF6F6F8);
-    final cardBorder = isDark ? const Color(0xFF222227) : const Color(0xFFE5E5EB);
+    final cardBg = isDark
+        ? const Color(0xFF14141C).withValues(alpha: 0.65)
+        : Colors.white.withValues(alpha: 0.75);
+    final cardBorder = isDark
+        ? Colors.white.withValues(alpha: 0.14)
+        : Colors.white.withValues(alpha: 0.60);
 
     return Container(
       decoration: BoxDecoration(
@@ -1562,8 +1570,12 @@ class _AddSubjectScreenState extends State<AddSubjectScreen> {
   }
 
   Widget _buildScheduleSection(ColorScheme colorScheme, dynamic timeFormat, bool isDark) {
-    final cardBg = isDark ? const Color(0xFF131316) : const Color(0xFFF6F6F8);
-    final cardBorder = isDark ? const Color(0xFF222227) : const Color(0xFFE5E5EB);
+    final cardBg = isDark
+        ? const Color(0xFF14141C).withValues(alpha: 0.65)
+        : Colors.white.withValues(alpha: 0.75);
+    final cardBorder = isDark
+        ? Colors.white.withValues(alpha: 0.14)
+        : Colors.white.withValues(alpha: 0.60);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1649,8 +1661,12 @@ class _AddSubjectScreenState extends State<AddSubjectScreen> {
 
   Widget _buildSlotCard(TimeSlot slot, int index, ColorScheme colorScheme,
       dynamic timeFormat, bool isDark) {
-    final cardBg = isDark ? const Color(0xFF131316) : const Color(0xFFF6F6F8);
-    final cardBorder = isDark ? const Color(0xFF222227) : const Color(0xFFE5E5EB);
+    final cardBg = isDark
+        ? const Color(0xFF14141C).withValues(alpha: 0.65)
+        : Colors.white.withValues(alpha: 0.75);
+    final cardBorder = isDark
+        ? Colors.white.withValues(alpha: 0.14)
+        : Colors.white.withValues(alpha: 0.60);
 
     return Dismissible(
       key: ValueKey('${slot.day.index}-${slot.startTime.hour}-${slot.startTime.minute}-$index'),
