@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -368,17 +369,21 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
     return TutorialOverlay(
       child: KeyedSubtree(
         key: _bunkCalculatorCardKey,
-        child: Container(
-          decoration: BoxDecoration(
-            color: isDarkMode
-                ? const Color(0xFF101016)
-                : Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(rs.scale(28))),
+        child: ClipRRect(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(rs.scale(28))),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDarkMode
+                    ? const Color(0xFF121218).withValues(alpha: 0.72)
+                    : Colors.white.withValues(alpha: 0.78),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(rs.scale(28))),
                 border: Border(
                   top: BorderSide(
                     color: isDarkMode
                         ? Colors.white.withValues(alpha: 0.16)
-                        : Colors.black.withValues(alpha: 0.08),
+                        : Colors.white.withValues(alpha: 0.60),
                     width: 1.0,
                   ),
                 ),
@@ -1220,6 +1225,8 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
                 ),
               ),
             ),
+          ),
+        ),
       ),
     );
   }
