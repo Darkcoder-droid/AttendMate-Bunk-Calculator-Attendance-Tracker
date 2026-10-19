@@ -740,105 +740,106 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildAnimatedSemesterOverlay(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _semesterAnimController,
-      builder: (context, _) {
-        final progress = _expandAnimation.value;
-        if (progress <= 0.0001 && !_isSemesterDetailsOpen) {
-          return const SizedBox.shrink();
-        }
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final rs = context.rs;
+    final mediaQuery = MediaQuery.of(context);
+    final screenHeight = mediaQuery.size.height;
+    final topPadding = mediaQuery.padding.top;
+    final bottomPadding = mediaQuery.padding.bottom;
 
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final rs = context.rs;
-        final mediaQuery = MediaQuery.of(context);
-        final screenHeight = mediaQuery.size.height;
-        final topPadding = mediaQuery.padding.top;
-        final bottomPadding = mediaQuery.padding.bottom;
+    final containerTop = math.max(topPadding, 14.0) + 4.0;
+    final containerBottom = math.max(bottomPadding, AttendMateDock.minBottomPadding) + 4.0;
+    final containerHorizontal = rs.scale(8);
 
-        final containerTop = math.max(topPadding, 14.0) + 4.0;
-        final containerBottom = math.max(bottomPadding, AttendMateDock.minBottomPadding) + 4.0;
-        final containerHorizontal = rs.scale(8);
+    final cardHeight = screenHeight - containerTop - containerBottom;
+    final localYAlign = cardHeight > 0
+        ? (1.0 - (56.0 / cardHeight)).clamp(-1.0, 1.0)
+        : 0.92;
 
-        final cardHeight = screenHeight - containerTop - containerBottom;
-        // The dock center button is at distance: math.max(bottomPadding, minBottomPadding) + 32.0 from bottom of screen.
-        // The bottom of the card is at: containerBottom = math.max(bottomPadding, minBottomPadding) + 4.0 from bottom of screen.
-        // Therefore, the center button is located (32.0 - 4.0) = 28.0 pixels above the bottom edge of the card.
-        // In local card coordinates from top: Y = cardHeight - 28.0.
-        // In Flutter Alignment [-1, 1]: (Y / cardHeight) * 2.0 - 1.0 = 1.0 - (56.0 / cardHeight).
-        final localYAlign = cardHeight > 0
-            ? (1.0 - (56.0 / cardHeight)).clamp(-1.0, 1.0)
-            : 0.92;
-
-        return Stack(
+    // Cache the heavy semester content so it is NOT rebuilt on every frame tick of the animation
+    final cachedModalContent = Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF141416) : Colors.white,
+        borderRadius: BorderRadius.circular(rs.scale(28)),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.14)
+              : Colors.black.withValues(alpha: 0.10),
+          width: 0.9,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: isDark ? 0.45 : 0.14,
+            ),
+            blurRadius: 32.0,
+            spreadRadius: 0.0,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: Column(
           children: [
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: _closeSemesterDetails,
-                child: Container(
-                  color: Colors.black.withValues(
-                    alpha: (0.45 * progress).clamp(0.0, 0.45),
+            _buildSemesterModalHeader(context, isDark),
+            const Expanded(
+              child: SemesterScreen(),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _semesterAnimController,
+        child: cachedModalContent,
+        builder: (context, child) {
+          final progress = _expandAnimation.value;
+          if (progress <= 0.0001 && !_isSemesterDetailsOpen) {
+            return const SizedBox.shrink();
+          }
+
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _closeSemesterDetails,
+                  child: Container(
+                    color: Colors.black.withValues(
+                      alpha: (0.45 * progress).clamp(0.0, 0.45),
+                    ),
                   ),
                 ),
               ),
-            ),
-            Positioned.fill(
-              child: IgnorePointer(
-                ignoring: progress < 0.08,
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    top: containerTop,
-                    left: containerHorizontal,
-                    right: containerHorizontal,
-                    bottom: containerBottom,
-                  ),
-                  child: Transform.scale(
-                    scale: progress.clamp(0.0, 1.0),
-                    alignment: Alignment(0.0, localYAlign),
-                    child: Opacity(
-                      opacity: _fadeAnimation.value.clamp(0.0, 1.0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF141416) : Colors.white,
-                          borderRadius: BorderRadius.circular(rs.scale(28)),
-                          border: Border.all(
-                            color: isDark
-                                ? Colors.white.withValues(alpha: 0.14)
-                                : Colors.black.withValues(alpha: 0.10),
-                            width: 0.9,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(
-                                alpha: isDark ? 0.45 : 0.14,
-                              ),
-                              blurRadius: 32.0,
-                              spreadRadius: 0.0,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Material(
-                          color: Colors.transparent,
-                          child: Column(
-                            children: [
-                              _buildSemesterModalHeader(context, isDark),
-                              const Expanded(
-                                child: SemesterScreen(),
-                              ),
-                            ],
-                          ),
-                        ),
+              Positioned.fill(
+                child: IgnorePointer(
+                  ignoring: progress < 0.08,
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      top: containerTop,
+                      left: containerHorizontal,
+                      right: containerHorizontal,
+                      bottom: containerBottom,
+                    ),
+                    child: Transform.scale(
+                      scale: progress.clamp(0.0, 1.0),
+                      alignment: Alignment(0.0, localYAlign),
+                      child: Opacity(
+                        opacity: _fadeAnimation.value.clamp(0.0, 1.0),
+                        child: child,
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 
