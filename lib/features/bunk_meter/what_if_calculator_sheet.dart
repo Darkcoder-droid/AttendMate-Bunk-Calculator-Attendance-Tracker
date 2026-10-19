@@ -518,30 +518,220 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
                         ),
                       ],
                     ),
-                    SizedBox(height: rs.height(16)),
+                    SizedBox(height: rs.height(14)),
 
-                    // Target Subject Label
-                    Text(
-                      'TARGET SUBJECT',
-                      style: GoogleFonts.inter(
-                        fontSize: rs.font(10),
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.8,
-                        color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF636366),
+                    // 1. HERO SIMULATION DISPLAY CONSOLE (The focal projection cockpit)
+                    Container(
+                      padding: rs.insetsAll(16),
+                      decoration: BoxDecoration(
+                        color: isDarkMode
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : Colors.white.withValues(alpha: 0.60),
+                        borderRadius: BorderRadius.circular(rs.scale(22)),
+                        border: Border.all(
+                          color: isDarkMode
+                              ? Colors.white.withValues(alpha: 0.12)
+                              : Colors.black.withValues(alpha: 0.08),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'PROJECTED ATTENDANCE',
+                                    style: GoogleFonts.inter(
+                                      fontSize: rs.font(9.5),
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.8,
+                                      color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF636366),
+                                    ),
+                                  ),
+                                  SizedBox(height: rs.height(3)),
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                                    textBaseline: TextBaseline.alphabetic,
+                                    children: [
+                                      Text(
+                                        '${simulatedRatio.toStringAsFixed(1)}%',
+                                        style: GoogleFonts.inter(
+                                          fontSize: rs.font(28),
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: -0.6,
+                                          color: isDarkMode ? Colors.white : const Color(0xFF1C1C1E),
+                                        ),
+                                      ),
+                                      SizedBox(width: rs.width(8)),
+                                      Container(
+                                        padding: EdgeInsets.symmetric(horizontal: rs.width(7), vertical: rs.height(2.5)),
+                                        decoration: BoxDecoration(
+                                          color: delta.abs() < 0.05
+                                              ? (isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04))
+                                              : (delta > 0
+                                                  ? const Color(0xFF34C759).withValues(alpha: 0.10)
+                                                  : const Color(0xFFFF453A).withValues(alpha: 0.10)),
+                                          borderRadius: BorderRadius.circular(rs.scale(8)),
+                                        ),
+                                        child: Text(
+                                          '${delta > 0 ? '+' : ''}${delta.toStringAsFixed(1)}%',
+                                          style: GoogleFonts.inter(
+                                            fontSize: rs.font(11.5),
+                                            fontWeight: FontWeight.w700,
+                                            color: delta.abs() < 0.05
+                                                ? (isDarkMode ? Colors.white70 : Colors.black54)
+                                                : (delta > 0
+                                                    ? const Color(0xFF34C759)
+                                                    : const Color(0xFFFF453A)),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: rs.width(9), vertical: rs.height(4)),
+                                decoration: BoxDecoration(
+                                  color: isAboveTarget
+                                      ? const Color(0xFF34C759).withValues(alpha: 0.08)
+                                      : const Color(0xFFFF453A).withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(rs.scale(10)),
+                                  border: Border.all(
+                                    color: isAboveTarget
+                                        ? const Color(0xFF34C759).withValues(alpha: 0.18)
+                                        : const Color(0xFFFF453A).withValues(alpha: 0.18),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      isAboveTarget ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+                                      size: rs.scale(12),
+                                      color: isAboveTarget ? const Color(0xFF34C759) : const Color(0xFFFF453A),
+                                    ),
+                                    SizedBox(width: rs.width(5)),
+                                    Text(
+                                      isAboveTarget ? 'ON TARGET' : 'BELOW TARGET',
+                                      style: GoogleFonts.inter(
+                                        color: isAboveTarget ? const Color(0xFF34C759) : const Color(0xFFFF453A),
+                                        fontSize: rs.font(10),
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: rs.height(13)),
+                          // Flat Single Color Progress Bar with Target Needle
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final width = constraints.maxWidth;
+                              final clampedSimPct = (simulatedRatio / 100.0).clamp(0.0, 1.0);
+                              final targetPos = (targetPercentage / 100.0).clamp(0.0, 1.0) * width;
+                              final barHeight = rs.height(8.0);
+
+                              return SizedBox(
+                                height: barHeight,
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  alignment: Alignment.centerLeft,
+                                  children: [
+                                    Container(
+                                      width: width,
+                                      height: barHeight,
+                                      decoration: BoxDecoration(
+                                        color: isDarkMode
+                                            ? Colors.white.withValues(alpha: 0.10)
+                                            : Colors.black.withValues(alpha: 0.08),
+                                        borderRadius: BorderRadius.circular(rs.scale(4)),
+                                      ),
+                                    ),
+                                    Container(
+                                      width: width * clampedSimPct,
+                                      height: barHeight,
+                                      decoration: BoxDecoration(
+                                        color: isDarkMode ? Colors.white : const Color(0xFF1C1C1E),
+                                        borderRadius: BorderRadius.circular(rs.scale(4)),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      left: (targetPos - rs.scale(1.2)).clamp(0.0, width - rs.scale(2.4)),
+                                      top: -rs.scale(2.5),
+                                      bottom: -rs.scale(2.5),
+                                      child: Container(
+                                        width: rs.scale(2.4),
+                                        decoration: BoxDecoration(
+                                          color: isDarkMode ? Colors.white : Colors.black,
+                                          borderRadius: BorderRadius.circular(rs.scale(1.2)),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                          SizedBox(height: rs.height(11)),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Simulated: $simulatedAttended / $simulatedHeld',
+                                style: GoogleFonts.inter(
+                                  fontSize: rs.font(11),
+                                  fontWeight: FontWeight.w600,
+                                  color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF636366),
+                                ),
+                              ),
+                              Text(
+                                'Current: ${currentRatio.toStringAsFixed(1)}%',
+                                style: GoogleFonts.inter(
+                                  fontSize: rs.font(11),
+                                  fontWeight: FontWeight.w600,
+                                  color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF636366),
+                                ),
+                              ),
+                              Text(
+                                'Target: ${targetPercentage.toStringAsFixed(0)}%',
+                                style: GoogleFonts.inter(
+                                  fontSize: rs.font(11),
+                                  fontWeight: FontWeight.w700,
+                                  color: isDarkMode ? Colors.white70 : Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                    SizedBox(height: rs.height(6)),
-                    // Subject Dropdown + MAX Pill Button
+
+                    SizedBox(height: rs.height(12)),
+
+                    // 2. CONTEXT SELECTORS (Subject & Horizon Controls)
                     Row(
                       children: [
+                        // Subject Selector Capsule
                         Expanded(
                           child: Container(
+                            height: rs.height(46),
                             padding: rs.insetsSymmetric(horizontal: 12),
                             decoration: BoxDecoration(
                               color: isDarkMode
                                   ? Colors.white.withValues(alpha: 0.05)
                                   : Colors.black.withValues(alpha: 0.03),
-                              borderRadius: BorderRadius.circular(rs.scale(14)),
+                              borderRadius: BorderRadius.circular(rs.scale(16)),
                               border: Border.all(
                                 color: isDarkMode
                                     ? Colors.white.withValues(alpha: 0.12)
@@ -556,7 +746,7 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
                                 icon: Icon(
                                   Icons.keyboard_arrow_down_rounded,
                                   color: isDarkMode ? Colors.white70 : Colors.black87,
-                                  size: rs.scale(20),
+                                  size: rs.scale(18),
                                 ),
                                 dropdownColor: isDarkMode ? const Color(0xFF16161E) : Colors.white,
                                 borderRadius: BorderRadius.circular(rs.scale(16)),
@@ -564,9 +754,9 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
                                   DropdownMenuItem(
                                     value: 'all',
                                     child: Text(
-                                      'Semester Average',
+                                      'All Subjects',
                                       style: GoogleFonts.inter(
-                                        fontSize: rs.font(13.5),
+                                        fontSize: rs.font(12.5),
                                         fontWeight: FontWeight.w600,
                                         color: isDarkMode ? Colors.white : const Color(0xFF1C1C1E),
                                       ),
@@ -578,25 +768,19 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
                                       child: Row(
                                         children: [
                                           Container(
-                                            width: 9,
-                                            height: 9,
+                                            width: 8,
+                                            height: 8,
                                             decoration: BoxDecoration(
                                               color: s.color,
                                               shape: BoxShape.circle,
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: s.color.withValues(alpha: 0.4),
-                                                  blurRadius: 4,
-                                                ),
-                                              ],
                                             ),
                                           ),
-                                          SizedBox(width: rs.width(8)),
+                                          SizedBox(width: rs.width(6)),
                                           Expanded(
                                             child: Text(
                                               s.acronym ?? s.name,
                                               style: GoogleFonts.inter(
-                                                fontSize: rs.font(13.5),
+                                                fontSize: rs.font(12.5),
                                                 fontWeight: FontWeight.w600,
                                                 color: isDarkMode ? Colors.white : const Color(0xFF1C1C1E),
                                               ),
@@ -623,74 +807,7 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
                           ),
                         ),
                         SizedBox(width: rs.width(8)),
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(rs.scale(14)),
-                            onTap: () => _applyMaxTargetSimulation(mustAttend, canBunk),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: rs.insetsSymmetric(horizontal: 14, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: _isMaxActive
-                                    ? const Color(0xFFFF9F0A).withValues(alpha: 0.16)
-                                    : (isDarkMode
-                                        ? Colors.white.withValues(alpha: 0.06)
-                                        : Colors.black.withValues(alpha: 0.04)),
-                                borderRadius: BorderRadius.circular(rs.scale(14)),
-                                border: Border.all(
-                                  color: _isMaxActive
-                                      ? const Color(0xFFFF9F0A).withValues(alpha: 0.5)
-                                      : (isDarkMode
-                                          ? Colors.white.withValues(alpha: 0.12)
-                                          : Colors.black.withValues(alpha: 0.08)),
-                                  width: 0.8,
-                                ),
-                                boxShadow: _isMaxActive
-                                    ? [
-                                        BoxShadow(
-                                          color: const Color(0xFFFF9F0A).withValues(alpha: 0.25),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ]
-                                    : null,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.bolt_rounded,
-                                    size: rs.scale(17),
-                                    color: _isMaxActive
-                                        ? const Color(0xFFFF9F0A)
-                                        : (isDarkMode ? Colors.white : const Color(0xFF1C1C1E)),
-                                  ),
-                                  SizedBox(width: rs.width(4)),
-                                  Text(
-                                    'MAX',
-                                    style: GoogleFonts.inter(
-                                      fontSize: rs.font(12),
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 0.6,
-                                      color: _isMaxActive
-                                          ? const Color(0xFFFF9F0A)
-                                          : (isDarkMode ? Colors.white : const Color(0xFF1C1C1E)),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: rs.height(10)),
-
-                    // Target Date Horizon & Consider Planned Leave Controls
-                    Row(
-                      children: [
+                        // Horizon End Date Picker Capsule
                         Expanded(
                           child: InkWell(
                             onTap: () async {
@@ -712,14 +829,15 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
                                 });
                               }
                             },
-                            borderRadius: BorderRadius.circular(rs.scale(12)),
+                            borderRadius: BorderRadius.circular(rs.scale(16)),
                             child: Container(
-                              padding: rs.insetsSymmetric(horizontal: 12, vertical: 9),
+                              height: rs.height(46),
+                              padding: rs.insetsSymmetric(horizontal: 10),
                               decoration: BoxDecoration(
                                 color: isDarkMode
                                     ? Colors.white.withValues(alpha: 0.05)
                                     : Colors.black.withValues(alpha: 0.03),
-                                borderRadius: BorderRadius.circular(rs.scale(12)),
+                                borderRadius: BorderRadius.circular(rs.scale(16)),
                                 border: Border.all(
                                   color: isDarkMode
                                       ? Colors.white.withValues(alpha: 0.12)
@@ -731,37 +849,22 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
                                 children: [
                                   Icon(
                                     Icons.calendar_today_rounded,
-                                    size: rs.scale(14),
+                                    size: rs.scale(13),
                                     color: theme.colorScheme.primary,
                                   ),
-                                  SizedBox(width: rs.width(8)),
+                                  SizedBox(width: rs.width(6)),
                                   Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'HORIZON END DATE',
-                                          style: GoogleFonts.inter(
-                                            fontSize: rs.font(9),
-                                            fontWeight: FontWeight.w700,
-                                            letterSpacing: 0.8,
-                                            color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF636366),
-                                          ),
-                                        ),
-                                        SizedBox(height: rs.height(1)),
-                                        Text(
-                                          _selectedTargetDate == null ||
-                                                  _isSameDay(_selectedTargetDate!, widget.semester.endDate)
-                                              ? 'End of Semester'
-                                              : DateFormat.yMMMd().format(_selectedTargetDate!),
-                                          style: GoogleFonts.inter(
-                                            fontSize: rs.font(12.5),
-                                            fontWeight: FontWeight.w700,
-                                            color: isDarkMode ? Colors.white : const Color(0xFF1C1C1E),
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
+                                    child: Text(
+                                      _selectedTargetDate == null ||
+                                              _isSameDay(_selectedTargetDate!, widget.semester.endDate)
+                                          ? 'Semester End'
+                                          : DateFormat.MMMd().format(_selectedTargetDate!),
+                                      style: GoogleFonts.inter(
+                                        fontSize: rs.font(12.5),
+                                        fontWeight: FontWeight.w600,
+                                        color: isDarkMode ? Colors.white : const Color(0xFF1C1C1E),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   if (_selectedTargetDate != null &&
@@ -776,17 +879,10 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
                                           }
                                         });
                                       },
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: BoxDecoration(
-                                          color: isDarkMode ? Colors.white10 : Colors.black12,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          Icons.close_rounded,
-                                          size: rs.scale(14),
-                                          color: isDarkMode ? Colors.white70 : Colors.black87,
-                                        ),
+                                      child: Icon(
+                                        Icons.close_rounded,
+                                        size: rs.scale(14),
+                                        color: isDarkMode ? Colors.white70 : Colors.black87,
                                       ),
                                     ),
                                 ],
@@ -799,204 +895,283 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
 
                     SizedBox(height: rs.height(8)),
 
-                    // Consider Planned Leave Switch Tile
-                    InkWell(
-                      onTap: () {
-                        setState(() {
-                          _considerPlannedLeave = !_considerPlannedLeave;
-                        });
-                      },
-                      borderRadius: BorderRadius.circular(rs.scale(10)),
-                      child: Padding(
-                        padding: rs.insetsSymmetric(vertical: 4, horizontal: 2),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: rs.scale(20),
-                              height: rs.scale(20),
-                              child: Checkbox(
-                                value: _considerPlannedLeave,
-                                activeColor: theme.colorScheme.primary,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                side: BorderSide(
-                                  color: isDarkMode ? const Color(0xFF48484A) : const Color(0xFFC7C7CC),
-                                  width: 1.2,
-                                ),
-                                onChanged: (val) {
-                                  setState(() {
-                                    _considerPlannedLeave = val ?? false;
-                                  });
-                                },
-                              ),
-                            ),
-                            SizedBox(width: rs.width(8)),
-                            Expanded(
-                              child: Text(
-                                'Consider Planned Leaves in projection',
-                                style: GoogleFonts.inter(
-                                  fontSize: rs.font(12.5),
-                                  fontWeight: FontWeight.w600,
-                                  color: isDarkMode ? const Color(0xFFD1D1D6) : const Color(0xFF3A3A3C),
+                    // Horizon Controls: Planned Leave Toggle & MAX Quick Trigger
+                    Row(
+                      children: [
+                        // Planned Leave Toggle Chip
+                        Expanded(
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _considerPlannedLeave = !_considerPlannedLeave;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(rs.scale(12)),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(horizontal: rs.width(10), vertical: rs.height(7)),
+                              decoration: BoxDecoration(
+                                color: _considerPlannedLeave
+                                    ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                                    : (isDarkMode ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03)),
+                                borderRadius: BorderRadius.circular(rs.scale(12)),
+                                border: Border.all(
+                                  color: _considerPlannedLeave
+                                      ? theme.colorScheme.primary.withValues(alpha: 0.35)
+                                      : Colors.transparent,
+                                  width: 0.8,
                                 ),
                               ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _considerPlannedLeave ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                                    size: rs.scale(16),
+                                    color: _considerPlannedLeave ? theme.colorScheme.primary : (isDarkMode ? Colors.white54 : Colors.black45),
+                                  ),
+                                  SizedBox(width: rs.width(6)),
+                                  Expanded(
+                                    child: Text(
+                                      'Include Planned Leaves',
+                                      style: GoogleFonts.inter(
+                                        fontSize: rs.font(11.5),
+                                        fontWeight: FontWeight.w600,
+                                        color: _considerPlannedLeave
+                                            ? (isDarkMode ? Colors.white : const Color(0xFF1C1C1E))
+                                            : (isDarkMode ? Colors.white60 : Colors.black54),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
+                        SizedBox(width: rs.width(8)),
+                        // MAX Simulation Quick Button
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(rs.scale(12)),
+                            onTap: () => _applyMaxTargetSimulation(mustAttend, canBunk),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: EdgeInsets.symmetric(horizontal: rs.width(12), vertical: rs.height(7)),
+                              decoration: BoxDecoration(
+                                color: _isMaxActive
+                                    ? const Color(0xFFFF9F0A).withValues(alpha: 0.18)
+                                    : (isDarkMode ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03)),
+                                borderRadius: BorderRadius.circular(rs.scale(12)),
+                                border: Border.all(
+                                  color: _isMaxActive
+                                      ? const Color(0xFFFF9F0A).withValues(alpha: 0.5)
+                                      : (isDarkMode ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08)),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.bolt_rounded,
+                                    size: rs.scale(16),
+                                    color: _isMaxActive
+                                        ? const Color(0xFFFF9F0A)
+                                        : (isDarkMode ? Colors.white70 : Colors.black87),
+                                  ),
+                                  SizedBox(width: rs.width(4)),
+                                  Text(
+                                    'MAX',
+                                    style: GoogleFonts.inter(
+                                      fontSize: rs.font(11.5),
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.4,
+                                      color: _isMaxActive
+                                          ? const Color(0xFFFF9F0A)
+                                          : (isDarkMode ? Colors.white : const Color(0xFF1C1C1E)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
 
                     SizedBox(height: rs.height(14)),
 
-                    // Target Horizon Breakdown Console
-                    Container(
-                      padding: rs.insetsAll(12),
-                      decoration: BoxDecoration(
-                        color: isDarkMode
-                            ? Colors.white.withValues(alpha: 0.05)
-                            : Colors.black.withValues(alpha: 0.03),
-                        borderRadius: BorderRadius.circular(rs.scale(14)),
-                        border: Border.all(
-                          color: isDarkMode
-                              ? Colors.white.withValues(alpha: 0.12)
-                              : Colors.black.withValues(alpha: 0.08),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  'CONDUCTED: $currentHeld',
-                                  style: GoogleFonts.inter(
-                                    fontSize: rs.font(11),
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.6,
-                                    color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF636366),
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              SizedBox(width: rs.width(8)),
-                              Flexible(
-                                child: Text(
-                                  'REMAINING: $totalRemaining CLASSES',
-                                  style: GoogleFonts.inter(
-                                    fontSize: rs.font(11),
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.6,
-                                    color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF636366),
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.end,
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (_considerPlannedLeave && leaveMissedTotal > 0) ...[
-                            SizedBox(height: rs.height(6)),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFF9F0A).withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: const Color(0xFFFF9F0A).withValues(alpha: 0.25),
-                                  width: 0.8,
-                                ),
-                              ),
-                              child: Text(
-                                'Includes $leaveMissedTotal planned leave class${leaveMissedTotal == 1 ? '' : 'es'} (counted as missed)',
-                                style: GoogleFonts.inter(
-                                  fontSize: rs.font(10.5),
-                                  color: isDarkMode ? const Color(0xFFFF9F0A) : const Color(0xFFD97706),
-                                  fontWeight: FontWeight.w600,
-                                ),
+                    // 3. DECISION CARDS: MUST ATTEND vs CAN BUNK
+                    Row(
+                      children: [
+                        // Must Attend Card
+                        Expanded(
+                          child: Container(
+                            padding: rs.insetsAll(13),
+                            decoration: BoxDecoration(
+                              color: isDarkMode
+                                  ? Colors.white.withValues(alpha: 0.05)
+                                  : Colors.black.withValues(alpha: 0.03),
+                              borderRadius: BorderRadius.circular(rs.scale(18)),
+                              border: Border.all(
+                                color: isDarkMode
+                                    ? Colors.white.withValues(alpha: 0.10)
+                                    : Colors.black.withValues(alpha: 0.08),
+                                width: 0.8,
                               ),
                             ),
-                          ],
-                          SizedBox(height: rs.height(8)),
-                          Divider(
-                            height: 1,
-                            thickness: 0.8,
-                            color: isDarkMode
-                                ? Colors.white.withValues(alpha: 0.08)
-                                : Colors.black.withValues(alpha: 0.06),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.task_alt_rounded,
+                                      size: rs.scale(14),
+                                      color: const Color(0xFF34C759),
+                                    ),
+                                    SizedBox(width: rs.width(5)),
+                                    Text(
+                                      'MUST ATTEND',
+                                      style: GoogleFonts.inter(
+                                        fontSize: rs.font(10),
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.4,
+                                        color: const Color(0xFF34C759),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: rs.height(4)),
+                                Text(
+                                  '$mustAttend',
+                                  style: GoogleFonts.inter(
+                                    fontSize: rs.font(24),
+                                    fontWeight: FontWeight.w900,
+                                    color: isDarkMode ? Colors.white : const Color(0xFF1C1C1E),
+                                  ),
+                                ),
+                                SizedBox(height: rs.height(2)),
+                                Text(
+                                  'to maintain ${targetPercentage.toStringAsFixed(0)}%',
+                                  style: GoogleFonts.inter(
+                                    fontSize: rs.font(10.5),
+                                    color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF636366),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          SizedBox(height: rs.height(8)),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 7,
-                                    height: 7,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF34C759),
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: const Color(0xFF34C759).withValues(alpha: 0.5),
-                                          blurRadius: 4,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  SizedBox(width: rs.width(6)),
-                                  Text(
-                                    'MUST ATTEND: $mustAttend',
-                                    style: GoogleFonts.inter(
-                                      fontSize: rs.font(11.5),
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 0.4,
-                                      color: const Color(0xFF34C759),
-                                    ),
-                                  ),
-                                ],
+                        ),
+                        SizedBox(width: rs.width(10)),
+                        // Can Bunk Card
+                        Expanded(
+                          child: Container(
+                            padding: rs.insetsAll(13),
+                            decoration: BoxDecoration(
+                              color: isDarkMode
+                                  ? Colors.white.withValues(alpha: 0.05)
+                                  : Colors.black.withValues(alpha: 0.03),
+                              borderRadius: BorderRadius.circular(rs.scale(18)),
+                              border: Border.all(
+                                color: isDarkMode
+                                    ? Colors.white.withValues(alpha: 0.10)
+                                    : Colors.black.withValues(alpha: 0.08),
+                                width: 0.8,
                               ),
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 7,
-                                    height: 7,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFFF9F0A),
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: const Color(0xFFFF9F0A).withValues(alpha: 0.5),
-                                          blurRadius: 4,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  SizedBox(width: rs.width(6)),
-                                  Text(
-                                    'CAN BUNK: $canBunk',
-                                    style: GoogleFonts.inter(
-                                      fontSize: rs.font(11.5),
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 0.4,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.beach_access_rounded,
+                                      size: rs.scale(14),
                                       color: const Color(0xFFFF9F0A),
                                     ),
+                                    SizedBox(width: rs.width(5)),
+                                    Text(
+                                      'CAN BUNK',
+                                      style: GoogleFonts.inter(
+                                        fontSize: rs.font(10),
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.4,
+                                        color: const Color(0xFFFF9F0A),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: rs.height(4)),
+                                Text(
+                                  '$canBunk',
+                                  style: GoogleFonts.inter(
+                                    fontSize: rs.font(24),
+                                    fontWeight: FontWeight.w900,
+                                    color: isDarkMode ? Colors.white : const Color(0xFF1C1C1E),
                                   ),
-                                ],
-                              ),
-                            ],
+                                ),
+                                SizedBox(height: rs.height(2)),
+                                Text(
+                                  'safe absences left',
+                                  style: GoogleFonts.inter(
+                                    fontSize: rs.font(10.5),
+                                    color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF636366),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: rs.height(8)),
+
+                    // Subtle telemetry context text
+                    Padding(
+                      padding: rs.insetsSymmetric(horizontal: 4),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Conducted: $currentHeld classes',
+                            style: GoogleFonts.inter(
+                              fontSize: rs.font(11),
+                              fontWeight: FontWeight.w500,
+                              color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF636366),
+                            ),
+                          ),
+                          Text(
+                            'Remaining: $totalRemaining classes',
+                            style: GoogleFonts.inter(
+                              fontSize: rs.font(11),
+                              fontWeight: FontWeight.w600,
+                              color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF636366),
+                            ),
                           ),
                         ],
                       ),
                     ),
+                    if (_considerPlannedLeave && leaveMissedTotal > 0)
+                      Padding(
+                        padding: EdgeInsets.only(top: rs.height(4), left: rs.width(4)),
+                        child: Text(
+                          '• Includes $leaveMissedTotal planned leave class${leaveMissedTotal == 1 ? '' : 'es'} (marked missed)',
+                          style: GoogleFonts.inter(
+                            fontSize: rs.font(10.5),
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFFFF9F0A),
+                          ),
+                        ),
+                      ),
 
                     SizedBox(height: rs.height(14)),
 
-                    // Dual Steppers Section
+                    // 4. DUAL TACTILE STEPPERS
                     Row(
                       children: [
                         Expanded(
@@ -1021,7 +1196,7 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
                                 : null,
                           ),
                         ),
-                        SizedBox(width: rs.width(12)),
+                        SizedBox(width: rs.width(10)),
                         Expanded(
                           child: _buildStepperCard(
                             context: context,
@@ -1045,211 +1220,6 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
                           ),
                         ),
                       ],
-                    ),
-
-                    SizedBox(height: rs.height(14)),
-
-                    // Simulated Attendance Console
-                    Container(
-                      padding: rs.insetsAll(14),
-                      decoration: BoxDecoration(
-                        color: isDarkMode
-                            ? Colors.white.withValues(alpha: 0.05)
-                            : Colors.black.withValues(alpha: 0.03),
-                        borderRadius: BorderRadius.circular(rs.scale(18)),
-                        border: Border.all(
-                          color: isDarkMode
-                              ? Colors.white.withValues(alpha: 0.12)
-                              : Colors.black.withValues(alpha: 0.08),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'SIMULATED ATTENDANCE',
-                                    style: GoogleFonts.inter(
-                                      fontSize: rs.font(9.5),
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 0.8,
-                                      color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF636366),
-                                    ),
-                                  ),
-                                  SizedBox(height: rs.height(4)),
-                                  Row(
-                                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                                    textBaseline: TextBaseline.alphabetic,
-                                    children: [
-                                      Text(
-                                        '${simulatedRatio.toStringAsFixed(1)}%',
-                                        style: GoogleFonts.inter(
-                                          fontSize: rs.font(26),
-                                          fontWeight: FontWeight.w900,
-                                          letterSpacing: -0.5,
-                                          color: isDarkMode ? Colors.white : const Color(0xFF1C1C1E),
-                                        ),
-                                      ),
-                                      SizedBox(width: rs.width(8)),
-                                      Text(
-                                        '(${delta >= 0 ? '+' : ''}${delta.toStringAsFixed(1)}%)',
-                                        style: GoogleFonts.inter(
-                                          fontSize: rs.font(13),
-                                          fontWeight: FontWeight.w700,
-                                          color: delta >= 0
-                                              ? const Color(0xFF34C759)
-                                              : const Color(0xFFFF453A),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: isAboveTarget
-                                      ? const Color(0xFF34C759).withValues(alpha: 0.12)
-                                      : const Color(0xFFFF453A).withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(rs.scale(10)),
-                                  border: Border.all(
-                                    color: isAboveTarget
-                                        ? const Color(0xFF34C759).withValues(alpha: 0.3)
-                                        : const Color(0xFFFF453A).withValues(alpha: 0.3),
-                                    width: 0.8,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Container(
-                                      width: 6,
-                                      height: 6,
-                                      decoration: BoxDecoration(
-                                        color: isAboveTarget ? const Color(0xFF34C759) : const Color(0xFFFF453A),
-                                        shape: BoxShape.circle,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: (isAboveTarget ? const Color(0xFF34C759) : const Color(0xFFFF453A)).withValues(alpha: 0.6),
-                                            blurRadius: 4,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    SizedBox(width: rs.width(6)),
-                                    Text(
-                                      isAboveTarget ? 'ON TARGET' : 'BELOW TARGET',
-                                      style: GoogleFonts.inter(
-                                        color: isAboveTarget ? const Color(0xFF34C759) : const Color(0xFFFF453A),
-                                        fontSize: rs.font(10.5),
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 0.6,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: rs.height(14)),
-                          // Battery Bar matching theme
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              final width = constraints.maxWidth;
-                              final clampedSimPct = (simulatedRatio / 100.0).clamp(0.0, 1.0);
-                              final targetPos = (targetPercentage / 100.0).clamp(0.0, 1.0) * width;
-
-                              return Stack(
-                                clipBehavior: Clip.none,
-                                alignment: Alignment.centerLeft,
-                                children: [
-                                  Container(
-                                    width: width,
-                                    height: rs.height(8),
-                                    decoration: BoxDecoration(
-                                      color: isDarkMode
-                                          ? Colors.white.withValues(alpha: 0.08)
-                                          : Colors.black.withValues(alpha: 0.06),
-                                      borderRadius: BorderRadius.circular(rs.scale(4)),
-                                    ),
-                                  ),
-                                  Container(
-                                    width: width * clampedSimPct,
-                                    height: rs.height(8),
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: isAboveTarget
-                                            ? [
-                                                const Color(0xFF34C759),
-                                                const Color(0xFF30D158),
-                                              ]
-                                            : [
-                                                const Color(0xFFFF453A),
-                                                const Color(0xFFFF9F0A),
-                                              ],
-                                      ),
-                                      borderRadius: BorderRadius.circular(rs.scale(4)),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: (isAboveTarget ? const Color(0xFF34C759) : const Color(0xFFFF453A)).withValues(alpha: 0.4),
-                                          blurRadius: 6,
-                                          offset: const Offset(0, 1),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Positioned(
-                                    left: (targetPos - rs.scale(1.5)).clamp(0.0, width - rs.scale(3)),
-                                    top: -rs.scale(3),
-                                    bottom: -rs.scale(3),
-                                    child: Container(
-                                      width: rs.scale(3),
-                                      decoration: BoxDecoration(
-                                        color: isDarkMode ? Colors.white : Colors.black87,
-                                        borderRadius: BorderRadius.circular(rs.scale(1.5)),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.35),
-                                            blurRadius: 3,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                          SizedBox(height: rs.height(12)),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Simulated: $simulatedAttended / $simulatedHeld classes',
-                                style: GoogleFonts.inter(
-                                  fontSize: rs.font(11.5),
-                                  fontWeight: FontWeight.w500,
-                                  color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF636366),
-                                ),
-                              ),
-                              Text(
-                                'Target: ${targetPercentage.toStringAsFixed(0)}%',
-                                style: GoogleFonts.inter(
-                                  fontSize: rs.font(11.5),
-                                  fontWeight: FontWeight.w700,
-                                  color: isDarkMode ? Colors.white70 : Colors.black87,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
                     ),
                   ],
                 ),
@@ -1276,10 +1246,14 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
     return Container(
       padding: rs.insetsAll(14),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: isDarkMode ? 0.08 : 0.05),
-        borderRadius: BorderRadius.circular(rs.scale(16)),
+        color: isDarkMode
+            ? Colors.white.withValues(alpha: 0.05)
+            : Colors.black.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(rs.scale(18)),
         border: Border.all(
-          color: color.withValues(alpha: isDarkMode ? 0.28 : 0.20),
+          color: isDarkMode
+              ? Colors.white.withValues(alpha: 0.10)
+              : Colors.black.withValues(alpha: 0.08),
           width: 0.8,
         ),
       ),
@@ -1288,22 +1262,15 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: rs.scale(12), color: color),
-              ),
-              SizedBox(width: rs.width(6)),
+              Icon(icon, size: rs.scale(13), color: color),
+              SizedBox(width: rs.width(5)),
               Text(
                 title.toUpperCase(),
                 style: GoogleFonts.inter(
                   fontSize: rs.font(10.5),
                   fontWeight: FontWeight.w700,
-                  letterSpacing: 0.6,
-                  color: color,
+                  letterSpacing: 0.5,
+                  color: isDarkMode ? Colors.white70 : Colors.black87,
                 ),
               ),
             ],
@@ -1346,7 +1313,9 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
                 style: GoogleFonts.inter(
                   fontSize: rs.font(24),
                   fontWeight: FontWeight.w800,
-                  color: color,
+                  color: value > 0
+                      ? color
+                      : (isDarkMode ? Colors.white : const Color(0xFF1C1C1E)),
                 ),
               ),
               Material(

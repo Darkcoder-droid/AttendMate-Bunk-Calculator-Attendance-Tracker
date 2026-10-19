@@ -34,7 +34,7 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late DateTime _selectedMonth;
   late DateTime _selectedDate;
   DayState? _selectedStateFilter;
@@ -45,13 +45,15 @@ class _CalendarScreenState extends State<CalendarScreen>
 
   late AnimationController _cameraZoomController;
   late Animation<double> _cameraZoomAnimation;
+  late AnimationController _pinchSpringController;
+  final ValueNotifier<double> _pinchScaleNotifier = ValueNotifier<double>(1.0);
+  double _pinchSpringStartScale = 1.0;
   bool _isZoomingOut = false;
 
-  // Multi-touch pinch tracking for live camera zoom
+  // Multi-touch pinch tracking for smooth zoom with limits
   final Map<int, Offset> _activePointers = {};
   double _pinchStartDistance = 0.0;
-  double _livePinchScale = 1.0;
-  bool _hasTriggeredPinchThisGesture = false;
+  DateTime? _lastStepZoomTime;
 
   final GlobalKey _calendarHeaderKey = GlobalKey();
   final GlobalKey _calendarLegendKey = GlobalKey();
@@ -68,13 +70,22 @@ class _CalendarScreenState extends State<CalendarScreen>
 
     _cameraZoomController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 280),
       value: 1.0,
     );
     _cameraZoomAnimation = CurvedAnimation(
       parent: _cameraZoomController,
       curve: Curves.easeOutCubic,
     );
+
+    _pinchSpringController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+    );
+    _pinchSpringController.addListener(() {
+      final curved = Curves.easeOutCubic.transform(_pinchSpringController.value);
+      _pinchScaleNotifier.value = lerpDouble(_pinchSpringStartScale, 1.0, curved)!;
+    });
 
     _loadPlannedLeaves();
 
@@ -131,6 +142,8 @@ class _CalendarScreenState extends State<CalendarScreen>
     _monthPageController?.dispose();
     _monthWheelController.dispose();
     _cameraZoomController.dispose();
+    _pinchSpringController.dispose();
+    _pinchScaleNotifier.dispose();
     super.dispose();
   }
 
@@ -143,7 +156,7 @@ class _CalendarScreenState extends State<CalendarScreen>
     setState(() {
       _isZoomingOut = zoomingOut;
       _granularity = newGranularity;
-      _livePinchScale = 1.0;
+      _pinchScaleNotifier.value = 1.0;
       if (targetMonth != null) {
         _selectedMonth = DateTime(targetMonth.year, targetMonth.month, 1);
         _selectedDate = DateTime(targetMonth.year, targetMonth.month, 1);
@@ -179,12 +192,21 @@ class _CalendarScreenState extends State<CalendarScreen>
     }
   }
 
+  void _animatePinchScaleToNeutral() {
+    if ((_pinchScaleNotifier.value - 1.0).abs() < 0.002) {
+      _pinchScaleNotifier.value = 1.0;
+      return;
+    }
+    _pinchSpringStartScale = _pinchScaleNotifier.value;
+    _pinchSpringController.forward(from: 0.0);
+  }
+
   void _onPointerDown(PointerDownEvent event) {
     _activePointers[event.pointer] = event.position;
     if (_activePointers.length == 2) {
       final pts = _activePointers.values.toList();
       _pinchStartDistance = (pts[0] - pts[1]).distance;
-      _hasTriggeredPinchThisGesture = false;
+      _pinchSpringController.stop();
     }
   }
 
@@ -198,27 +220,53 @@ class _CalendarScreenState extends State<CalendarScreen>
 
       if (_pinchStartDistance <= 0.0) {
         _pinchStartDistance = currentDist;
-      } else if (_pinchStartDistance > 15.0 && !_hasTriggeredPinchThisGesture) {
-        final scaleRatio = currentDist / _pinchStartDistance;
+        return;
+      }
 
-        // Interactive spring feedback: smoothly scale content under fingers
-        if (mounted) {
-          setState(() {
-            _livePinchScale = scaleRatio.clamp(0.85, 1.20);
-          });
-        }
+      if (_pinchStartDistance < 15.0) return;
 
-        // Pinch Out -> Spreading fingers -> Zoom IN (ONE notch at a time)
-        if (scaleRatio >= 1.16) {
-          _hasTriggeredPinchThisGesture = true;
-          HapticFeedback.mediumImpact();
-          _stepZoomIn();
+      final rawRatio = currentDist / _pinchStartDistance;
+      final now = DateTime.now();
+      final msSinceLastStep = _lastStepZoomTime == null
+          ? 9999
+          : now.difference(_lastStepZoomTime!).inMilliseconds;
+
+      // 1. Zoom In (spreading fingers apart, scale > 1.0)
+      if (rawRatio > 1.0) {
+        if (_granularity == TimelineGranularity.day) {
+          // Limit reached: Cannot zoom in past Day view
+          // Smooth rubber-band damping with a firm visual boundary limit
+          final damped = 1.0 + (rawRatio - 1.0) * 0.12;
+          _pinchScaleNotifier.value = damped.clamp(1.0, 1.07);
+        } else {
+          // Smooth live scaling while pinching
+          _pinchScaleNotifier.value = rawRatio.clamp(0.92, 1.25);
+
+          // Threshold to step to the next granularity
+          if (rawRatio >= 1.16 && msSinceLastStep > 320) {
+            _lastStepZoomTime = now;
+            _pinchStartDistance = currentDist;
+            _stepZoomIn();
+          }
         }
-        // Pinch In -> Bringing fingers together -> Zoom OUT (ONE notch at a time)
-        else if (scaleRatio <= 0.84) {
-          _hasTriggeredPinchThisGesture = true;
-          HapticFeedback.mediumImpact();
-          _stepZoomOut();
+      }
+      // 2. Zoom Out (pinching fingers together, scale < 1.0)
+      else if (rawRatio < 1.0) {
+        if (_granularity == TimelineGranularity.semester) {
+          // Limit reached: Cannot zoom out past Semester view
+          // Smooth rubber-band damping with a firm visual boundary limit
+          final damped = 1.0 - (1.0 - rawRatio) * 0.12;
+          _pinchScaleNotifier.value = damped.clamp(0.93, 1.0);
+        } else {
+          // Smooth live scaling while pinching
+          _pinchScaleNotifier.value = rawRatio.clamp(0.78, 1.08);
+
+          // Threshold to step to the previous granularity
+          if (rawRatio <= 0.84 && msSinceLastStep > 320) {
+            _lastStepZoomTime = now;
+            _pinchStartDistance = currentDist;
+            _stepZoomOut();
+          }
         }
       }
     }
@@ -228,113 +276,11 @@ class _CalendarScreenState extends State<CalendarScreen>
     _activePointers.remove(event.pointer);
     if (_activePointers.length < 2) {
       _pinchStartDistance = 0.0;
-      _hasTriggeredPinchThisGesture = false;
-      if (_livePinchScale != 1.0 && mounted) {
-        setState(() {
-          _livePinchScale = 1.0;
-        });
-      }
+      _animatePinchScaleToNeutral();
     }
   }
 
-  Widget _buildPinchZoomHUD(BuildContext context, ResponsiveScale rs, bool isDark) {
-    String notchLabel;
-    switch (_granularity) {
-      case TimelineGranularity.semester:
-        notchLabel = 'SEMESTER';
-        break;
-      case TimelineGranularity.month:
-        notchLabel = 'MONTHLY';
-        break;
-      case TimelineGranularity.week:
-        notchLabel = 'WEEKLY';
-        break;
-      case TimelineGranularity.day:
-        notchLabel = 'DAILY FOCUS';
-        break;
-    }
 
-    final isPinchingIn = _livePinchScale < 0.98;
-    final isPinchingOut = _livePinchScale > 1.02;
-
-    return Positioned(
-      top: rs.height(130),
-      left: 0,
-      right: 0,
-      child: Center(
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(rs.scale(24)),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: rs.width(18), vertical: rs.height(10)),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF0C0C12).withValues(alpha: 0.75)
-                    : Colors.white.withValues(alpha: 0.82),
-                borderRadius: BorderRadius.circular(rs.scale(24)),
-                border: Border.all(
-                  color: isDark
-                      ? const Color(0xFF38BDF8).withValues(alpha: 0.45)
-                      : const Color(0xFF0284C7).withValues(alpha: 0.45),
-                  width: 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.15),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    isPinchingIn
-                        ? Icons.zoom_out_rounded
-                        : isPinchingOut
-                            ? Icons.zoom_in_rounded
-                            : Icons.camera_alt_outlined,
-                    size: rs.scale(18),
-                    color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
-                  ),
-                  SizedBox(width: rs.width(8)),
-                  Text(
-                    notchLabel,
-                    style: GoogleFonts.robotoMono(
-                      fontSize: rs.font(12.5),
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.8,
-                      color: isDark ? Colors.white : Colors.black,
-                    ),
-                  ),
-                  if (isPinchingIn || isPinchingOut) ...[
-                    SizedBox(width: rs.width(8)),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: rs.width(6), vertical: rs.height(2)),
-                      decoration: BoxDecoration(
-                        color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(rs.scale(6)),
-                      ),
-                      child: Text(
-                        isPinchingIn ? 'Zoom Out' : 'Zoom In',
-                        style: GoogleFonts.inter(
-                          fontSize: rs.font(10),
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white70 : Colors.black87,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -421,57 +367,51 @@ class _CalendarScreenState extends State<CalendarScreen>
             onPointerMove: _onPointerMove,
             onPointerUp: _onPointerUpOrCancel,
             onPointerCancel: _onPointerUpOrCancel,
-            child: Stack(
+            child: Column(
               children: [
-                Column(
-                  children: [
-                    // Camera Zoom Dial & Viewfinder Header
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(rs.width(16), rs.height(2), rs.width(16), rs.height(8)),
-                      child: KeyedSubtree(
-                        key: _calendarHeaderKey,
-                        child: _buildControlsRow(context, startDate, endDate),
-                      ),
-                    ),
-
-
-
-                    // Main Timeline View with Pinch-to-Zoom & 3D Perspective Camera Animation
-                    Expanded(
-                      child: KeyedSubtree(
-                        key: _calendarGridKey,
-                        child: AnimatedBuilder(
-                          animation: _cameraZoomAnimation,
-                          builder: (context, child) {
-                            final t = _cameraZoomAnimation.value;
-                            final animScale = _isZoomingOut
-                                ? lerpDouble(1.08, 1.0, t)!
-                                : lerpDouble(0.92, 1.0, t)!;
-                            final totalScale = animScale * _livePinchScale;
-                            final opacity = lerpDouble(0.4, 1.0, t)!;
-                            return Opacity(
-                              opacity: opacity,
-                              child: Transform.scale(
-                                scale: totalScale,
-                                child: child,
-                              ),
-                            );
-                          },
-                          child: _buildTimelineContent(
-                            monthPages: monthPages,
-                            startDate: startDate,
-                            endDate: endDate,
-                            subjects: subjectProvider.subjects,
-                            attendanceRecords: attendanceProvider.attendanceRecords,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                // Camera Zoom Dial & Viewfinder Header
+                Padding(
+                  padding: EdgeInsets.fromLTRB(rs.width(16), rs.height(2), rs.width(16), rs.height(8)),
+                  child: KeyedSubtree(
+                    key: _calendarHeaderKey,
+                    child: _buildControlsRow(context, startDate, endDate),
+                  ),
                 ),
-                // Floating Camera Optical Zoom Reticle HUD (appears when 2 fingers pinch)
-                if (_activePointers.length >= 2)
-                  _buildPinchZoomHUD(context, rs, isDark),
+
+                // Main Timeline View with Smooth Pinch-to-Zoom & Perspective Camera Animation
+                Expanded(
+                  child: KeyedSubtree(
+                    key: _calendarGridKey,
+                    child: AnimatedBuilder(
+                      animation: Listenable.merge([_cameraZoomAnimation, _pinchScaleNotifier]),
+                      builder: (context, child) {
+                        final t = _cameraZoomAnimation.value;
+                        final isPinching = _activePointers.length >= 2;
+                        final animScale = isPinching
+                            ? 1.0
+                            : (_isZoomingOut
+                                ? lerpDouble(1.06, 1.0, t)!
+                                : lerpDouble(0.94, 1.0, t)!);
+                        final totalScale = animScale * _pinchScaleNotifier.value;
+                        final opacity = lerpDouble(0.55, 1.0, t)!;
+                        return Opacity(
+                          opacity: opacity,
+                          child: Transform.scale(
+                            scale: totalScale,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: _buildTimelineContent(
+                        monthPages: monthPages,
+                        startDate: startDate,
+                        endDate: endDate,
+                        subjects: subjectProvider.subjects,
+                        attendanceRecords: attendanceProvider.attendanceRecords,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

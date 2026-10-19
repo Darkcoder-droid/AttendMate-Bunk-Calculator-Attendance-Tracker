@@ -635,110 +635,249 @@ class _SubjectCardItemState extends State<_SubjectCardItem>
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final subject = widget.subject;
     final sortedSchedule = widget.sortedSchedule;
-    final attendancePct = widget.attendancePct;
     final targetAttendance = subject.targetAttendance;
-    final bool hasAttendanceData = attendancePct != null;
-    final bool isOnTrack = hasAttendanceData && attendancePct >= targetAttendance;
 
 
     return Padding(
-      padding: EdgeInsets.only(bottom: rs.height(8)),
+      padding: EdgeInsets.only(bottom: rs.height(10)),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(rs.scale(16)),
+        borderRadius: BorderRadius.circular(rs.scale(18)),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
             decoration: BoxDecoration(
               color: isDarkMode
                   ? Colors.white.withValues(alpha: 0.05)
-                  : Colors.white.withValues(alpha: 0.55),
-              borderRadius: BorderRadius.circular(rs.scale(16)),
+                  : Colors.white.withValues(alpha: 0.65),
+              borderRadius: BorderRadius.circular(rs.scale(18)),
               border: Border.all(
-                color: isDarkMode ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08),
+                color: isDarkMode ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.07),
                 width: 0.8,
               ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-          // Tappable Header Row
-          InkWell(
-            borderRadius: BorderRadius.circular(rs.scale(16)),
-            onTap: _handleTap,
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: rs.width(13),
-                vertical: rs.height(11),
-              ),
-              child: Row(
-                children: [
-                  // Encircled Subject PFP Node
-                  Container(
-                    width: rs.scale(34),
-                    height: rs.scale(34),
-                    decoration: BoxDecoration(
-                      color: isDarkMode
-                          ? subject.color.withValues(alpha: 0.16)
-                          : subject.color.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: subject.color,
-                        width: 1.5,
-                      ),
+                // Tappable Header Row
+                InkWell(
+                  borderRadius: BorderRadius.circular(rs.scale(18)),
+                  onTap: _handleTap,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: rs.width(14),
+                      vertical: rs.height(12),
                     ),
-                    child: Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(rs.scale(3)),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            subject.displayAcronym,
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            style: GoogleFonts.inter(
-                              color: isDarkMode ? Colors.white : Colors.black87,
-                              fontWeight: FontWeight.w700,
-                              fontSize: rs.font(11),
-                              letterSpacing: 0.4,
-                              height: 1.0,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Executive Squircle Acronym Node
+                        Container(
+                          width: rs.scale(42),
+                          height: rs.scale(42),
+                          decoration: BoxDecoration(
+                            color: subject.color.withValues(alpha: isDarkMode ? 0.16 : 0.12),
+                            borderRadius: BorderRadius.circular(rs.scale(13)),
+                            border: Border.all(
+                              color: subject.color.withValues(alpha: isDarkMode ? 0.45 : 0.35),
+                              width: 1.2,
                             ),
                           ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: rs.width(10)),
-                  // Title and Subtitle Info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          subject.name,
-                          style: GoogleFonts.inter(
-                            fontWeight: FontWeight.w600,
-                            fontSize: rs.font(14.5),
-                            color: isDarkMode ? Colors.white : Colors.black87,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        SizedBox(height: rs.height(2)),
-                        Row(
-                          children: [
-                            Text(
-                              'Target $targetAttendance%',
-                              style: GoogleFonts.inter(
-                                fontSize: rs.font(11),
-                                color: isDarkMode ? Colors.white54 : Colors.black54,
-                                fontWeight: FontWeight.w500,
+                          child: Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(rs.scale(4)),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  subject.displayAcronym,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  style: GoogleFonts.inter(
+                                    color: isDarkMode ? Colors.white : Colors.black87,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: rs.font(13),
+                                    letterSpacing: 0.5,
+                                    height: 1.0,
+                                  ),
+                                ),
                               ),
                             ),
-                            Text(
-                              '  |  ${sortedSchedule.length} slots/wk',
-                              style: GoogleFonts.inter(
-                                fontSize: rs.font(11),
-                                color: isDarkMode ? Colors.white38 : Colors.black38,
+                          ),
+                        ),
+                        SizedBox(width: rs.width(12)),
+
+                        // Title and Metadata Info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                subject.name,
+                                style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: rs.font(15),
+                                  letterSpacing: -0.2,
+                                  color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              SizedBox(height: rs.height(5)),
+                              Wrap(
+                                spacing: rs.width(5),
+                                runSpacing: rs.height(4),
+                                children: [
+                                  // Target attendance capsule
+                                  Container(
+                                    padding: rs.insetsSymmetric(horizontal: 7, vertical: 2.5),
+                                    decoration: BoxDecoration(
+                                      color: isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04),
+                                      borderRadius: BorderRadius.circular(rs.scale(6)),
+                                      border: Border.all(
+                                        color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+                                        width: 0.7,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.track_changes_rounded,
+                                          size: rs.scale(10.5),
+                                          color: isDarkMode ? Colors.white70 : Colors.black54,
+                                        ),
+                                        SizedBox(width: rs.width(3.5)),
+                                        Text(
+                                          'Target $targetAttendance%',
+                                          style: GoogleFonts.inter(
+                                            fontSize: rs.font(10.5),
+                                            fontWeight: FontWeight.w600,
+                                            color: isDarkMode ? Colors.white70 : Colors.black54,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  // Weekly slot count capsule
+                                  Container(
+                                    padding: rs.insetsSymmetric(horizontal: 7, vertical: 2.5),
+                                    decoration: BoxDecoration(
+                                      color: isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04),
+                                      borderRadius: BorderRadius.circular(rs.scale(6)),
+                                      border: Border.all(
+                                        color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+                                        width: 0.7,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.calendar_view_week_rounded,
+                                          size: rs.scale(10.5),
+                                          color: isDarkMode ? Colors.white60 : Colors.black45,
+                                        ),
+                                        SizedBox(width: rs.width(3.5)),
+                                        Text(
+                                          '${sortedSchedule.length} ${sortedSchedule.length == 1 ? "slot" : "slots"}/wk',
+                                          style: GoogleFonts.inter(
+                                            fontSize: rs.font(10.5),
+                                            fontWeight: FontWeight.w500,
+                                            color: isDarkMode ? Colors.white60 : Colors.black45,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  // Optional room capsule if set
+                                  if (subject.room != null && subject.room!.trim().isNotEmpty)
+                                    Container(
+                                      padding: rs.insetsSymmetric(horizontal: 7, vertical: 2.5),
+                                      decoration: BoxDecoration(
+                                        color: isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04),
+                                        borderRadius: BorderRadius.circular(rs.scale(6)),
+                                        border: Border.all(
+                                          color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+                                          width: 0.7,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.meeting_room_outlined,
+                                            size: rs.scale(10.5),
+                                            color: isDarkMode ? Colors.white60 : Colors.black45,
+                                          ),
+                                          SizedBox(width: rs.width(3.5)),
+                                          Text(
+                                            'Rm ${subject.room!}',
+                                            style: GoogleFonts.inter(
+                                              fontSize: rs.font(10.5),
+                                              fontWeight: FontWeight.w500,
+                                              color: isDarkMode ? Colors.white60 : Colors.black45,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Actions Group: Edit, Delete, Expand
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(rs.scale(16)),
+                                onTap: widget.semesterEnded ? null : widget.onEdit,
+                                child: Container(
+                                  padding: const EdgeInsets.all(7),
+                                  decoration: BoxDecoration(
+                                    color: isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.edit_outlined,
+                                    size: rs.scale(15),
+                                    color: isDarkMode ? Colors.white70 : Colors.black87,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: rs.width(6)),
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(rs.scale(16)),
+                                onTap: widget.semesterEnded ? null : widget.onDelete,
+                                child: Container(
+                                  padding: const EdgeInsets.all(7),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFF453A).withValues(alpha: 0.10),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.delete_outline_rounded,
+                                    size: rs.scale(15),
+                                    color: const Color(0xFFFF453A),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: rs.width(4)),
+                            RotationTransition(
+                              turns: _iconTurns,
+                              child: Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                size: rs.scale(19),
+                                color: isDarkMode ? Colors.white54 : Colors.black45,
                               ),
                             ),
                           ],
@@ -746,201 +885,136 @@ class _SubjectCardItemState extends State<_SubjectCardItem>
                       ],
                     ),
                   ),
-                  // Actions: Edit, Delete, Expand
-                  IconButton(
-                    icon: Icon(
-                      Icons.edit_outlined,
-                      size: rs.scale(16),
-                      color: isDarkMode ? Colors.white54 : Colors.black54,
-                    ),
-                    tooltip: 'Edit',
-                    visualDensity: VisualDensity.compact,
-                    onPressed: widget.semesterEnded ? null : widget.onEdit,
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.delete_outline_rounded,
-                      size: rs.scale(16),
-                      color: isDarkMode ? Colors.white38 : Colors.black38,
-                    ),
-                    tooltip: 'Delete',
-                    visualDensity: VisualDensity.compact,
-                    onPressed: widget.semesterEnded ? null : widget.onDelete,
-                  ),
-                  RotationTransition(
-                    turns: _iconTurns,
-                    child: Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      size: rs.scale(18),
-                      color: isDarkMode ? Colors.white54 : Colors.black54,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Mini Attendance Health Bar (Tesla Charge Style Meter)
-          if (hasAttendanceData)
-            Padding(
-              padding: EdgeInsets.only(
-                left: rs.width(13),
-                right: rs.width(13),
-                bottom: rs.height(10),
-              ),
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: rs.width(10), vertical: rs.height(6)),
-                decoration: BoxDecoration(
-                  color: isDarkMode ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
-                  borderRadius: BorderRadius.circular(rs.scale(10)),
-                  border: Border.all(
-                    color: isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
-                    width: 0.8,
-                  ),
                 ),
-                child: Row(
-                  children: [
-                    Text(
-                      '${attendancePct.toStringAsFixed(1)}%',
-                      style: GoogleFonts.inter(
-                        fontSize: rs.font(12.5),
-                        fontWeight: FontWeight.w700,
-                        color: isDarkMode ? Colors.white : Colors.black87,
+
+                // Collapsible Schedule Slots Details
+                ClipRect(
+                  child: AnimatedBuilder(
+                    animation: _controller.view,
+                    builder: (context, child) {
+                      return Align(
+                        alignment: Alignment.topCenter,
+                        heightFactor: _heightFactor.value,
+                        child: child,
+                      );
+                    },
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        left: rs.width(14),
+                        right: rs.width(14),
+                        bottom: rs.height(13),
                       ),
-                    ),
-                    SizedBox(width: rs.width(8)),
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(3),
-                        child: Container(
-                          height: 4,
-                          color: isDarkMode ? Colors.white12 : Colors.black12,
-                          child: FractionallySizedBox(
-                            alignment: Alignment.centerLeft,
-                            widthFactor: (attendancePct / 100).clamp(0.0, 1.0),
-                            child: Container(
-                              color: isDarkMode ? Colors.white : Colors.black,
-                            ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Divider(
+                            height: 1,
+                            thickness: 0.8,
+                            color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
                           ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: rs.width(8)),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: rs.width(6), vertical: rs.height(1.5)),
-                      decoration: BoxDecoration(
-                        color: isOnTrack
-                            ? (isDarkMode ? Colors.white : Colors.black)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(rs.scale(6)),
-                        border: !isOnTrack
-                            ? Border.all(
-                                color: isDarkMode ? Colors.white38 : Colors.black38,
-                                width: 0.8,
-                              )
-                            : null,
-                      ),
-                      child: Text(
-                        isOnTrack ? 'ON TRACK' : 'OFF TRACK',
-                        style: GoogleFonts.inter(
-                          fontSize: rs.font(8.5),
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                          color: isOnTrack
-                              ? (isDarkMode ? Colors.black : Colors.white)
-                              : (isDarkMode ? Colors.white54 : Colors.black54),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-          // Collapsible Schedule Slots Details
-          ClipRect(
-            child: AnimatedBuilder(
-              animation: _controller.view,
-              builder: (context, child) {
-                return Align(
-                  alignment: Alignment.topCenter,
-                  heightFactor: _heightFactor.value,
-                  child: child,
-                );
-              },
-              child: Padding(
-                padding: EdgeInsets.only(
-                  left: rs.width(13),
-                  right: rs.width(13),
-                  bottom: rs.height(11),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Divider(
-                      height: 1,
-                      thickness: 0.8,
-                      color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
-                    ),
-                    SizedBox(height: rs.height(8)),
-                    if (sortedSchedule.isNotEmpty)
-                      Wrap(
-                        spacing: rs.width(6),
-                        runSpacing: rs.height(5),
-                        children: sortedSchedule.map((timeSlot) {
-                          final dayLabel = timeSlot.specificDate == null
-                              ? timeSlot.day.name.capitalize().substring(0, 3).toUpperCase()
-                              : '${timeSlot.day.name.capitalize().substring(0, 3).toUpperCase()} ${timeSlot.specificDate!.day}/${timeSlot.specificDate!.month}';
-                          final room = subject.getEffectiveRoom(timeSlot);
-                          final block = subject.getEffectiveBlock(timeSlot);
-                          final roomText = room != null
-                              ? '  |  $room${block != null && block.isNotEmpty ? " ($block)" : ""}'
-                              : '';
-                          return Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: rs.width(8),
-                              vertical: rs.height(4),
-                            ),
-                            decoration: BoxDecoration(
-                              color: isDarkMode ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
-                              borderRadius: BorderRadius.circular(rs.scale(8)),
-                              border: Border.all(
-                                color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
-                                width: 0.8,
+                          SizedBox(height: rs.height(10)),
+                          Row(
+                            children: [
+                              Container(
+                                width: 5,
+                                height: 5,
+                                decoration: BoxDecoration(
+                                  color: subject.color,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              SizedBox(width: rs.width(6)),
+                              Text(
+                                'WEEKLY TIMETABLE',
+                                style: GoogleFonts.inter(
+                                  fontSize: rs.font(9.5),
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.8,
+                                  color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF636366),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: rs.height(8)),
+                          if (sortedSchedule.isNotEmpty)
+                            Wrap(
+                              spacing: rs.width(6),
+                              runSpacing: rs.height(6),
+                              children: sortedSchedule.map((timeSlot) {
+                                final dayLabel = timeSlot.specificDate == null
+                                    ? timeSlot.day.name.capitalize().substring(0, 3).toUpperCase()
+                                    : '${timeSlot.day.name.capitalize().substring(0, 3).toUpperCase()} ${timeSlot.specificDate!.day}/${timeSlot.specificDate!.month}';
+                                final room = subject.getEffectiveRoom(timeSlot);
+                                final block = subject.getEffectiveBlock(timeSlot);
+                                final roomText = room != null
+                                    ? ' • Rm $room${block != null && block.isNotEmpty ? " ($block)" : ""}'
+                                    : '';
+                                return Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: rs.width(9),
+                                    vertical: rs.height(5),
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isDarkMode ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.035),
+                                    borderRadius: BorderRadius.circular(rs.scale(8)),
+                                    border: Border.all(
+                                      color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+                                      width: 0.8,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                        decoration: BoxDecoration(
+                                          color: subject.color.withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          dayLabel,
+                                          style: GoogleFonts.inter(
+                                            fontSize: rs.font(9.5),
+                                            fontWeight: FontWeight.w700,
+                                            color: subject.color,
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(width: rs.width(6)),
+                                      Text(
+                                        '${timeSlot.formatTimeRange(widget.timeFormatProvider.timeFormat)}$roomText',
+                                        style: GoogleFonts.inter(
+                                          fontSize: rs.font(11),
+                                          color: isDarkMode ? Colors.white70 : Colors.black87,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            )
+                          else
+                            Padding(
+                              padding: EdgeInsets.symmetric(vertical: rs.height(2)),
+                              child: Text(
+                                'No schedule configured for this subject.',
+                                style: GoogleFonts.inter(
+                                  fontSize: rs.font(11.5),
+                                  color: isDarkMode ? Colors.white38 : Colors.black38,
+                                ),
                               ),
                             ),
-                            child: Text(
-                              '$dayLabel ${timeSlot.formatTimeRange(widget.timeFormatProvider.timeFormat)}$roomText',
-                              style: GoogleFonts.inter(
-                                fontSize: rs.font(10.5),
-                                color: isDarkMode ? Colors.white70 : Colors.black87,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      )
-                    else
-                      Padding(
-                        padding: EdgeInsets.symmetric(vertical: rs.height(2)),
-                        child: Text(
-                          'No schedule configured for this subject.',
-                          style: GoogleFonts.inter(
-                            fontSize: rs.font(11),
-                            color: isDarkMode ? Colors.white38 : Colors.black38,
-                          ),
-                        ),
+                        ],
                       ),
-                  ],
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ),
-        ],
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

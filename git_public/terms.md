@@ -1,4 +1,3 @@
-[&larr; Back to Home](index.html)
 Welcome to **AttendMate**. These Terms of Service ("Terms") govern your use of the AttendMate mobile application ("App"). By installing or using the App, you agree to comply with and be bound by these Terms.
 ## 1. Description of Service
 AttendMate is a local-first helper application designed to track class attendance, calculate bunk allowances, monitor classroom geofences for attendance verification, import and export historical attendance datasets, synchronize timetables with Google Calendar and Device Calendars, and maintain optional cloud backups via Google Drive.

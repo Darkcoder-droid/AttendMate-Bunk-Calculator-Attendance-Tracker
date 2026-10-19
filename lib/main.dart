@@ -929,10 +929,10 @@ class MyApp extends StatelessWidget {
         unselectedItemColor: Colors.grey,
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: Colors.white.withValues(alpha: 0.88),
+        backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        barrierColor: Colors.black.withValues(alpha: 0.35),
+        barrierColor: Colors.black.withValues(alpha: 0.45),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
           side: BorderSide(color: Colors.black.withValues(alpha: 0.08), width: 1.0),
@@ -1066,10 +1066,10 @@ class MyApp extends StatelessWidget {
         unselectedItemColor: Colors.grey,
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: const Color(0xFF141418).withValues(alpha: 0.82),
+        backgroundColor: const Color(0xFF16161A),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        barrierColor: Colors.black.withValues(alpha: 0.55),
+        barrierColor: Colors.black.withValues(alpha: 0.65),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
           side: BorderSide(color: Colors.white.withValues(alpha: 0.14), width: 1.0),

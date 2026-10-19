@@ -1,4 +1,3 @@
-[&larr; Back to Home](index.html)
 **AttendMate** ("we," "our," or "the App") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and protect your information when you use our mobile application, including attendance tracking, location & geofencing services, calendar synchronization, and Google Drive cloud backup features.
 ## 1. Information We Process
 AttendMate operates on a **local-first architecture**. All your personal data, schedule information, and app preferences remain stored strictly on your device in a secure private database. We process:

@@ -4,6 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class AttendMateDock extends StatelessWidget {
+  static const double horizontalMargin = 20.0;
+  static const double dockHeight = 64.0;
+  static const double minBottomPadding = 16.0;
+
+  static double totalDockHeight(BuildContext context) {
+    final bottomPadding = MediaQuery.paddingOf(context).bottom;
+    return dockHeight + math.max(bottomPadding, minBottomPadding);
+  }
+
   final int selectedIndex;
   final ValueChanged<int> onItemTapped;
   final Key? todayKey;
@@ -11,6 +20,7 @@ class AttendMateDock extends StatelessWidget {
   final Key? semesterKey;
   final Key? bunkKey;
   final Key? moreKey;
+  final bool isSemesterDetailsOpen;
 
   const AttendMateDock({
     super.key,
@@ -21,6 +31,7 @@ class AttendMateDock extends StatelessWidget {
     this.semesterKey,
     this.bunkKey,
     this.moreKey,
+    this.isSemesterDetailsOpen = false,
   });
 
   @override
@@ -54,9 +65,9 @@ class AttendMateDock extends StatelessWidget {
     return Container(
       color: Colors.transparent,
       padding: EdgeInsets.only(
-        left: 20.0,
-        right: 20.0,
-        bottom: math.max(bottomPadding, 16.0),
+        left: horizontalMargin,
+        right: horizontalMargin,
+        bottom: math.max(bottomPadding, minBottomPadding),
       ),
       child: Container(
         decoration: BoxDecoration(
@@ -120,6 +131,7 @@ class AttendMateDock extends StatelessWidget {
                     index: 2,
                     selectedIndex: selectedIndex,
                     isDark: isDark,
+                    isOpen: isSemesterDetailsOpen,
                     onTap: () => onItemTapped(2),
                   ),
 
@@ -226,6 +238,7 @@ class _DockCenterButtonItem extends StatefulWidget {
   final int index;
   final int selectedIndex;
   final bool isDark;
+  final bool isOpen;
   final VoidCallback onTap;
 
   const _DockCenterButtonItem({
@@ -233,6 +246,7 @@ class _DockCenterButtonItem extends StatefulWidget {
     required this.index,
     required this.selectedIndex,
     required this.isDark,
+    this.isOpen = false,
     required this.onTap,
   });
 
@@ -245,7 +259,7 @@ class _DockCenterButtonItemState extends State<_DockCenterButtonItem> {
 
   @override
   Widget build(BuildContext context) {
-    final isSelected = widget.selectedIndex == widget.index;
+    final isSelected = widget.selectedIndex == widget.index || widget.isOpen;
 
     // High contrast styling:
     // In dark theme: crisp pure white circle with solid black icon
@@ -282,10 +296,18 @@ class _DockCenterButtonItemState extends State<_DockCenterButtonItem> {
                 ),
               ),
               child: Center(
-                child: Icon(
-                  Icons.school_rounded,
-                  size: 24.0,
-                  color: iconColor,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, anim) => RotationTransition(
+                    turns: Tween<double>(begin: 0.85, end: 1.0).animate(anim),
+                    child: FadeTransition(opacity: anim, child: child),
+                  ),
+                  child: Icon(
+                    widget.isOpen ? Icons.close_rounded : Icons.school_rounded,
+                    key: ValueKey(widget.isOpen),
+                    size: 24.0,
+                    color: iconColor,
+                  ),
                 ),
               ),
             ),

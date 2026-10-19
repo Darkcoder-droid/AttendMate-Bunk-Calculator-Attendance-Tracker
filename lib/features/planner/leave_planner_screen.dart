@@ -8,7 +8,6 @@ import '../../utils/responsive_scale.dart';
 import '../../utils/snackbar_utils.dart';
 import '../../widgets/app_time_picker.dart';
 import '../../widgets/day_cycle_background.dart';
-import '../../widgets/glass_dialog.dart';
 import '../attendance/attendance_provider.dart';
 import '../subject/subject_model.dart';
 import '../subject/subject_provider.dart';
@@ -128,56 +127,46 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
             child: Padding(
               padding: EdgeInsets.only(bottom: rs.scale(80)),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(rs.scale(24)),
+                borderRadius: BorderRadius.circular(rs.scale(26)),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                  filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                   child: Container(
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: isDarkMode
-                            ? [
-                                const Color(0xFF6C63FF).withValues(alpha: 0.90),
-                                const Color(0xFF5A52E0).withValues(alpha: 0.80),
-                              ]
-                            : [
-                                const Color(0xFF6C63FF),
-                                const Color(0xFF5A52E0),
-                              ],
-                      ),
-                      borderRadius: BorderRadius.circular(rs.scale(24)),
+                      color: isDarkMode
+                          ? const Color(0xFF1B1B22).withValues(alpha: 0.85)
+                          : Colors.white.withValues(alpha: 0.90),
+                      borderRadius: BorderRadius.circular(rs.scale(26)),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.35),
+                        color: theme.colorScheme.primary.withValues(alpha: isDarkMode ? 0.35 : 0.25),
                         width: 1.0,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF6C63FF).withValues(alpha: 0.40),
-                          blurRadius: 20,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
                     ),
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: subjects.isEmpty ? null : () => _showAddLeaveDialog(context, subjects),
-                        borderRadius: BorderRadius.circular(rs.scale(24)),
+                        borderRadius: BorderRadius.circular(rs.scale(26)),
                         child: Padding(
-                          padding: rs.insetsSymmetric(horizontal: 20, vertical: 12),
+                          padding: rs.insetsSymmetric(horizontal: 18, vertical: 12),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.add_rounded, size: rs.scale(20), color: Colors.white),
+                              Container(
+                                padding: const EdgeInsets.all(5),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(Icons.add_rounded, size: rs.scale(18), color: theme.colorScheme.primary),
+                              ),
                               SizedBox(width: rs.width(8)),
                               Text(
                                 'Add Leave',
                                 style: GoogleFonts.inter(
                                   fontWeight: FontWeight.w700,
                                   fontSize: rs.font(13.5),
-                                  color: Colors.white,
-                                  letterSpacing: 0.3,
+                                  color: isDarkMode ? Colors.white : const Color(0xFF1C1C1E),
+                                  letterSpacing: 0.2,
                                 ),
                               ),
                             ],
@@ -222,7 +211,7 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
         : Colors.black.withValues(alpha: 0.06);
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(rs.scale(20)),
+      borderRadius: BorderRadius.circular(rs.scale(24)),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
@@ -230,15 +219,8 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
           padding: rs.insetsAll(16),
           decoration: BoxDecoration(
             color: cardBg,
-            borderRadius: BorderRadius.circular(rs.scale(20)),
+            borderRadius: BorderRadius.circular(rs.scale(24)),
             border: Border.all(color: cardBorder, width: 0.8),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDarkMode ? 0.3 : 0.05),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,15 +235,6 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
                           ? (isDarkMode ? const Color(0xFFFF9F0A) : const Color(0xFFFF9500))
                           : (isDarkMode ? const Color(0xFF34C759) : const Color(0xFF28A745)),
                       shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: (totalImpacted > 0
-                                  ? const Color(0xFFFF9F0A)
-                                  : const Color(0xFF34C759))
-                              .withValues(alpha: 0.5),
-                          blurRadius: 6,
-                        ),
-                      ],
                     ),
                   ),
                   SizedBox(width: rs.width(8)),
@@ -405,13 +378,6 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
                       color: isDarkMode ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08),
                       width: 1.0,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: theme.colorScheme.primary.withValues(alpha: isDarkMode ? 0.2 : 0.08),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
                   ),
                   child: Icon(
                     Icons.event_available_outlined,
@@ -515,22 +481,15 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
     }
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(rs.scale(18)),
+      borderRadius: BorderRadius.circular(rs.scale(24)),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
           margin: EdgeInsets.only(bottom: rs.scale(12)),
           decoration: BoxDecoration(
             color: cardBg,
-            borderRadius: BorderRadius.circular(rs.scale(18)),
+            borderRadius: BorderRadius.circular(rs.scale(24)),
             border: Border.all(color: cardBorder, width: 0.8),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDarkMode ? 0.2 : 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
           ),
           child: Padding(
             padding: rs.insetsAll(14),
@@ -543,7 +502,7 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
                       padding: rs.insetsAll(10),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primary.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(rs.scale(12)),
+                        borderRadius: BorderRadius.circular(rs.scale(16)),
                         border: Border.all(
                           color: theme.colorScheme.primary.withValues(alpha: 0.25),
                           width: 0.8,
@@ -611,7 +570,7 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
                   padding: rs.insetsAll(12),
                   decoration: BoxDecoration(
                     color: recessedBg,
-                    borderRadius: BorderRadius.circular(rs.scale(14)),
+                    borderRadius: BorderRadius.circular(rs.scale(16)),
                     border: Border.all(color: innerBorder, width: 0.8),
                   ),
                   child: Column(
@@ -627,15 +586,6 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
                                   ? (isDarkMode ? const Color(0xFFFF9F0A) : const Color(0xFFD97706))
                                   : (isDarkMode ? const Color(0xFF34C759) : const Color(0xFF28A745)),
                               shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: (totalClassesMissed > 0
-                                          ? const Color(0xFFFF9F0A)
-                                          : const Color(0xFF34C759))
-                                      .withValues(alpha: 0.5),
-                                  blurRadius: 4,
-                                ),
-                              ],
                             ),
                           ),
                           SizedBox(width: rs.width(6)),
@@ -685,7 +635,8 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
     required DateTime firstDate,
     required DateTime lastDate,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return showDatePicker(
       context: context,
       initialDate: initialDate,
@@ -693,19 +644,19 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
       lastDate: lastDate,
       builder: (context, child) {
         return Theme(
-          data: Theme.of(context).copyWith(
+          data: theme.copyWith(
             colorScheme: isDark
-                ? const ColorScheme.dark(
-                    primary: Color(0xFF6C63FF),
-                    onPrimary: Colors.white,
-                    surface: Color(0xFF14141A),
+                ? ColorScheme.dark(
+                    primary: theme.colorScheme.primary,
+                    onPrimary: theme.colorScheme.onPrimary,
+                    surface: const Color(0xFF14141A),
                     onSurface: Colors.white,
                   )
-                : const ColorScheme.light(
-                    primary: Color(0xFF6C63FF),
-                    onPrimary: Colors.white,
+                : ColorScheme.light(
+                    primary: theme.colorScheme.primary,
+                    onPrimary: theme.colorScheme.onPrimary,
                     surface: Colors.white,
-                    onSurface: Color(0xFF1C1C1E),
+                    onSurface: const Color(0xFF1C1C1E),
                   ),
             dialogTheme: DialogThemeData(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -737,34 +688,102 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
       endDate = DateTime(endDate.year, endDate.month, endDate.day, 23, 59);
     }
 
-    showGlassDialog(
+    showModalBottomSheet(
       context: parentContext,
-      builder: (dialogCtx) {
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             final startTimeTod = TimeOfDay.fromDateTime(startDate);
             final endTimeTod = TimeOfDay.fromDateTime(endDate);
 
-            return GlassDialog(
-              maxWidth: 400,
-              icon: Icon(
-                isEditing ? Icons.edit_calendar_rounded : Icons.add_alarm_rounded,
-                color: Theme.of(context).colorScheme.primary,
-                size: 26,
-              ),
-              title: Text(
-                isEditing ? 'Edit Planned Leave' : 'Plan New Leave',
-                style: GoogleFonts.inter(
-                  fontSize: rs.font(17),
-                  fontWeight: FontWeight.w800,
-                  color: isDarkMode ? Colors.white : const Color(0xFF1C1C1E),
+            return Container(
+              decoration: BoxDecoration(
+                color: isDarkMode ? const Color(0xFF16161C) : Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(rs.scale(26))),
+                border: Border(
+                  top: BorderSide(
+                    color: isDarkMode ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08),
+                    width: 0.8,
+                  ),
                 ),
               ),
-              content: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                rs.scale(20),
+                rs.scale(12),
+                rs.scale(20),
+                MediaQuery.of(sheetCtx).viewInsets.bottom + rs.scale(24),
+              ),
+              child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Drag handle
+                    Center(
+                      child: Container(
+                        width: rs.scale(36),
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDarkMode ? Colors.white24 : Colors.black26,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: rs.height(14)),
+                    // Header Row: Icon + Title + Close Button
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(rs.scale(12)),
+                            border: Border.all(
+                              color: isDarkMode ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Icon(
+                            isEditing ? Icons.edit_calendar_rounded : Icons.event_available_rounded,
+                            size: rs.scale(20),
+                            color: isDarkMode ? Colors.white : const Color(0xFF1C1C1E),
+                          ),
+                        ),
+                        SizedBox(width: rs.width(10)),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isEditing ? 'Edit Planned Leave' : 'Plan New Leave',
+                                style: GoogleFonts.inter(
+                                  fontSize: rs.font(17),
+                                  fontWeight: FontWeight.w800,
+                                  color: isDarkMode ? Colors.white : const Color(0xFF1C1C1E),
+                                ),
+                              ),
+                              SizedBox(height: rs.height(2)),
+                              Text(
+                                'Forecast absence impact on your attendance buffer',
+                                style: GoogleFonts.inter(
+                                  fontSize: rs.font(11.5),
+                                  color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF636366),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.close_rounded, size: rs.scale(20)),
+                          color: isDarkMode ? Colors.white70 : Colors.black54,
+                          onPressed: () => Navigator.of(sheetCtx).pop(),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: rs.height(18)),
                     Text(
                       'LEAVE REASON',
                       style: GoogleFonts.inter(
@@ -1089,119 +1108,117 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
                         ),
                       ],
                     ),
+                    SizedBox(height: rs.height(22)),
+                    // Action Buttons Row (Flat styling, no glowing effects)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              padding: rs.insetsSymmetric(vertical: 13),
+                              side: BorderSide(
+                                color: isDarkMode ? Colors.white.withValues(alpha: 0.16) : Colors.black.withValues(alpha: 0.12),
+                                width: 0.8,
+                              ),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(rs.scale(14))),
+                            ),
+                            onPressed: () => Navigator.of(sheetCtx).pop(),
+                            child: Text(
+                              'Cancel',
+                              style: GoogleFonts.inter(
+                                fontSize: rs.font(13.5),
+                                fontWeight: FontWeight.w600,
+                                color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF636366),
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: rs.width(10)),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              padding: rs.insetsSymmetric(vertical: 13),
+                              backgroundColor: isDarkMode ? Colors.white : const Color(0xFF1C1C1E),
+                              foregroundColor: isDarkMode ? Colors.black : Colors.white,
+                              elevation: 0,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(rs.scale(14))),
+                            ),
+                            onPressed: () async {
+                              final name = nameController.text.trim();
+                              final messenger = ScaffoldMessenger.of(parentContext);
+                              final nav = Navigator.of(sheetCtx);
+                              final subjectProvider = Provider.of<SubjectProvider>(parentContext, listen: false);
+                              final attendanceProvider = Provider.of<AttendanceProvider>(parentContext, listen: false);
+
+                              if (name.isEmpty) {
+                                messenger.showReplacingSnackBar(
+                                  const SnackBar(content: Text('Please enter a leave reason.')),
+                                );
+                                return;
+                              }
+
+                              if (isEditing) {
+                                final updatedLeave = PlannedLeave(
+                                  id: leave.id,
+                                  name: name,
+                                  startDate: startDate,
+                                  endDate: endDate,
+                                  affectedSubjectIds: subjects.map((s) => s.id).toList(),
+                                );
+                                await _databaseService.savePlannedLeave(updatedLeave);
+                                final allLeaves = await _databaseService.loadPlannedLeaves();
+                                await attendanceProvider.cleanupPlannedLeaveAttendance(
+                                  deletedLeave: leave,
+                                  remainingLeaves: allLeaves,
+                                  subjects: subjects,
+                                );
+                                await attendanceProvider.syncPlannedLeavesWithAttendance(
+                                  plannedLeaves: [updatedLeave],
+                                  subjects: subjects,
+                                );
+                                nav.pop();
+                                _loadLeaves();
+                                subjectProvider.scheduleAutoSync();
+                                messenger.showReplacingSnackBar(
+                                  SnackBar(content: Text('Leave "$name" updated.')),
+                                );
+                              } else {
+                                final newLeave = PlannedLeave(
+                                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                                  name: name,
+                                  startDate: startDate,
+                                  endDate: endDate,
+                                  affectedSubjectIds: subjects.map((s) => s.id).toList(),
+                                );
+                                await _databaseService.savePlannedLeave(newLeave);
+                                await attendanceProvider.syncPlannedLeavesWithAttendance(
+                                  plannedLeaves: [newLeave],
+                                  subjects: subjects,
+                                );
+                                nav.pop();
+                                _loadLeaves();
+                                subjectProvider.scheduleAutoSync();
+                                messenger.showReplacingSnackBar(
+                                  SnackBar(content: Text('Leave "$name" scheduled.')),
+                                );
+                              }
+                            },
+                            child: Text(
+                              isEditing ? 'Update Leave' : 'Add Leave',
+                              style: GoogleFonts.inter(
+                                fontSize: rs.font(13.5),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogCtx).pop(),
-                  child: Text(
-                    'Cancel',
-                    style: GoogleFonts.inter(
-                      fontSize: rs.font(13),
-                      fontWeight: FontWeight.w600,
-                      color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF636366),
-                    ),
-                  ),
-                ),
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(rs.scale(14)),
-                    onTap: () async {
-                      final name = nameController.text.trim();
-                      final messenger = ScaffoldMessenger.of(parentContext);
-                      final nav = Navigator.of(dialogCtx);
-                      final subjectProvider = Provider.of<SubjectProvider>(parentContext, listen: false);
-                      final attendanceProvider = Provider.of<AttendanceProvider>(parentContext, listen: false);
-
-                      if (name.isEmpty) {
-                        messenger.showReplacingSnackBar(
-                          const SnackBar(content: Text('Please enter a leave reason.')),
-                        );
-                        return;
-                      }
-
-                      if (isEditing) {
-                        final updatedLeave = PlannedLeave(
-                          id: leave.id,
-                          name: name,
-                          startDate: startDate,
-                          endDate: endDate,
-                          affectedSubjectIds: subjects.map((s) => s.id).toList(),
-                        );
-                        await _databaseService.savePlannedLeave(updatedLeave);
-                        final allLeaves = await _databaseService.loadPlannedLeaves();
-                        await attendanceProvider.cleanupPlannedLeaveAttendance(
-                          deletedLeave: leave,
-                          remainingLeaves: allLeaves,
-                          subjects: subjects,
-                        );
-                        await attendanceProvider.syncPlannedLeavesWithAttendance(
-                          plannedLeaves: [updatedLeave],
-                          subjects: subjects,
-                        );
-                        nav.pop();
-                        _loadLeaves();
-                        subjectProvider.scheduleAutoSync();
-                        messenger.showReplacingSnackBar(
-                          SnackBar(content: Text('Leave "$name" updated.')),
-                        );
-                      } else {
-                        final newLeave = PlannedLeave(
-                          id: DateTime.now().millisecondsSinceEpoch.toString(),
-                          name: name,
-                          startDate: startDate,
-                          endDate: endDate,
-                          affectedSubjectIds: subjects.map((s) => s.id).toList(),
-                        );
-                        await _databaseService.savePlannedLeave(newLeave);
-                        await attendanceProvider.syncPlannedLeavesWithAttendance(
-                          plannedLeaves: [newLeave],
-                          subjects: subjects,
-                        );
-                        nav.pop();
-                        _loadLeaves();
-                        subjectProvider.scheduleAutoSync();
-                        messenger.showReplacingSnackBar(
-                          SnackBar(content: Text('Leave "$name" scheduled.')),
-                        );
-                      }
-                    },
-                    child: Container(
-                      padding: rs.insetsSymmetric(horizontal: 20, vertical: 10),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFF6C63FF),
-                            Color(0xFF5A52E0),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(rs.scale(14)),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.30),
-                          width: 1.0,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF6C63FF).withValues(alpha: 0.35),
-                            blurRadius: 12,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        isEditing ? 'Update Leave' : 'Add Leave',
-                        style: GoogleFonts.inter(
-                          fontSize: rs.font(13),
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
             );
           },
         );
@@ -1215,119 +1232,201 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
     final subjectProvider = Provider.of<SubjectProvider>(context, listen: false);
     final attendanceProvider = Provider.of<AttendanceProvider>(context, listen: false);
 
-    showGlassDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => GlassDialog(
-        icon: Container(
-          padding: const EdgeInsets.all(10),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) {
+        return Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFFF453A).withValues(alpha: 0.14),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: const Color(0xFFFF453A).withValues(alpha: 0.35),
-              width: 1.0,
-            ),
-          ),
-          child: const Icon(
-            Icons.delete_outline_rounded,
-            color: Color(0xFFFF453A),
-            size: 26,
-          ),
-        ),
-        title: Text(
-          'Delete Leave',
-          style: GoogleFonts.inter(
-            fontSize: rs.font(17),
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Are you sure you want to delete "${leave.name}"?',
-              style: GoogleFonts.inter(
-                fontSize: rs.font(14),
-                fontWeight: FontWeight.w600,
-                color: isDarkMode ? Colors.white : const Color(0xFF1C1C1E),
-              ),
-            ),
-            SizedBox(height: rs.height(6)),
-            Text(
-              'This will remove scheduled absence projections and restore your attendance forecast.',
-              style: GoogleFonts.inter(
-                fontSize: rs.font(12.5),
-                color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF636366),
-                height: 1.45,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.inter(
-                fontSize: rs.font(13),
-                fontWeight: FontWeight.w600,
-                color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF636366),
+            color: isDarkMode ? const Color(0xFF16161C) : Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(rs.scale(26))),
+            border: Border(
+              top: BorderSide(
+                color: isDarkMode ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08),
+                width: 0.8,
               ),
             ),
           ),
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(rs.scale(14)),
-              onTap: () async {
-                final dialogNav = Navigator.of(ctx);
-                await _databaseService.deletePlannedLeave(leave.id);
-                final remainingLeaves = await _databaseService.loadPlannedLeaves();
-                await attendanceProvider.cleanupPlannedLeaveAttendance(
-                  deletedLeave: leave,
-                  remainingLeaves: remainingLeaves,
-                  subjects: subjectProvider.subjects,
-                );
-                dialogNav.pop();
-                _loadLeaves();
-                subjectProvider.scheduleAutoSync();
-              },
-              child: Container(
-                padding: rs.insetsSymmetric(horizontal: 20, vertical: 10),
+          padding: EdgeInsets.fromLTRB(
+            rs.scale(20),
+            rs.scale(12),
+            rs.scale(20),
+            MediaQuery.of(sheetCtx).padding.bottom + rs.scale(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Drag handle
+              Center(
+                child: Container(
+                  width: rs.scale(36),
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? Colors.white24 : Colors.black26,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              SizedBox(height: rs.height(18)),
+              // Red Trash Badge + Title
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF453A).withValues(alpha: 0.14),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFFF453A).withValues(alpha: 0.35),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.delete_outline_rounded,
+                      color: const Color(0xFFFF453A),
+                      size: rs.scale(22),
+                    ),
+                  ),
+                  SizedBox(width: rs.width(12)),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Delete Leave',
+                          style: GoogleFonts.inter(
+                            fontSize: rs.font(17),
+                            fontWeight: FontWeight.w800,
+                            color: isDarkMode ? Colors.white : const Color(0xFF1C1C1E),
+                          ),
+                        ),
+                        SizedBox(height: rs.height(2)),
+                        Text(
+                          'Remove scheduled absence projections',
+                          style: GoogleFonts.inter(
+                            fontSize: rs.font(12),
+                            color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF636366),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: rs.height(16)),
+              // Detailed Confirmation Card
+              Container(
+                padding: rs.insetsAll(14),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      const Color(0xFFFF453A).withValues(alpha: 0.35),
-                      const Color(0xFFFF453A).withValues(alpha: 0.18),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(rs.scale(14)),
+                  color: isDarkMode ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
+                  borderRadius: BorderRadius.circular(rs.scale(16)),
                   border: Border.all(
-                    color: const Color(0xFFFF453A).withValues(alpha: 0.55),
-                    width: 1.0,
+                    color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+                    width: 0.8,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFFF453A).withValues(alpha: 0.25),
-                      blurRadius: 12,
-                      offset: const Offset(0, 3),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Are you sure you want to delete "${leave.name}"?',
+                      style: GoogleFonts.inter(
+                        fontSize: rs.font(13.5),
+                        fontWeight: FontWeight.w600,
+                        color: isDarkMode ? Colors.white : const Color(0xFF1C1C1E),
+                      ),
+                    ),
+                    SizedBox(height: rs.height(6)),
+                    Text(
+                      'This will remove scheduled absence projections and restore your attendance forecast.',
+                      style: GoogleFonts.inter(
+                        fontSize: rs.font(12),
+                        color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF636366),
+                        height: 1.4,
+                      ),
                     ),
                   ],
                 ),
-                child: Text(
-                  'Delete',
-                  style: GoogleFonts.inter(
-                    fontSize: rs.font(13),
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFFFF6961),
-                  ),
-                ),
               ),
-            ),
+              SizedBox(height: rs.height(20)),
+              // Action Buttons Row: Cancel and Delete
+              Row(
+                children: [
+                  Expanded(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => Navigator.of(sheetCtx).pop(),
+                        borderRadius: BorderRadius.circular(rs.scale(14)),
+                        child: Container(
+                          padding: rs.insetsSymmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(rs.scale(14)),
+                            border: Border.all(
+                              color: isDarkMode ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08),
+                              width: 0.8,
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Cancel',
+                            style: GoogleFonts.inter(
+                              fontSize: rs.font(13.5),
+                              fontWeight: FontWeight.w600,
+                              color: isDarkMode ? Colors.white70 : Colors.black87,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: rs.width(10)),
+                  Expanded(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () async {
+                          final dialogNav = Navigator.of(sheetCtx);
+                          await _databaseService.deletePlannedLeave(leave.id);
+                          final remainingLeaves = await _databaseService.loadPlannedLeaves();
+                          await attendanceProvider.cleanupPlannedLeaveAttendance(
+                            deletedLeave: leave,
+                            remainingLeaves: remainingLeaves,
+                            subjects: subjectProvider.subjects,
+                          );
+                          dialogNav.pop();
+                          _loadLeaves();
+                          subjectProvider.scheduleAutoSync();
+                        },
+                        borderRadius: BorderRadius.circular(rs.scale(14)),
+                        child: Container(
+                          padding: rs.insetsSymmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF453A),
+                            borderRadius: BorderRadius.circular(rs.scale(14)),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Delete Leave',
+                            style: GoogleFonts.inter(
+                              fontSize: rs.font(13.5),
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

@@ -680,61 +680,7 @@ class _MoreScreenState extends State<MoreScreen> {
         _buildGroupCard(
           isDarkMode: isDarkMode,
           children: [
-            ListTile(
-              leading: _buildLeadingIcon(ambientProvider.icon, isDarkMode),
-              title: Text(
-                'Ambient Lighting & AMOLED',
-                style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
-              ),
-              subtitle: Text(
-                'Currently: ${ambientProvider.shortLabel}',
-                style: TextStyle(fontSize: 12, color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      ambientProvider.cycleNextMode();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: isDarkMode
-                            ? Colors.white.withValues(alpha: 0.10)
-                            : Colors.black.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isDarkMode
-                              ? Colors.white.withValues(alpha: 0.14)
-                              : Colors.black.withValues(alpha: 0.08),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(ambientProvider.icon, size: 14, color: isDarkMode ? Colors.white : Colors.black),
-                          const SizedBox(width: 5),
-                          Text(
-                            ambientProvider.shortLabel,
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: isDarkMode ? Colors.white : Colors.black,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  chevronIcon,
-                ],
-              ),
-              onTap: () => _showAmbientThemeModal(context, ambientProvider, isDarkMode),
-            ),
+            _buildAmbientThemeControl(context, ambientProvider, isDarkMode),
             _buildTileDivider(isDarkMode),
             ListTile(
               leading: _buildLeadingIcon(Icons.schedule_outlined, isDarkMode),
@@ -1587,6 +1533,320 @@ class _MoreScreenState extends State<MoreScreen> {
     );
   }
 
+  Widget _buildAmbientThemeControl(
+    BuildContext context,
+    AmbientThemeProvider ambientProvider,
+    bool isDarkMode,
+  ) {
+    final mode = ambientProvider.mode;
+    final isAmoled = ambientProvider.isAmoled;
+    final isDynamic = ambientProvider.isDynamic;
+    final isAccent = ambientProvider.isAccent;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Row
+          Row(
+            children: [
+              _buildLeadingIcon(
+                isAmoled
+                    ? Icons.contrast_rounded
+                    : (isDynamic ? Icons.auto_mode_rounded : Icons.palette_outlined),
+                isDarkMode,
+                accentColor: isAmoled
+                    ? (isDarkMode ? Colors.white : Colors.black)
+                    : (isDynamic ? const Color(0xFF38BDF8) : const Color(0xFFF59E0B)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Atmosphere & Theme',
+                      style: GoogleFonts.roboto(fontWeight: FontWeight.w600, fontSize: 14.5),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isDynamic
+                          ? 'Dynamic Time-Cycle (Adapts to morning, dusk, night)'
+                          : (isAmoled
+                              ? 'Pure AMOLED Black (Zero glow, saves battery)'
+                              : ambientProvider.displayName),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: Icon(
+                  Icons.tune_rounded,
+                  size: 19,
+                  color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70),
+                ),
+                tooltip: 'All Themes',
+                onPressed: () => _showAmbientThemeModal(context, ambientProvider, isDarkMode),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // Redesigned Segmented Toggle System
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: isDarkMode
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : Colors.black.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isDarkMode
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.black.withValues(alpha: 0.06),
+                width: 0.8,
+              ),
+            ),
+            child: Row(
+              children: [
+                // 1. Dynamic Toggle Segment
+                Expanded(
+                  child: _buildThemeSegmentButton(
+                    title: 'Dynamic',
+                    icon: Icons.auto_mode_rounded,
+                    isSelected: isDynamic,
+                    isDarkMode: isDarkMode,
+                    activeColor: const Color(0xFF38BDF8),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      ambientProvider.setMode(AmbientThemeMode.dynamicCycle);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 4),
+
+                // 2. AMOLED Toggle Segment
+                Expanded(
+                  child: _buildThemeSegmentButton(
+                    title: 'AMOLED',
+                    icon: Icons.contrast_rounded,
+                    isSelected: isAmoled,
+                    isDarkMode: isDarkMode,
+                    activeColor: isDarkMode ? Colors.white : Colors.black,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      ambientProvider.setMode(AmbientThemeMode.amoled);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 4),
+
+                // 3. Mood / Accent Toggle Segment
+                Expanded(
+                  child: _buildThemeSegmentButton(
+                    title: 'Mood',
+                    icon: Icons.palette_outlined,
+                    isSelected: isAccent,
+                    isDarkMode: isDarkMode,
+                    activeColor: const Color(0xFFF59E0B),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      if (!isAccent) {
+                        ambientProvider.setMode(AmbientThemeMode.night);
+                      } else {
+                        _showAmbientThemeModal(context, ambientProvider, isDarkMode);
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Sub-mood presets when Mood / Accent is active
+          if (isAccent) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildMoodPresetPill(
+                    label: 'Dawn',
+                    mode: AmbientThemeMode.morning,
+                    currentMode: mode,
+                    color: const Color(0xFFF59E0B),
+                    icon: Icons.wb_sunny_rounded,
+                    isDarkMode: isDarkMode,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      ambientProvider.setMode(AmbientThemeMode.morning);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: _buildMoodPresetPill(
+                    label: 'Sunset',
+                    mode: AmbientThemeMode.afternoon,
+                    currentMode: mode,
+                    color: const Color(0xFFEA580C),
+                    icon: Icons.wb_twilight_rounded,
+                    isDarkMode: isDarkMode,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      ambientProvider.setMode(AmbientThemeMode.afternoon);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: _buildMoodPresetPill(
+                    label: 'Twilight',
+                    mode: AmbientThemeMode.night,
+                    currentMode: mode,
+                    color: const Color(0xFF3B82F6),
+                    icon: Icons.nights_stay_rounded,
+                    isDarkMode: isDarkMode,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      ambientProvider.setMode(AmbientThemeMode.night);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThemeSegmentButton({
+    required String title,
+    required IconData icon,
+    required bool isSelected,
+    required bool isDarkMode,
+    required Color activeColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDarkMode
+                  ? Colors.white.withValues(alpha: 0.16)
+                  : Colors.white)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: isSelected
+              ? Border.all(
+                  color: isDarkMode
+                      ? Colors.white.withValues(alpha: 0.22)
+                      : Colors.black.withValues(alpha: 0.10),
+                  width: 0.8,
+                )
+              : null,
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDarkMode ? 0.25 : 0.06),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 14.5,
+              color: isSelected
+                  ? activeColor
+                  : (isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              title,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected
+                    ? (isDarkMode ? Colors.white : Colors.black)
+                    : (isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMoodPresetPill({
+    required String label,
+    required AmbientThemeMode mode,
+    required AmbientThemeMode currentMode,
+    required Color color,
+    required IconData icon,
+    required bool isDarkMode,
+    required VoidCallback onTap,
+  }) {
+    final isSelected = mode == currentMode;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? color.withValues(alpha: isDarkMode ? 0.22 : 0.15)
+              : (isDarkMode ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03)),
+          borderRadius: BorderRadius.circular(9),
+          border: Border.all(
+            color: isSelected
+                ? color.withValues(alpha: 0.55)
+                : (isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05)),
+            width: isSelected ? 1.0 : 0.6,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? color : (isDarkMode ? Colors.white70 : Colors.black54),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showAmbientThemeModal(
     BuildContext context,
     AmbientThemeProvider ambientProvider,
@@ -1601,13 +1861,13 @@ class _MoreScreenState extends State<MoreScreen> {
         return ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
             child: Container(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
               decoration: BoxDecoration(
                 color: isDarkMode
-                    ? const Color(0xFF0C0C12).withValues(alpha: 0.70)
-                    : Colors.white.withValues(alpha: 0.78),
+                    ? const Color(0xFF0C0C12).withValues(alpha: 0.75)
+                    : Colors.white.withValues(alpha: 0.82),
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 border: Border(
                   top: BorderSide(
@@ -1644,7 +1904,7 @@ class _MoreScreenState extends State<MoreScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Ambient Lighting & AMOLED',
+                        'Atmosphere & Ambient Themes',
                         style: GoogleFonts.inter(
                           fontSize: 17,
                           fontWeight: FontWeight.w700,
@@ -1656,7 +1916,7 @@ class _MoreScreenState extends State<MoreScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Select atmospheric lighting or switch to clean black AMOLED.',
+                    'Choose real-time ambient lighting or clean pitch-black AMOLED.',
                     style: TextStyle(
                       fontSize: 12.5,
                       color: isDarkMode ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70),
@@ -1669,36 +1929,51 @@ class _MoreScreenState extends State<MoreScreen> {
                     String desc;
                     IconData icon;
                     Color accent;
+                    Gradient? previewGradient;
+
                     switch (mode) {
                       case AmbientThemeMode.dynamicCycle:
                         title = 'Dynamic (Time-Based)';
                         desc = 'Transitions automatically with morning, sunset, and night cycles.';
                         icon = Icons.auto_mode_rounded;
                         accent = const Color(0xFF38BDF8);
+                        previewGradient = const LinearGradient(
+                          colors: [Color(0xFFF59E0B), Color(0xFFEA580C), Color(0xFF3B82F6)],
+                        );
                         break;
                       case AmbientThemeMode.morning:
-                        title = 'Only Morning Gradient';
+                        title = 'Morning Golden Dawn';
                         desc = 'Always illuminated with vibrant golden amber dawn warmth.';
                         icon = Icons.wb_sunny_rounded;
                         accent = const Color(0xFFF59E0B);
+                        previewGradient = const LinearGradient(
+                          colors: [Color(0xFFFEF3C7), Color(0xFFF59E0B)],
+                        );
                         break;
                       case AmbientThemeMode.afternoon:
-                        title = 'Only Afternoon/Evening Gradient';
+                        title = 'Afternoon Sunset Coral';
                         desc = 'Always bathed in warm radiant sunset orange hues.';
                         icon = Icons.wb_twilight_rounded;
                         accent = const Color(0xFFEA580C);
+                        previewGradient = const LinearGradient(
+                          colors: [Color(0xFFFFEDD5), Color(0xFFEA580C)],
+                        );
                         break;
                       case AmbientThemeMode.night:
-                        title = 'Only Blue Night Gradient';
+                        title = 'Blue Night Twilight';
                         desc = 'Always bathed in deep midnight sapphire dark blue tones.';
                         icon = Icons.nights_stay_rounded;
                         accent = const Color(0xFF3B82F6);
+                        previewGradient = const LinearGradient(
+                          colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
+                        );
                         break;
                       case AmbientThemeMode.amoled:
                         title = 'Clean Minimal AMOLED Black';
-                        desc = 'Turn off all gradients for pure pitch-black AMOLED aesthetic.';
+                        desc = 'Turns off all ambient gradients for true pitch-black OLED clarity.';
                         icon = Icons.contrast_rounded;
                         accent = isDarkMode ? Colors.white : Colors.black;
+                        previewGradient = null; // pure black
                         break;
                     }
 
@@ -1733,11 +2008,24 @@ class _MoreScreenState extends State<MoreScreen> {
                           child: Row(
                             children: [
                               Container(
-                                width: 36,
-                                height: 36,
+                                width: 38,
+                                height: 38,
                                 decoration: BoxDecoration(
-                                  color: accent.withValues(alpha: isDarkMode ? 0.20 : 0.15),
+                                  color: mode == AmbientThemeMode.amoled
+                                      ? const Color(0xFF000000)
+                                      : accent.withValues(alpha: isDarkMode ? 0.22 : 0.16),
+                                  gradient: previewGradient != null
+                                      ? LinearGradient(
+                                          colors: previewGradient.colors
+                                              .map((c) => c.withValues(alpha: 0.4))
+                                              .toList(),
+                                        )
+                                      : null,
                                   borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: accent.withValues(alpha: 0.35),
+                                    width: 0.8,
+                                  ),
                                 ),
                                 child: Icon(icon, size: 18, color: accent),
                               ),
@@ -1769,7 +2057,7 @@ class _MoreScreenState extends State<MoreScreen> {
                                 Icon(
                                   Icons.check_circle_rounded,
                                   size: 20,
-                                  color: isDarkMode ? Colors.white : Colors.black,
+                                  color: accent,
                                 ),
                             ],
                           ),

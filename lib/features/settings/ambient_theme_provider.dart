@@ -28,6 +28,12 @@ class AmbientThemeProvider with ChangeNotifier {
 
   AmbientThemeMode get mode => _mode;
   bool get isLoaded => _isLoaded;
+  bool get isAmoled => _mode == AmbientThemeMode.amoled;
+  bool get isDynamic => _mode == AmbientThemeMode.dynamicCycle;
+  bool get isAccent =>
+      _mode == AmbientThemeMode.morning ||
+      _mode == AmbientThemeMode.afternoon ||
+      _mode == AmbientThemeMode.night;
 
   AmbientThemeProvider() {
     _loadFromPrefs();
