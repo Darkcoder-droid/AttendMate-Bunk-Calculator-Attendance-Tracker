@@ -278,7 +278,11 @@ class _GitHubDiscussionsScreenState extends State<GitHubDiscussionsScreen> {
                                             if (item.authorAvatarUrl != null)
                                               CircleAvatar(
                                                 radius: 9,
-                                                backgroundImage: NetworkImage(item.authorAvatarUrl!),
+                                                backgroundImage: ResizeImage(
+                                                  NetworkImage(item.authorAvatarUrl!),
+                                                  width: 60,
+                                                  height: 60,
+                                                ),
                                               )
                                             else
                                               const CircleAvatar(

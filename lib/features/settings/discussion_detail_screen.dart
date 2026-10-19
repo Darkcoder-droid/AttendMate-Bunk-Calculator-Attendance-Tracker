@@ -104,7 +104,11 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                 if (discussion.authorAvatarUrl != null)
                   CircleAvatar(
                     radius: 14,
-                    backgroundImage: NetworkImage(discussion.authorAvatarUrl!),
+                    backgroundImage: ResizeImage(
+                      NetworkImage(discussion.authorAvatarUrl!),
+                      width: 90,
+                      height: 90,
+                    ),
                   )
                 else
                   const CircleAvatar(

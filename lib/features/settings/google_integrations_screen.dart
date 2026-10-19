@@ -409,7 +409,13 @@ class _GoogleIntegrationsScreenState extends State<GoogleIntegrationsScreen> {
                     ),
                     child: CircleAvatar(
                       radius: 26,
-                      backgroundImage: user.photoUrl != null ? NetworkImage(user.photoUrl!) : null,
+                      backgroundImage: user.photoUrl != null
+                          ? ResizeImage(
+                              NetworkImage(user.photoUrl!),
+                              width: 160,
+                              height: 160,
+                            )
+                          : null,
                       backgroundColor: colorScheme.primary.withValues(alpha: 0.15),
                       child: user.photoUrl == null
                           ? Text(
