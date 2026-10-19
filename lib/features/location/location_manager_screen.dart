@@ -997,83 +997,102 @@ class _LocationManagerScreenState extends State<LocationManagerScreen> {
         ),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                children: [
-                  // ── Real-World Classroom Presence & Proximity Card ───────────
-                  _buildPresenceStatusCard(
-                    colorScheme: colorScheme,
-                    isDarkMode: isDarkMode,
-                    mappedCount: mappedCount,
-                    unmappedCount: unmappedCount,
-                  ),
-
-                  const SizedBox(height: 18),
-
-                  // ── Quick Filter Tabs & Search Bar ───────────────────────
-                  _buildFilterAndSearchSection(
-                    colorScheme: colorScheme,
-                    isDarkMode: isDarkMode,
-                    totalCount: _locations.length,
-                    mappedCount: mappedCount,
-                    unmappedCount: unmappedCount,
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  // ── Section Header ───────────────────────────────────────
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.room_preferences_rounded,
-                            size: 15,
-                            color: colorScheme.primary,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'CLASSROOM LOCATIONS',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.8,
-                              color: colorScheme.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        '${filteredLocations.length} ${_currentFilter == _LocationFilter.all ? 'total' : 'matched'}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+            : CustomScrollView(
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        // ── Real-World Classroom Presence & Proximity Card ───────────
+                        _buildPresenceStatusCard(
+                          colorScheme: colorScheme,
+                          isDarkMode: isDarkMode,
+                          mappedCount: mappedCount,
+                          unmappedCount: unmappedCount,
                         ),
-                      ),
-                    ],
-                  ),
 
-                  const SizedBox(height: 10),
+                        const SizedBox(height: 18),
+
+                        // ── Quick Filter Tabs & Search Bar ───────────────────────
+                        _buildFilterAndSearchSection(
+                          colorScheme: colorScheme,
+                          isDarkMode: isDarkMode,
+                          totalCount: _locations.length,
+                          mappedCount: mappedCount,
+                          unmappedCount: unmappedCount,
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        // ── Section Header ───────────────────────────────────────
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.room_preferences_rounded,
+                                  size: 15,
+                                  color: colorScheme.primary,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'CLASSROOM LOCATIONS',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.8,
+                                    color: colorScheme.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              '${filteredLocations.length} ${_currentFilter == _LocationFilter.all ? 'total' : 'matched'}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 10),
+                      ]),
+                    ),
+                  ),
 
                   // ── Locations List or Empty State ────────────────────────
                   if (filteredLocations.isEmpty)
-                    _buildEmptyState(
-                      colorScheme: colorScheme,
-                      isDarkMode: isDarkMode,
-                      isFilterEmpty: _locations.isNotEmpty,
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      sliver: SliverToBoxAdapter(
+                        child: _buildEmptyState(
+                          colorScheme: colorScheme,
+                          isDarkMode: isDarkMode,
+                          isFilterEmpty: _locations.isNotEmpty,
+                        ),
+                      ),
                     )
                   else
-                    ...filteredLocations.map(
-                      (loc) => _buildTactileLocationCard(
-                        loc: loc,
-                        colorScheme: colorScheme,
-                        isDarkMode: isDarkMode,
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      sliver: SliverList.builder(
+                        itemCount: filteredLocations.length,
+                        itemBuilder: (context, index) {
+                          return _buildTactileLocationCard(
+                            loc: filteredLocations[index],
+                            colorScheme: colorScheme,
+                            isDarkMode: isDarkMode,
+                          );
+                        },
                       ),
                     ),
 
-                  const SizedBox(height: 80),
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 80),
+                  ),
                 ],
               ),
         floatingActionButton: FloatingActionButton.extended(
