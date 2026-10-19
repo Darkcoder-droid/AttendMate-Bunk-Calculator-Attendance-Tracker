@@ -1,5 +1,5 @@
 import 'dart:math' as math;
-import 'dart:ui' show lerpDouble;
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -357,25 +357,31 @@ class TodayScheduleState extends State<TodaySchedule> {
                           bottom: 0,
                           width: markerWidth,
                           child: _isDraggingMarker
-                              ? Container(
-                                  decoration: BoxDecoration(
-                                    color: isDarkMode
-                                        ? Colors.white.withValues(alpha: 0.28)
-                                        : Colors.black.withValues(alpha: 0.16),
-                                    borderRadius: BorderRadius.circular(rs.scale(22)),
-                                    border: Border.all(
-                                      color: isDarkMode
-                                          ? Colors.white.withValues(alpha: 0.50)
-                                          : Colors.black.withValues(alpha: 0.22),
-                                      width: 1.2,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: isDarkMode ? 0.20 : 0.06),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 3),
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(rs.scale(22)),
+                                  child: BackdropFilter(
+                                    filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: isDarkMode
+                                            ? Colors.white.withValues(alpha: 0.28)
+                                            : Colors.black.withValues(alpha: 0.16),
+                                        borderRadius: BorderRadius.circular(rs.scale(22)),
+                                        border: Border.all(
+                                          color: isDarkMode
+                                              ? Colors.white.withValues(alpha: 0.50)
+                                              : Colors.black.withValues(alpha: 0.22),
+                                          width: 1.2,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: isDarkMode ? 0.20 : 0.06),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ],
                                       ),
-                                    ],
+                                    ),
                                   ),
                                 )
                               : Container(
@@ -723,33 +729,30 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
       isScrollControlled: true,
       builder: (sheetContext) {
         final currentStatus = currentAttendance?.status;
-        return Container(
-          padding: EdgeInsets.fromLTRB(
-            rs.scale(20),
-            rs.scale(16),
-            rs.scale(20),
-            rs.scale(32) + MediaQuery.of(sheetContext).viewInsets.bottom,
-          ),
-          decoration: BoxDecoration(
-            color: isDarkMode
-                ? const Color(0xFF141418)
-                : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border.all(
-              color: isDarkMode
-                  ? Colors.white.withValues(alpha: 0.15)
-                  : Colors.black.withValues(alpha: 0.10),
-              width: 0.9,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDarkMode ? 0.40 : 0.08),
-                blurRadius: 20,
-                offset: const Offset(0, -6),
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+              padding: EdgeInsets.fromLTRB(
+                rs.scale(20),
+                rs.scale(16),
+                rs.scale(20),
+                rs.scale(32) + MediaQuery.of(sheetContext).viewInsets.bottom,
               ),
-            ],
-          ),
-          child: Column(
+              decoration: BoxDecoration(
+                color: isDarkMode
+                    ? const Color(0xFF101016).withValues(alpha: 0.72)
+                    : Colors.white.withValues(alpha: 0.78),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                border: Border.all(
+                  color: isDarkMode
+                      ? Colors.white.withValues(alpha: 0.16)
+                      : Colors.white.withValues(alpha: 0.60),
+                  width: 0.9,
+                ),
+              ),
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -970,7 +973,9 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
                   ),
                 ],
               ),
-            );
+            ),
+          ),
+        );
       },
     );
   }
@@ -1403,28 +1408,25 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
     return Center(
       child: Padding(
         padding: rs.insetsAll(24),
-        child: Container(
-          padding: rs.insetsAll(28),
-          decoration: BoxDecoration(
-            color: isDarkMode
-                ? const Color(0xFF14141A)
-                : Colors.white,
-            borderRadius: BorderRadius.circular(rs.scale(24)),
-            border: Border.all(
-              color: isDarkMode
-                  ? Colors.white.withValues(alpha: 0.12)
-                  : Colors.black.withValues(alpha: 0.08),
-              width: 0.8,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDarkMode ? 0.25 : 0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(rs.scale(24)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+              padding: rs.insetsAll(28),
+              decoration: BoxDecoration(
+                color: isDarkMode
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.white.withValues(alpha: 0.50),
+                borderRadius: BorderRadius.circular(rs.scale(24)),
+                border: Border.all(
+                  color: isDarkMode
+                      ? Colors.white.withValues(alpha: 0.12)
+                      : Colors.black.withValues(alpha: 0.08),
+                  width: 0.8,
+                ),
               ),
-            ],
-          ),
-          child: Column(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
@@ -1472,7 +1474,9 @@ class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
               ),
             ),
           ),
-        );
+        ),
+      ),
+    );
   }
 }
 
@@ -2102,12 +2106,12 @@ class _StackedCardDeckState extends State<StackedCardDeck>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isDarkMode
-                      ? const Color(0xFF141418)
-                      : Colors.white,
+                      ? const Color(0xFF14141C).withValues(alpha: 0.70)
+                      : Colors.white.withValues(alpha: 0.78),
                   border: Border.all(
                     color: isDarkMode
                         ? Colors.white.withValues(alpha: 0.16)
-                        : Colors.black.withValues(alpha: 0.10),
+                        : Colors.white.withValues(alpha: 0.60),
                     width: 0.9,
                   ),
                 ),
@@ -2145,12 +2149,14 @@ class _StackedCardDeckState extends State<StackedCardDeck>
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF141418) : Colors.white,
+        color: isDarkMode
+            ? const Color(0xFF14141C).withValues(alpha: 0.70)
+            : Colors.white.withValues(alpha: 0.78),
         borderRadius: BorderRadius.circular(rs.scale(28)),
         border: Border.all(
           color: isDarkMode
               ? Colors.white.withValues(alpha: 0.16)
-              : Colors.black.withValues(alpha: 0.10),
+              : Colors.white.withValues(alpha: 0.60),
           width: 1.0,
         ),
         boxShadow: [
@@ -2261,12 +2267,14 @@ class _StackedCardDeckState extends State<StackedCardDeck>
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF141418) : Colors.white,
+        color: isDarkMode
+            ? const Color(0xFF14141C).withValues(alpha: 0.70)
+            : Colors.white.withValues(alpha: 0.78),
         borderRadius: BorderRadius.circular(rs.scale(28)),
         border: Border.all(
           color: isDarkMode
-              ? Colors.white.withValues(alpha: 0.14)
-              : Colors.black.withValues(alpha: 0.08),
+              ? Colors.white.withValues(alpha: 0.16)
+              : Colors.white.withValues(alpha: 0.60),
           width: 1.0,
         ),
         boxShadow: [
@@ -2377,14 +2385,18 @@ class _StackedCardDeckState extends State<StackedCardDeck>
     } else if (verticalSwipeRatio > 0.18) {
       borderColor = const Color(0xFFF59E0B).withValues(alpha: 0.65);
     } else {
-      borderColor = isDarkMode ? Colors.white.withValues(alpha: 0.16) : Colors.black.withValues(alpha: 0.10);
+      borderColor = isDarkMode
+          ? Colors.white.withValues(alpha: 0.16)
+          : Colors.white.withValues(alpha: 0.60);
     }
 
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF141418) : Colors.white,
+        color: isDarkMode
+            ? const Color(0xFF14141C).withValues(alpha: 0.70)
+            : Colors.white.withValues(alpha: 0.78),
         borderRadius: BorderRadius.circular(rs.scale(28)),
         border: Border.all(color: borderColor, width: 1.0),
         boxShadow: [
@@ -3016,28 +3028,42 @@ class AccordionPeekWindow extends StatelessWidget {
     required int cancelledCount,
     required int remainingCount,
   }) {
-    return Container(
+    return ClipRRect(
       key: const ValueKey('peek_trigger_capsule'),
-      decoration: BoxDecoration(
-        color: isDarkMode
-            ? const Color(0xFF16161C)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(rs.scale(22)),
-        border: Border.all(
-          color: isDarkMode
-              ? Colors.white.withValues(alpha: 0.16)
-              : Colors.black.withValues(alpha: 0.08),
-          width: 0.9,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDarkMode ? 0.30 : 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+      borderRadius: BorderRadius.circular(rs.scale(22)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDarkMode
+                  ? [
+                      const Color(0xFF18181D).withValues(alpha: 0.68),
+                      const Color(0xFF0F0F12).withValues(alpha: 0.75),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.76),
+                      const Color(0xFFF8F9FA).withValues(alpha: 0.70),
+                    ],
+            ),
+            borderRadius: BorderRadius.circular(rs.scale(22)),
+            border: Border.all(
+              color: isDarkMode
+                  ? Colors.white.withValues(alpha: 0.18)
+                  : Colors.white.withValues(alpha: 0.60),
+              width: 0.9,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDarkMode ? 0.35 : 0.08),
+                blurRadius: 18,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Material(
+          child: Material(
             color: Colors.transparent,
             child: InkWell(
               onTap: onToggleExpand,
@@ -3157,7 +3183,9 @@ class AccordionPeekWindow extends StatelessWidget {
               ),
             ),
           ),
-        );
+        ),
+      ),
+    );
   }
 
   @override
@@ -3201,27 +3229,41 @@ class AccordionPeekWindow extends StatelessWidget {
     }
 
     // --- Expanded State: Structured App-Type Timeline Rail Sheet ---
-    return Container(
-      decoration: BoxDecoration(
-        color: isDarkMode
-            ? const Color(0xFF141418)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(rs.scale(24)),
-        border: Border.all(
-          color: isDarkMode
-              ? Colors.white.withValues(alpha: 0.16)
-              : Colors.black.withValues(alpha: 0.10),
-          width: 0.9,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDarkMode ? 0.35 : 0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(rs.scale(24)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: isDarkMode
+                  ? [
+                      const Color(0xFF14141C).withValues(alpha: 0.72),
+                      const Color(0xFF0D0D12).withValues(alpha: 0.78),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.80),
+                      const Color(0xFFF8F9FA).withValues(alpha: 0.75),
+                    ],
+            ),
+            borderRadius: BorderRadius.circular(rs.scale(24)),
+            border: Border.all(
+              color: isDarkMode
+                  ? Colors.white.withValues(alpha: 0.16)
+                  : Colors.white.withValues(alpha: 0.60),
+              width: 0.9,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDarkMode ? 0.60 : 0.18),
+                blurRadius: 36,
+                offset: const Offset(0, -8),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
+          child: Column(
             children: [
               // Header Tab & Drag Handle
               InkWell(
@@ -3962,7 +4004,9 @@ class AccordionPeekWindow extends StatelessWidget {
               ),
             ],
           ),
-        );
+        ),
+      ),
+    );
   }
 }
 
@@ -4136,15 +4180,15 @@ class DayOverSummaryView extends StatelessWidget {
           padding: rs.insetsAll(18),
           decoration: BoxDecoration(
             color: isDarkMode
-                ? const Color(0xFF16161C)
-                : Colors.white,
-                borderRadius: BorderRadius.circular(rs.scale(24)),
-                border: Border.all(
-                  color: isDarkMode
-                      ? Colors.white.withValues(alpha: 0.18)
-                      : Colors.black.withValues(alpha: 0.08),
-                  width: 1.0,
-                ),
+                ? const Color(0xFF14141C).withValues(alpha: 0.68)
+                : Colors.white.withValues(alpha: 0.76),
+            borderRadius: BorderRadius.circular(rs.scale(24)),
+            border: Border.all(
+              color: isDarkMode
+                  ? Colors.white.withValues(alpha: 0.16)
+                  : Colors.white.withValues(alpha: 0.60),
+              width: 1.0,
+            ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: isDarkMode ? 0.22 : 0.06),
@@ -4587,15 +4631,15 @@ class DayOverSummaryView extends StatelessWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: isDarkMode
-                                    ? const Color(0xFF16161C)
-                                    : Colors.white,
+                                    ? Colors.white.withValues(alpha: 0.07)
+                                    : Colors.white.withValues(alpha: 0.75),
                                 borderRadius: BorderRadius.circular(rs.scale(18)),
-                                    border: Border.all(
-                                      color: isDarkMode
-                                          ? Colors.white.withValues(alpha: 0.10)
-                                          : Colors.black.withValues(alpha: 0.08),
-                                      width: 0.8,
-                                    ),
+                                border: Border.all(
+                                  color: isDarkMode
+                                      ? Colors.white.withValues(alpha: 0.12)
+                                      : Colors.white.withValues(alpha: 0.60),
+                                  width: 0.8,
+                                ),
                                     boxShadow: [
                                       BoxShadow(
                                         color: Colors.black.withValues(alpha: isDarkMode ? 0.22 : 0.04),
