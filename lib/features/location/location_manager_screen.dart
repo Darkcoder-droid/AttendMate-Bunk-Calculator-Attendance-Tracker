@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -390,25 +389,28 @@ class _LocationManagerScreenState extends State<LocationManagerScreen> {
 
           return Padding(
             padding: EdgeInsets.only(bottom: viewInsets),
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-                  decoration: BoxDecoration(
-                    color: isDarkMode ? const Color(0xFF141418) : Colors.white,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-                    border: Border(
-                      top: BorderSide(
-                        color: isDarkMode
-                            ? Colors.white.withValues(alpha: 0.16)
-                            : Colors.black.withValues(alpha: 0.08),
-                        width: 1.0,
-                      ),
-                    ),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+              decoration: BoxDecoration(
+                color: isDarkMode ? const Color(0xFF141418) : Colors.white,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                border: Border(
+                  top: BorderSide(
+                    color: isDarkMode
+                        ? Colors.white.withValues(alpha: 0.16)
+                        : Colors.black.withValues(alpha: 0.08),
+                    width: 1.0,
                   ),
-                  child: SingleChildScrollView(
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDarkMode ? 0.35 : 0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: SingleChildScrollView(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -906,9 +908,7 @@ class _LocationManagerScreenState extends State<LocationManagerScreen> {
                     ),
                   ),
                 ),
-              ),
-            ),
-          );
+              );
         },
       ),
     );
@@ -1428,12 +1428,8 @@ class _LocationManagerScreenState extends State<LocationManagerScreen> {
         // Search Bar (Shown when user has 3+ locations)
         if (_locations.length >= 3) ...[
           const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: TextField(
-                controller: _searchController,
+          TextField(
+            controller: _searchController,
                 onChanged: (val) => setState(() => _searchQuery = val),
                 decoration: InputDecoration(
                   hintText: 'Search by room or building...',
@@ -1471,8 +1467,6 @@ class _LocationManagerScreenState extends State<LocationManagerScreen> {
                   ),
                 ),
               ),
-            ),
-          ),
         ],
       ],
     );
@@ -1989,24 +1983,27 @@ class _LocationManagerScreenState extends State<LocationManagerScreen> {
     required bool isDarkMode,
     required bool isFilterEmpty,
   }) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
-          decoration: BoxDecoration(
-            color: isDarkMode
-                ? const Color(0xFF14141E).withValues(alpha: 0.50)
-                : Colors.white.withValues(alpha: 0.65),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isDarkMode
-                  ? Colors.white.withValues(alpha: 0.12)
-                  : Colors.black.withValues(alpha: 0.08),
-            ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+      decoration: BoxDecoration(
+        color: isDarkMode
+            ? const Color(0xFF14141A)
+            : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDarkMode
+              ? Colors.white.withValues(alpha: 0.12)
+              : Colors.black.withValues(alpha: 0.08),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDarkMode ? 0.20 : 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
-          child: Column(
+        ],
+      ),
+      child: Column(
             children: [
               Container(
                 padding: const EdgeInsets.all(18),
@@ -2065,8 +2062,6 @@ class _LocationManagerScreenState extends State<LocationManagerScreen> {
                 ),
             ],
           ),
-        ),
-      ),
     );
   }
 
