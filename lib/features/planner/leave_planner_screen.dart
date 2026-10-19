@@ -200,9 +200,7 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
   }
 
   Widget _buildOverviewCard(ResponsiveScale rs, bool isDarkMode, int totalImpacted) {
-    final cardBg = isDarkMode
-        ? Colors.white.withValues(alpha: 0.06)
-        : Colors.white.withValues(alpha: 0.65);
+    final cardBg = isDarkMode ? const Color(0xFF141418) : Colors.white;
     final cardBorder = isDarkMode
         ? Colors.white.withValues(alpha: 0.12)
         : Colors.black.withValues(alpha: 0.08);
@@ -210,18 +208,21 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
         ? Colors.white.withValues(alpha: 0.08)
         : Colors.black.withValues(alpha: 0.06);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(rs.scale(24)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          margin: EdgeInsets.only(bottom: rs.scale(14)),
-          padding: rs.insetsAll(16),
-          decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: BorderRadius.circular(rs.scale(24)),
-            border: Border.all(color: cardBorder, width: 0.8),
+    return Container(
+      margin: EdgeInsets.only(bottom: rs.scale(14)),
+      padding: rs.insetsAll(16),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(rs.scale(24)),
+        border: Border.all(color: cardBorder, width: 0.8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDarkMode ? 0.20 : 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
+        ],
+      ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -353,10 +354,8 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
+        );
+      }
 
   Widget _buildEmptyState(ResponsiveScale rs, ThemeData theme, bool isDarkMode) {
     return Center(
@@ -426,7 +425,7 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
     final startDate = DateTime(leave.startDate.year, leave.startDate.month, leave.startDate.day);
     final endDate = DateTime(leave.endDate.year, leave.endDate.month, leave.endDate.day);
 
-    final cardBg = isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.white.withValues(alpha: 0.65);
+    final cardBg = isDarkMode ? const Color(0xFF141418) : Colors.white;
     final cardBorder = isDarkMode ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08);
     final recessedBg = isDarkMode ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03);
     final innerBorder = isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06);
@@ -480,17 +479,20 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
       dateRangeDisplay = '${leave.startDate.day}/${leave.startDate.month}/${leave.startDate.year} ($startTimeStr) - ${leave.endDate.day}/${leave.endDate.month}/${leave.endDate.year} ($endTimeStr)';
     }
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(rs.scale(24)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          margin: EdgeInsets.only(bottom: rs.scale(12)),
-          decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: BorderRadius.circular(rs.scale(24)),
-            border: Border.all(color: cardBorder, width: 0.8),
+    return Container(
+      margin: EdgeInsets.only(bottom: rs.scale(12)),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(rs.scale(24)),
+        border: Border.all(color: cardBorder, width: 0.8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDarkMode ? 0.20 : 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
+        ],
+      ),
           child: Padding(
             padding: rs.insetsAll(14),
             child: Column(
@@ -616,10 +618,8 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
+        );
+      }
 
   void _showAddLeaveDialog(BuildContext parentContext, List<Subject> subjects) {
     _showLeaveEditorDialog(parentContext: parentContext, subjects: subjects);
