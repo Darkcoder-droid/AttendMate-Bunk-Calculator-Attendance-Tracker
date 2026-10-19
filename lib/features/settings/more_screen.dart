@@ -7,6 +7,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
+import 'dart:ui';
 
 import 'ambient_theme_provider.dart';
 import 'refresh_rate_provider.dart';
@@ -1861,30 +1862,27 @@ class _MoreScreenState extends State<MoreScreen> {
       backgroundColor: Colors.transparent,
       barrierColor: isDarkMode ? Colors.black.withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.3),
       builder: (ctx) {
-        return Container(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-          decoration: BoxDecoration(
-            color: isDarkMode
-                ? const Color(0xFF141418)
-                : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border(
-              top: BorderSide(
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+              decoration: BoxDecoration(
                 color: isDarkMode
-                    ? Colors.white.withValues(alpha: 0.16)
-                    : Colors.black.withValues(alpha: 0.08),
-                width: 1.0,
+                    ? const Color(0xFF0C0C12).withValues(alpha: 0.75)
+                    : Colors.white.withValues(alpha: 0.82),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                border: Border(
+                  top: BorderSide(
+                    color: isDarkMode
+                        ? Colors.white.withValues(alpha: 0.18)
+                        : Colors.black.withValues(alpha: 0.10),
+                    width: 1.0,
+                  ),
+                ),
               ),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDarkMode ? 0.35 : 0.06),
-                blurRadius: 16,
-                offset: const Offset(0, -4),
-              ),
-            ],
-          ),
-          child: Column(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -2073,6 +2071,8 @@ class _MoreScreenState extends State<MoreScreen> {
                   }),
                 ],
               ),
+            ),
+          ),
         );
       },
     );
@@ -2303,11 +2303,25 @@ class _MoreScreenState extends State<MoreScreen> {
         final isPlatformSupported = refreshRateProvider.isSupportedOnPlatform;
         final availableRates = refreshRateProvider.availableRefreshRates;
 
-        return Container(
-          decoration: BoxDecoration(
-            color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDarkMode
+                    ? const Color(0xFF0C0C12).withValues(alpha: 0.75)
+                    : Colors.white.withValues(alpha: 0.82),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                border: Border(
+                  top: BorderSide(
+                    color: isDarkMode
+                        ? Colors.white.withValues(alpha: 0.18)
+                        : Colors.white.withValues(alpha: 0.60),
+                    width: 1.0,
+                  ),
+                ),
+              ),
           child: SafeArea(
             top: false,
             child: Padding(
@@ -2595,7 +2609,9 @@ class _MoreScreenState extends State<MoreScreen> {
               ),
             ),
           ),
-        );
+        ),
+      ),
+    );
       },
     );
   }
@@ -2604,30 +2620,29 @@ class _MoreScreenState extends State<MoreScreen> {
     required List<Widget> children,
     required bool isDarkMode,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDarkMode
-            ? const Color(0xFF14141A)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDarkMode
-              ? Colors.white.withValues(alpha: 0.14)
-              : Colors.black.withValues(alpha: 0.08),
-          width: 0.9,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDarkMode ? 0.25 : 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? const Color(0xFF0D0D12).withValues(alpha: 0.42)
+                : Colors.white.withValues(alpha: 0.55),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDarkMode
+                  ? Colors.white.withValues(alpha: 0.16)
+                  : Colors.white.withValues(alpha: 0.60),
+              width: 0.9,
+            ),
           ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: children,
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: children,
+          ),
+        ),
       ),
     );
   }

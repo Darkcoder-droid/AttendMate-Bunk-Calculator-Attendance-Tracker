@@ -375,28 +375,25 @@ class _GoogleIntegrationsScreenState extends State<GoogleIntegrationsScreen> {
 
   // ── Connected User Hero Card ──────────────────────────────────────────
   Widget _buildConnectedUserCard(dynamic user, ColorScheme colorScheme, bool isDarkMode) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: isDarkMode
-            ? const Color(0xFF14141A)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDarkMode
-              ? Colors.white.withValues(alpha: 0.14)
-              : Colors.black.withValues(alpha: 0.08),
-          width: 1.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDarkMode ? 0.25 : 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? const Color(0xFF0F0F16).withValues(alpha: 0.60)
+                : Colors.white.withValues(alpha: 0.72),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDarkMode
+                  ? Colors.white.withValues(alpha: 0.14)
+                  : Colors.black.withValues(alpha: 0.08),
+              width: 1.0,
+            ),
           ),
-        ],
-      ),
-      child: Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -519,33 +516,32 @@ class _GoogleIntegrationsScreenState extends State<GoogleIntegrationsScreen> {
               ),
             ],
           ),
+        ),
+      ),
     );
   }
 
   // ── Connect Google Account Hero Card ──────────────────────────────────
   Widget _buildConnectGoogleCard(ColorScheme colorScheme, bool isDarkMode) {
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: isDarkMode
-            ? const Color(0xFF14141A)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDarkMode
-              ? Colors.white.withValues(alpha: 0.14)
-              : Colors.black.withValues(alpha: 0.08),
-          width: 1.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDarkMode ? 0.25 : 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? const Color(0xFF0F0F16).withValues(alpha: 0.60)
+                : Colors.white.withValues(alpha: 0.72),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDarkMode
+                  ? Colors.white.withValues(alpha: 0.14)
+                  : Colors.black.withValues(alpha: 0.08),
+              width: 1.0,
+            ),
           ),
-        ],
-      ),
-      child: Column(
+          child: Column(
             children: [
               Container(
                 padding: const EdgeInsets.all(16),
@@ -591,33 +587,32 @@ class _GoogleIntegrationsScreenState extends State<GoogleIntegrationsScreen> {
               ),
             ],
           ),
+        ),
+      ),
     );
   }
 
   // ── Google Calendar Sync Glass Card ───────────────────────────────────
   Widget _buildCalendarSyncCard(bool isSignedIn, ColorScheme colorScheme, bool isDarkMode) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: isDarkMode
-            ? const Color(0xFF14141A)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isDarkMode
-              ? Colors.white.withValues(alpha: 0.12)
-              : Colors.black.withValues(alpha: 0.07),
-          width: 1.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDarkMode ? 0.25 : 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? const Color(0xFF13131B).withValues(alpha: 0.55)
+                : Colors.white.withValues(alpha: 0.70),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: isDarkMode
+                  ? Colors.white.withValues(alpha: 0.11)
+                  : Colors.black.withValues(alpha: 0.07),
+              width: 1.0,
+            ),
           ),
-        ],
-      ),
-      child: Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -719,33 +714,32 @@ class _GoogleIntegrationsScreenState extends State<GoogleIntegrationsScreen> {
                 ),
             ],
           ),
+        ),
+      ),
     );
   }
 
   // ── Google Drive Cloud Backup Glass Card ──────────────────────────────
   Widget _buildDriveBackupCard(bool isSignedIn, ColorScheme colorScheme, bool isDarkMode) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: isDarkMode
-            ? const Color(0xFF14141A)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isDarkMode
-              ? Colors.white.withValues(alpha: 0.12)
-              : Colors.black.withValues(alpha: 0.07),
-          width: 1.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDarkMode ? 0.25 : 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? const Color(0xFF13131B).withValues(alpha: 0.55)
+                : Colors.white.withValues(alpha: 0.70),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: isDarkMode
+                  ? Colors.white.withValues(alpha: 0.11)
+                  : Colors.black.withValues(alpha: 0.07),
+              width: 1.0,
+            ),
           ),
-        ],
-      ),
-      child: Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -916,33 +910,32 @@ class _GoogleIntegrationsScreenState extends State<GoogleIntegrationsScreen> {
                 ),
             ],
           ),
+        ),
+      ),
     );
   }
 
   // ── Privacy & Trust Strip ─────────────────────────────────────────────
   Widget _buildPrivacyTrustCard(ColorScheme colorScheme, bool isDarkMode) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDarkMode
-            ? const Color(0xFF14141A)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isDarkMode
-              ? Colors.white.withValues(alpha: 0.10)
-              : Colors.black.withValues(alpha: 0.06),
-          width: 1.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDarkMode ? 0.20 : 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDarkMode
+                ? const Color(0xFF13131B).withValues(alpha: 0.45)
+                : Colors.white.withValues(alpha: 0.60),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: isDarkMode
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.05),
+              width: 1.0,
+            ),
           ),
-        ],
-      ),
-      child: Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -979,6 +972,8 @@ class _GoogleIntegrationsScreenState extends State<GoogleIntegrationsScreen> {
               ),
             ],
           ),
+        ),
+      ),
     );
   }
 }
