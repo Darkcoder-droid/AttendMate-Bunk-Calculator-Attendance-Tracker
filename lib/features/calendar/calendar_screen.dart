@@ -382,32 +382,34 @@ class _CalendarScreenState extends State<CalendarScreen>
                 Expanded(
                   child: KeyedSubtree(
                     key: _calendarGridKey,
-                    child: AnimatedBuilder(
-                      animation: Listenable.merge([_cameraZoomAnimation, _pinchScaleNotifier]),
-                      builder: (context, child) {
-                        final t = _cameraZoomAnimation.value;
-                        final isPinching = _activePointers.length >= 2;
-                        final animScale = isPinching
-                            ? 1.0
-                            : (_isZoomingOut
-                                ? lerpDouble(1.06, 1.0, t)!
-                                : lerpDouble(0.94, 1.0, t)!);
-                        final totalScale = animScale * _pinchScaleNotifier.value;
-                        final opacity = lerpDouble(0.55, 1.0, t)!;
-                        return Opacity(
-                          opacity: opacity,
-                          child: Transform.scale(
-                            scale: totalScale,
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: _buildTimelineContent(
-                        monthPages: monthPages,
-                        startDate: startDate,
-                        endDate: endDate,
-                        subjects: subjectProvider.subjects,
-                        attendanceRecords: attendanceProvider.attendanceRecords,
+                    child: RepaintBoundary(
+                      child: AnimatedBuilder(
+                        animation: Listenable.merge([_cameraZoomAnimation, _pinchScaleNotifier]),
+                        builder: (context, child) {
+                          final t = _cameraZoomAnimation.value;
+                          final isPinching = _activePointers.length >= 2;
+                          final animScale = isPinching
+                              ? 1.0
+                              : (_isZoomingOut
+                                  ? lerpDouble(1.06, 1.0, t)!
+                                  : lerpDouble(0.94, 1.0, t)!);
+                          final totalScale = animScale * _pinchScaleNotifier.value;
+                          final opacity = lerpDouble(0.55, 1.0, t)!;
+                          return Opacity(
+                            opacity: opacity,
+                            child: Transform.scale(
+                              scale: totalScale,
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: _buildTimelineContent(
+                          monthPages: monthPages,
+                          startDate: startDate,
+                          endDate: endDate,
+                          subjects: subjectProvider.subjects,
+                          attendanceRecords: attendanceProvider.attendanceRecords,
+                        ),
                       ),
                     ),
                   ),
