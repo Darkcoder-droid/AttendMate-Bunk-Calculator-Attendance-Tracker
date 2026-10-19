@@ -120,47 +120,50 @@ class _SwipeableCardState extends State<SwipeableCard> with SingleTickerProvider
     // Limit swipe offset to 25% of the screen width
     _maxDragDistance = screenWidth * 0.25;
 
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final currentOffset = _controller.isAnimating ? _animation.value : _dragOffset;
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _controller,
+        child: widget.child,
+        builder: (context, staticChild) {
+          final currentOffset = _controller.isAnimating ? _animation.value : _dragOffset;
 
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            if (currentOffset != 0)
-              Positioned.fill(
-                child: ClipRRect(
-                  borderRadius: widget.borderRadius ?? BorderRadius.circular(widget.rs.scale(14)),
-                  child: Stack(
-                    children: [
-                      if (_controller.isAnimating && _animatingBackground != null)
-                        Positioned.fill(child: _animatingBackground!)
-                      else ...[
-                        if (currentOffset > 0)
-                          Positioned.fill(child: widget.swipeRightBackground),
-                        if (currentOffset < 0)
-                          Positioned.fill(child: widget.swipeLeftBackground),
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              if (currentOffset != 0)
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: widget.borderRadius ?? BorderRadius.circular(widget.rs.scale(14)),
+                    child: Stack(
+                      children: [
+                        if (_controller.isAnimating && _animatingBackground != null)
+                          Positioned.fill(child: _animatingBackground!)
+                        else ...[
+                          if (currentOffset > 0)
+                            Positioned.fill(child: widget.swipeRightBackground),
+                          if (currentOffset < 0)
+                            Positioned.fill(child: widget.swipeLeftBackground),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
+              GestureDetector(
+                onHorizontalDragStart: _onHorizontalDragStart,
+                onHorizontalDragUpdate: _onHorizontalDragUpdate,
+                onHorizontalDragEnd: _onHorizontalDragEnd,
+                behavior: HitTestBehavior.opaque,
+                child: Transform.translate(
+                  offset: Offset(currentOffset, 0.0),
+                  child: widget.childBuilder != null
+                      ? widget.childBuilder!(context, currentOffset)
+                      : staticChild!,
+                ),
               ),
-            GestureDetector(
-              onHorizontalDragStart: _onHorizontalDragStart,
-              onHorizontalDragUpdate: _onHorizontalDragUpdate,
-              onHorizontalDragEnd: _onHorizontalDragEnd,
-              behavior: HitTestBehavior.opaque,
-              child: Transform.translate(
-                offset: Offset(currentOffset, 0.0),
-                child: widget.childBuilder != null
-                    ? widget.childBuilder!(context, currentOffset)
-                    : widget.child!,
-              ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 }
