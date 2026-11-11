@@ -955,9 +955,11 @@ class _SubjectCardItemState extends State<_SubjectCardItem>
                               spacing: rs.width(6),
                               runSpacing: rs.height(6),
                               children: sortedSchedule.map((timeSlot) {
-                                final dayLabel = timeSlot.specificDate == null
-                                    ? timeSlot.day.name.capitalize().substring(0, 3).toUpperCase()
-                                    : '${timeSlot.day.name.capitalize().substring(0, 3).toUpperCase()} ${timeSlot.specificDate!.day}/${timeSlot.specificDate!.month}';
+                                final dayLabel = timeSlot.isExtra && timeSlot.specificDate != null
+                                    ? 'EXTRA ${timeSlot.specificDate!.day}/${timeSlot.specificDate!.month}'
+                                    : timeSlot.specificDate == null
+                                        ? timeSlot.day.name.capitalize().substring(0, 3).toUpperCase()
+                                        : '${timeSlot.day.name.capitalize().substring(0, 3).toUpperCase()} ${timeSlot.specificDate!.day}/${timeSlot.specificDate!.month}';
                                 final room = subject.getEffectiveRoom(timeSlot);
                                 final block = subject.getEffectiveBlock(timeSlot);
                                 final roomText = room != null

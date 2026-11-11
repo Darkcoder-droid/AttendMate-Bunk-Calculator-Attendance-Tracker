@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../attendance/attendance_model.dart';
@@ -23,6 +22,16 @@ class TimetableUpdateResult {
     required this.newSubjects,
     required this.retiredSubjects,
     required this.changedSubjectSchedules,
+  });
+}
+
+class ExtraClassMutationResult {
+  final bool success;
+  final String message;
+
+  const ExtraClassMutationResult({
+    required this.success,
+    required this.message,
   });
 }
 
@@ -57,6 +66,7 @@ class SubjectProvider with ChangeNotifier {
   void dispose() {
     _attendanceProvider.removeListener(_onAttendanceChanged);
     _autoSyncTimer?.cancel();
+    _notificationSyncTimer?.cancel();
     super.dispose();
   }
 
@@ -183,10 +193,13 @@ class SubjectProvider with ChangeNotifier {
         normalizedEffectiveFrom,
       );
 
-      final mergedSchedule = <TimeSlot>[
-        ...oldWeeklyBeforeCutoff,
-        ...importedNewSlots,
-      ];
+      final mergedSchedule = schedulePreservingExtraClasses(
+        replacement: <TimeSlot>[
+          ...oldWeeklyBeforeCutoff,
+          ...importedNewSlots,
+        ],
+        existing: existing.schedule,
+      );
 
       final updatedSubject = existing.copyWith(
         name: importedSubject.name,
@@ -360,6 +373,7 @@ class SubjectProvider with ChangeNotifier {
             normalizeDate(slot.specificDate)?.toIso8601String() ?? '',
             normalizeDate(slot.effectiveFrom)?.toIso8601String() ?? '',
             normalizeDate(slot.effectiveUntil)?.toIso8601String() ?? '',
+            slot.isExtra ? 'extra' : '',
           ].join('|'),
         )
         .join('~');
@@ -510,9 +524,140 @@ class SubjectProvider with ChangeNotifier {
     );
   }
 
+  Future<ExtraClassMutationResult> addExtraClass({
+    required String subjectId,
+    required DateTime date,
+    required TimeOfDay startTime,
+    required TimeOfDay endTime,
+  }) async {
+    final index = _subjects.indexWhere((subject) => subject.id == subjectId);
+    if (index == -1) {
+      return const ExtraClassMutationResult(
+        success: false,
+        message: 'Subject not found.',
+      );
+    }
+
+    final subject = _subjects[index];
+    final normalizedDate = normalizeDate(date) ?? date;
+    final startMinutes = startTime.hour * 60 + startTime.minute;
+    final endMinutes = endTime.hour * 60 + endTime.minute;
+    if (endMinutes <= startMinutes) {
+      return const ExtraClassMutationResult(
+        success: false,
+        message: 'End time must be after the start time.',
+      );
+    }
+
+    if (CalendarUtils.isLockedByManualOverride(subject, normalizedDate)) {
+      return const ExtraClassMutationResult(
+        success: false,
+        message: 'This date is locked by a manual attendance baseline.',
+      );
+    }
+
+    for (final other in _subjects) {
+      for (final slot in other.schedule) {
+        if (!slot.occursOnDate(normalizedDate)) {
+          continue;
+        }
+        if (slot.overlapsMinutes(startMinutes, endMinutes)) {
+          return ExtraClassMutationResult(
+            success: false,
+            message: 'That time overlaps an existing ${other.name} class.',
+          );
+        }
+      }
+    }
+
+    final extraSlot = TimeSlot(
+      day: DayOfWeek.values[normalizedDate.weekday - 1],
+      startTime: startTime,
+      endTime: endTime,
+      specificDate: normalizedDate,
+      isExtra: true,
+    );
+
+    _subjects[index] = subject.copyWith(
+      schedule: _sortedSchedule([...subject.schedule, extraSlot]),
+    );
+    await _databaseService.saveSubjects(_subjects);
+    final plannedLeaves = await _databaseService.loadPlannedLeaves();
+    if (plannedLeaves.isNotEmpty) {
+      await _attendanceProvider.syncPlannedLeavesWithAttendance(
+        plannedLeaves: plannedLeaves,
+        subjects: _subjects,
+      );
+    }
+    await _refreshAttendanceReminders();
+    await BackupService().notifyDataChanged();
+    notifyListeners();
+    _scheduleAutoSync();
+
+    return ExtraClassMutationResult(
+      success: true,
+      message: 'Extra ${subject.name} class added.',
+    );
+  }
+
+  Future<ExtraClassMutationResult> removeExtraClass({
+    required String subjectId,
+    required DateTime date,
+    required String slotKey,
+  }) async {
+    final index = _subjects.indexWhere((subject) => subject.id == subjectId);
+    if (index == -1) {
+      return const ExtraClassMutationResult(
+        success: false,
+        message: 'Subject not found.',
+      );
+    }
+
+    final subject = _subjects[index];
+    final normalizedDate = normalizeDate(date) ?? date;
+    if (CalendarUtils.isLockedByManualOverride(subject, normalizedDate)) {
+      return const ExtraClassMutationResult(
+        success: false,
+        message: 'This date is locked by a manual attendance baseline.',
+      );
+    }
+
+    final extraExists = subject.schedule.any(
+      (slot) => slot.isExtra && slot.slotKey == slotKey,
+    );
+    if (!extraExists) {
+      return const ExtraClassMutationResult(
+        success: false,
+        message: 'That extra class is no longer on this day.',
+      );
+    }
+
+    _subjects[index] = subject.copyWith(
+      schedule: subject.schedule
+          .where((slot) => !(slot.isExtra && slot.slotKey == slotKey))
+          .toList(),
+    );
+    await _databaseService.saveSubjects(_subjects);
+    await _attendanceProvider.deleteRecordForSubjectOnDate(
+      subjectId,
+      normalizedDate,
+      slotKey: slotKey,
+    );
+    await _refreshAttendanceReminders();
+    await BackupService().notifyDataChanged();
+    notifyListeners();
+    _scheduleAutoSync();
+
+    return ExtraClassMutationResult(
+      success: true,
+      message: 'Removed the extra ${subject.name} class.',
+    );
+  }
+
   Future<void> deleteSubject(Subject subject) async {
     _subjects.removeWhere((s) => s.id == subject.id);
     await _databaseService.saveSubjects(_subjects);
+    await NotificationService().cancelAllRemindersForSubject(subject);
     await _refreshAttendanceReminders();
     await _attendanceProvider.deleteRecordsForSubject(subject.id);
     await BackupService().notifyDataChanged();
@@ -753,10 +898,21 @@ class SubjectProvider with ChangeNotifier {
   }
 
   Timer? _autoSyncTimer;
+  Timer? _notificationSyncTimer;
+  bool _isAutoSyncRunning = false;
 
   void _onAttendanceChanged() {
     notifyListeners();
     scheduleAutoSync();
+    _scheduleNotificationRefresh();
+  }
+
+  void _scheduleNotificationRefresh() {
+    if (_isLoading) return;
+    _notificationSyncTimer?.cancel();
+    _notificationSyncTimer = Timer(const Duration(milliseconds: 1000), () {
+      _refreshAttendanceReminders();
+    });
   }
 
   void _scheduleAutoSync() => scheduleAutoSync();
@@ -764,12 +920,20 @@ class SubjectProvider with ChangeNotifier {
   void scheduleAutoSync() {
     if (_isLoading) return;
     _autoSyncTimer?.cancel();
-    _autoSyncTimer = Timer(const Duration(milliseconds: 1500), () {
+    // 8-second debounce window allows students to mark attendance across all classes
+    // without triggering multiple rapid sync cycles or exhausting cloud API quotas.
+    _autoSyncTimer = Timer(const Duration(milliseconds: 8000), () {
       _runAutoSync();
     });
   }
 
   Future<void> _runAutoSync() async {
+    if (_isAutoSyncRunning) {
+      debugPrint("Auto-sync skipped: previous auto-sync execution is still active.");
+      return;
+    }
+    _isAutoSyncRunning = true;
+
     try {
       final semester = await _databaseService.loadSemester();
       if (semester == null) {
@@ -786,24 +950,34 @@ class SubjectProvider with ChangeNotifier {
       }).toList();
 
       // 1. Google Calendar Auto-Sync
-      if (await CalendarService.isUserSignedIn() && await CalendarService.isGoogleCalendarSyncEnabled()) {
-        await CalendarService.syncFullTimetable(
-          subjects: syncedSubjects,
-          semester: semester,
-          isHoliday: isHoliday,
-        );
+      try {
+        if (await CalendarService.isUserSignedIn() && await CalendarService.isGoogleCalendarSyncEnabled()) {
+          await CalendarService.syncFullTimetable(
+            subjects: syncedSubjects,
+            semester: semester,
+            isHoliday: isHoliday,
+          );
+        }
+      } catch (e) {
+        debugPrint("Google Calendar auto-sync error: $e");
       }
 
       // 2. System Calendar Auto-Sync
-      if (await SystemCalendarService.isSystemSyncEnabled()) {
-        await SystemCalendarService.syncFullTimetable(
-          subjects: syncedSubjects,
-          semester: semester,
-          isHoliday: isHoliday,
-        );
+      try {
+        if (await SystemCalendarService.isSystemSyncEnabled()) {
+          await SystemCalendarService.syncFullTimetable(
+            subjects: syncedSubjects,
+            semester: semester,
+            isHoliday: isHoliday,
+          );
+        }
+      } catch (e) {
+        debugPrint("System Calendar auto-sync error: $e");
       }
     } catch (e) {
       debugPrint("Auto-sync background error: $e");
+    } finally {
+      _isAutoSyncRunning = false;
     }
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/backup_service.dart';
 import '../../services/database_service.dart';
+import '../../services/notification_service.dart';
 import '../calendar/calendar_utils.dart';
 import 'attendance_model.dart';
 import '../planner/planned_leave_model.dart';
@@ -70,6 +71,17 @@ class AttendanceProvider with ChangeNotifier {
 
       await _databaseService.saveSingleAttendance(newRecord);
       await BackupService().notifyDataChanged();
+
+      try {
+        await NotificationService().cancelEndOfClassReminder(
+          subjectId: subjectId,
+          date: date,
+          slotKey: slotKey,
+        );
+      } catch (e) {
+        // Silently fail - notification cancellation error
+      }
+
       notifyListeners();
     } catch (e) {
       rethrow;
@@ -102,6 +114,20 @@ class AttendanceProvider with ChangeNotifier {
       }
       await _databaseService.saveMultipleAttendanceIncremental(normalizedRecords);
       await BackupService().notifyDataChanged();
+
+      try {
+        final notifService = NotificationService();
+        for (final record in normalizedRecords) {
+          await notifService.cancelEndOfClassReminder(
+            subjectId: record.subjectId,
+            date: record.date,
+            slotKey: record.slotKey,
+          );
+        }
+      } catch (e) {
+        // Silently fail - notification cancellation error
+      }
+
       notifyListeners();
     } catch (e) {
       rethrow;

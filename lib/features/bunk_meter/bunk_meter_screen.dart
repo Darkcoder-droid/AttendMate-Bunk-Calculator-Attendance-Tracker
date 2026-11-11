@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../utils/attendance_math.dart';
 import '../../utils/responsive_scale.dart';
@@ -35,11 +36,25 @@ class _BunkMeterScreenState extends State<BunkMeterScreen> {
   String _searchQuery = '';
   final Set<String> _expandedSubjectIds = <String>{};
   List<PlannedLeave> _plannedLeaves = [];
+  bool _considerFutureMarked = false;
 
   @override
   void initState() {
     super.initState();
     _loadPlannedLeaves();
+    _loadConsiderFutureMarked();
+  }
+
+  Future<void> _loadConsiderFutureMarked() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final val = prefs.getBool('bunk_calc_consider_future_marked') ?? false;
+      if (mounted) {
+        setState(() {
+          _considerFutureMarked = val;
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadPlannedLeaves() async {
@@ -141,6 +156,7 @@ class _BunkMeterScreenState extends State<BunkMeterScreen> {
           subjectRecords: recordsBySubject[subject.id] ?? const [],
           semester: semester,
           endDate: endDate,
+          considerFutureMarked: _considerFutureMarked,
         )
     };
 
@@ -295,11 +311,11 @@ class _BunkMeterScreenState extends State<BunkMeterScreen> {
                             borderRadius: BorderRadius.circular(rs.scale(22)),
                             child: InkWell(
                               borderRadius: BorderRadius.circular(rs.scale(22)),
-                              onTap: () {
+                              onTap: () async {
                                 if (tutorialController.isActive && tutorialController.currentStepIndex == 20) {
                                   tutorialController.nextStep();
                                 }
-                                showModalBottomSheet(
+                                await showModalBottomSheet(
                                   context: context,
                                   isScrollControlled: true,
                                   barrierColor: isDarkMode
@@ -318,6 +334,7 @@ class _BunkMeterScreenState extends State<BunkMeterScreen> {
                                     semester: semester,
                                   ),
                                 );
+                                _loadConsiderFutureMarked();
                               },
                               child: Container(
                                 padding: rs.insetsSymmetric(vertical: 12, horizontal: 14),
@@ -525,6 +542,14 @@ class _BunkMeterScreenState extends State<BunkMeterScreen> {
                       final double targetPercentage = subject.targetAttendance / 100.0;
 
                       int futureScheduled = snapshot.totalClassesInWindow - snapshot.scheduledSoFarInWindow;
+                      if (_considerFutureMarked) {
+                        final futureRecords = (recordsBySubject[subject.id] ?? const []).where((r) =>
+                          r.date.isAfter(endDate) &&
+                          !r.date.isAfter(semester.endDate) &&
+                          !r.date.isBefore(snapshot.countingStart)
+                        );
+                        futureScheduled -= futureRecords.length;
+                      }
                       if (futureScheduled < 0) {
                         futureScheduled = 0;
                       }
@@ -670,6 +695,7 @@ class _BunkMeterScreenState extends State<BunkMeterScreen> {
     required List<Attendance> subjectRecords,
     required Semester semester,
     required DateTime endDate,
+    bool considerFutureMarked = false,
   }) {
     final manualOverride = subject.manualAttendanceOverride;
     DateTime countingStart = manualOverride?.effectiveFrom ?? semester.startDate;
@@ -678,7 +704,10 @@ class _BunkMeterScreenState extends State<BunkMeterScreen> {
     }
 
     final recordsForSubject = subjectRecords.where((record) {
-      if (record.date.isAfter(endDate)) {
+      if (!considerFutureMarked && record.date.isAfter(endDate)) {
+        return false;
+      }
+      if (record.date.isAfter(semester.endDate)) {
         return false;
       }
       if (record.date.isBefore(countingStart)) {
@@ -691,7 +720,7 @@ class _BunkMeterScreenState extends State<BunkMeterScreen> {
         .where((record) => record.status == AttendanceStatus.attended)
         .length;
     final absentPostOverride = recordsForSubject
-        .where((record) => record.status == AttendanceStatus.absent)
+        .where((record) => record.status == AttendanceStatus.absent || record.status == AttendanceStatus.plannedAbsent)
         .length;
     final cancelledPostOverride = recordsForSubject
         .where((record) => record.status == AttendanceStatus.cancelled)
@@ -704,9 +733,24 @@ class _BunkMeterScreenState extends State<BunkMeterScreen> {
         ? 0
         : subject.getTotalScheduledClasses(countingStart, semester.endDate);
 
-    int heldPostOverride = scheduledSoFarInWindow - cancelledPostOverride;
-    if (heldPostOverride < 0) {
-      heldPostOverride = 0;
+    int heldPostOverride;
+    if (considerFutureMarked) {
+      final pastRecords = recordsForSubject.where((r) => !r.date.isAfter(endDate));
+      final pastCancelled = pastRecords.where((r) => r.status == AttendanceStatus.cancelled).length;
+      final futureRecords = recordsForSubject.where((r) => r.date.isAfter(endDate));
+      final futureAttendedOrAbsent = futureRecords.where((r) =>
+          r.status == AttendanceStatus.attended ||
+          r.status == AttendanceStatus.absent ||
+          r.status == AttendanceStatus.plannedAbsent).length;
+
+      int baseHeld = scheduledSoFarInWindow - pastCancelled;
+      if (baseHeld < 0) baseHeld = 0;
+      heldPostOverride = baseHeld + futureAttendedOrAbsent;
+    } else {
+      heldPostOverride = scheduledSoFarInWindow - cancelledPostOverride;
+      if (heldPostOverride < 0) {
+        heldPostOverride = 0;
+      }
     }
 
     final baselineHeld = manualOverride?.classesHeld ?? 0;

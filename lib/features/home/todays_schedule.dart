@@ -19,6 +19,7 @@ import '../subject/subject_model.dart';
 import '../attendance/attendance_model.dart';
 import '../attendance/attendance_provider.dart';
 import '../calendar/calendar_utils.dart';
+import 'add_extra_class_sheet.dart';
 import '../location/location_model.dart';
 import '../../services/database_service.dart';
 
@@ -32,8 +33,14 @@ enum ScheduleViewMode {
 class TodaySchedule extends StatefulWidget {
   final ValueChanged<String>? onTitleChanged;
   final DayChangedCallback? onDayChanged;
+  final ScheduleViewMode initialViewMode;
 
-  const TodaySchedule({super.key, this.onTitleChanged, this.onDayChanged});
+  const TodaySchedule({
+    super.key,
+    this.onTitleChanged,
+    this.onDayChanged,
+    this.initialViewMode = ScheduleViewMode.deck,
+  });
 
   @override
   State<TodaySchedule> createState() => TodayScheduleState();
@@ -429,8 +436,9 @@ class TodayScheduleState extends State<TodaySchedule> {
                             return Expanded(
                               child: Container(
                                 alignment: Alignment.center,
-                                padding: EdgeInsets.symmetric(vertical: rs.height(6)),
+                                padding: EdgeInsets.symmetric(vertical: rs.height(2)),
                                 child: Column(
+                                  mainAxisSize: MainAxisSize.min,
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Text(
@@ -587,6 +595,7 @@ class TodayScheduleState extends State<TodaySchedule> {
                 targetDate: date,
                 today: _today,
                 locationById: _locationById,
+                initialViewMode: widget.initialViewMode,
               );
             },
           ),
@@ -604,12 +613,14 @@ class SingleDayScheduleView extends StatefulWidget {
   final DateTime targetDate;
   final DateTime today;
   final Map<String, LocationConfig> locationById;
+  final ScheduleViewMode initialViewMode;
 
   const SingleDayScheduleView({
     super.key,
     required this.targetDate,
     required this.today,
     required this.locationById,
+    this.initialViewMode = ScheduleViewMode.deck,
   });
 
   @override
@@ -617,9 +628,15 @@ class SingleDayScheduleView extends StatefulWidget {
 }
 
 class _SingleDayScheduleViewState extends State<SingleDayScheduleView> {
-  ScheduleViewMode _viewMode = ScheduleViewMode.deck;
+  late ScheduleViewMode _viewMode;
   int _activeCardIndex = 0;
   bool _isAccordionExpanded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _viewMode = widget.initialViewMode;
+  }
 
   List<Subject> _expandSubjectsBySlot(List<Subject> subjects) {
     final expandedSubjects = <Subject>[];
@@ -4116,9 +4133,43 @@ class DayOverSummaryView extends StatelessWidget {
     final swipeProvider = Provider.of<SwipeActionProvider>(context);
     final bool allDone = markedCount == displayClasses.length;
 
+    final editableClasses = displayClasses
+        .where((subject) => !CalendarUtils.isLockedByManualOverride(subject, targetDate))
+        .toList();
+    final lockedCount = displayClasses.length - editableClasses.length;
+    final bool allLocked = displayClasses.isNotEmpty && lockedCount == displayClasses.length;
+
     return ListView(
       padding: EdgeInsets.fromLTRB(rs.scale(16), rs.scale(8), rs.scale(16), rs.scale(120)),
       children: [
+        if (!semesterEnded && !isFutureDate && allLocked)
+          Container(
+            margin: rs.insetsSymmetric(horizontal: 16, vertical: 8),
+            padding: rs.insetsSymmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF607D8B).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(rs.scale(10)),
+              border: Border.all(
+                color: const Color(0xFF607D8B).withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.lock_outline, color: const Color(0xFF607D8B), size: rs.scale(20)),
+                SizedBox(width: rs.width(10)),
+                Expanded(
+                  child: Text(
+                    'Classes on this date are locked due to manual count update.',
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.blueGrey.shade200 : Colors.blueGrey.shade800,
+                      fontWeight: FontWeight.w500,
+                      fontSize: rs.font(13),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         // Victory Header (Image 2 style)
         Row(
           children: [
@@ -4291,7 +4342,7 @@ class DayOverSummaryView extends StatelessWidget {
             ),
 
         // Quick Day Actions
-        if (!semesterEnded && !isFutureDate) ...[
+        if (!semesterEnded && !isFutureDate && !allLocked) ...[
           SizedBox(height: rs.height(12)),
           Row(
             children: [
@@ -4432,6 +4483,7 @@ class DayOverSummaryView extends StatelessWidget {
             final rightSwipeAction = swipeProvider.rightAction;
             final leftSwipeAction = swipeProvider.leftAction;
             final isLocked = CalendarUtils.isLockedByManualOverride(subject, targetDate);
+            final overrideDate = subject.manualAttendanceOverride?.effectiveFrom;
 
             final isUnmarkingRight = (isAttended && rightSwipeAction == SwipeAction.present) ||
                 (isAbsent && rightSwipeAction == SwipeAction.absent);
@@ -4439,27 +4491,35 @@ class DayOverSummaryView extends StatelessWidget {
                 (isAbsent && leftSwipeAction == SwipeAction.absent);
 
             // Node Theme Colors
-            final Color nodeColor = isAttended
-                ? const Color(0xFF10B981)
-                : (isAbsent
-                    ? const Color(0xFFEF4444)
-                    : (isHoliday
-                        ? const Color(0xFFF59E0B)
-                        : (isDarkMode ? const Color(0xFF272935) : const Color(0xFFE2E8F0))));
+            final Color nodeColor = isLocked
+                ? const Color(0xFF607D8B)
+                : (isAttended
+                    ? const Color(0xFF10B981)
+                    : (isAbsent
+                        ? const Color(0xFFEF4444)
+                        : (isHoliday
+                            ? const Color(0xFFF59E0B)
+                            : (isDarkMode ? const Color(0xFF272935) : const Color(0xFFE2E8F0)))));
 
-            final IconData? nodeIcon = isAttended
-                ? Icons.check_rounded
-                : (isAbsent ? Icons.close_rounded : (isHoliday ? Icons.pause_rounded : null));
+            final IconData? nodeIcon = isLocked
+                ? Icons.lock_outline
+                : (isAttended
+                    ? Icons.check_rounded
+                    : (isAbsent ? Icons.close_rounded : (isHoliday ? Icons.pause_rounded : null)));
 
-            final Color statusPillColor = isAttended
-                ? const Color(0xFF10B981)
-                : (isAbsent
-                    ? const Color(0xFFEF4444)
-                    : (isHoliday ? const Color(0xFFF59E0B) : (isDarkMode ? Colors.white60 : Colors.black54)));
+            final Color statusPillColor = isLocked
+                ? const Color(0xFF607D8B)
+                : (isAttended
+                    ? const Color(0xFF10B981)
+                    : (isAbsent
+                        ? const Color(0xFFEF4444)
+                        : (isHoliday ? const Color(0xFFF59E0B) : (isDarkMode ? Colors.white60 : Colors.black54))));
 
-            final String statusLabel = isAttended
-                ? 'Present'
-                : (isAbsent ? 'Absent' : (isHoliday ? 'Holiday' : 'Awaiting'));
+            final String statusLabel = isLocked
+                ? 'Locked'
+                : (isAttended
+                    ? 'Attended'
+                    : (isAbsent ? 'Absent' : (isHoliday ? 'Holiday' : 'Awaiting Status')));
 
             return IntrinsicHeight(
               child: Row(
@@ -4573,185 +4633,198 @@ class DayOverSummaryView extends StatelessWidget {
                   Expanded(
                     child: Padding(
                       padding: EdgeInsets.symmetric(vertical: rs.height(5)),
-                      child: SwipeableCard(
-                        key: ValueKey('summary_timeline_${subject.id}_${slotKey}_$idx'),
-                        rs: rs,
-                        borderRadius: BorderRadius.circular(rs.scale(18)),
-                        swipeRightBackground: _buildScheduleSwipeBackground(
-                          action: rightSwipeAction,
-                          alignment: Alignment.centerLeft,
-                          rs: rs,
-                          isUnmarking: isUnmarkingRight,
-                        ),
-                        swipeLeftBackground: _buildScheduleSwipeBackground(
-                          action: leftSwipeAction,
-                          alignment: Alignment.centerRight,
-                          rs: rs,
-                          isUnmarking: isUnmarkingLeft,
-                        ),
-                        onSwipeRight: () => _handleScheduleSwipeAction(
-                          context: context,
-                          action: rightSwipeAction,
-                          isUnmarking: isUnmarkingRight,
-                          subject: subject,
-                          slotKey: slotKey,
-                          targetDate: targetDate,
-                          subjectProvider: subjectProvider,
-                          isLocked: isLocked,
-                          semesterEnded: semesterEnded,
-                          isFutureDate: isFutureDate,
-                        ),
-                        onSwipeLeft: () => _handleScheduleSwipeAction(
-                          context: context,
-                          action: leftSwipeAction,
-                          isUnmarking: isUnmarkingLeft,
-                          subject: subject,
-                          slotKey: slotKey,
-                          targetDate: targetDate,
-                          subjectProvider: subjectProvider,
-                          isLocked: isLocked,
-                          semesterEnded: semesterEnded,
-                          isFutureDate: isFutureDate,
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => onModifyItem(subject, slot, slotKey, attendance),
-                            borderRadius: BorderRadius.circular(rs.scale(18)),
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: rs.width(13),
-                                vertical: rs.height(10),
-                              ),
-                              decoration: BoxDecoration(
-                                color: isDarkMode
-                                    ? Colors.white.withValues(alpha: 0.07)
-                                    : Colors.white.withValues(alpha: 0.75),
-                                borderRadius: BorderRadius.circular(rs.scale(18)),
-                                border: Border.all(
-                                  color: isDarkMode
-                                      ? Colors.white.withValues(alpha: 0.12)
-                                      : Colors.white.withValues(alpha: 0.60),
-                                  width: 0.8,
+                      child: Builder(
+                        builder: (context) {
+                          final Widget cardContent = Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: isLocked ? null : () => onModifyItem(subject, slot, slotKey, attendance),
+                              borderRadius: BorderRadius.circular(rs.scale(18)),
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: rs.width(13),
+                                  vertical: rs.height(10),
                                 ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: isDarkMode ? 0.22 : 0.04),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 3),
-                                      ),
-                                    ],
+                                decoration: BoxDecoration(
+                                  color: isDarkMode
+                                      ? Colors.white.withValues(alpha: 0.07)
+                                      : Colors.white.withValues(alpha: 0.75),
+                                  borderRadius: BorderRadius.circular(rs.scale(18)),
+                                  border: Border.all(
+                                    color: isDarkMode
+                                        ? Colors.white.withValues(alpha: 0.12)
+                                        : Colors.white.withValues(alpha: 0.60),
+                                    width: 0.8,
                                   ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      // Header row: Acronym + Room + Status pill
-                                      Row(
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 2.5),
-                                            decoration: BoxDecoration(
-                                              color: subject.color.withValues(alpha: 0.20),
-                                              borderRadius: BorderRadius.circular(rs.scale(8)),
-                                              border: Border.all(
-                                                color: subject.color.withValues(alpha: 0.45),
-                                                width: 0.7,
-                                              ),
-                                            ),
-                                            child: Text(
-                                              subject.displayAcronym,
-                                              style: GoogleFonts.inter(
-                                                fontSize: rs.font(10.5),
-                                                fontWeight: FontWeight.w800,
-                                                color: subject.color,
-                                              ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: isDarkMode ? 0.22 : 0.04),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // Header row: Acronym + Room + Status pill
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 2.5),
+                                          decoration: BoxDecoration(
+                                            color: subject.color.withValues(alpha: 0.20),
+                                            borderRadius: BorderRadius.circular(rs.scale(8)),
+                                            border: Border.all(
+                                              color: subject.color.withValues(alpha: 0.45),
+                                              width: 0.7,
                                             ),
                                           ),
-                                          if (hasRoom) ...[
-                                            SizedBox(width: rs.width(6)),
-                                            Flexible(
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(Icons.location_on_rounded, size: rs.scale(11), color: isDarkMode ? Colors.white54 : Colors.black45),
-                                                  SizedBox(width: rs.width(2)),
-                                                  Flexible(
-                                                    child: Text(
-                                                      'Rm $room',
-                                                      style: GoogleFonts.inter(
-                                                        fontSize: rs.font(10.5),
-                                                        fontWeight: FontWeight.w500,
-                                                        color: isDarkMode ? Colors.white60 : Colors.black54,
-                                                      ),
-                                                      maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
+                                          child: Text(
+                                            subject.displayAcronym,
+                                            style: GoogleFonts.inter(
+                                              fontSize: rs.font(10.5),
+                                              fontWeight: FontWeight.w800,
+                                              color: subject.color,
                                             ),
-                                          ],
-                                          const Spacer(),
-                                          // Status Pill (Small Badge for Present / Absent / Holiday)
-                                          InkWell(
-                                            onTap: () {
-                                              HapticFeedback.selectionClick();
-                                              onModifyItem(subject, slot, slotKey, attendance);
-                                            },
-                                            borderRadius: BorderRadius.circular(rs.scale(8)),
-                                            child: Container(
-                                              padding: rs.insetsSymmetric(horizontal: 7.5, vertical: 2.5),
-                                              decoration: BoxDecoration(
-                                                color: statusPillColor.withValues(alpha: isDarkMode ? 0.20 : 0.14),
-                                                borderRadius: BorderRadius.circular(rs.scale(8)),
-                                                border: Border.all(
-                                                  color: statusPillColor.withValues(alpha: isDarkMode ? 0.55 : 0.40),
-                                                  width: 0.8,
-                                                ),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  if (nodeIcon != null) ...[
-                                                    Icon(nodeIcon, size: rs.scale(10.5), color: statusPillColor),
-                                                    SizedBox(width: rs.width(3)),
-                                                  ],
-                                                  Text(
-                                                    statusLabel,
+                                          ),
+                                        ),
+                                        if (hasRoom) ...[
+                                          SizedBox(width: rs.width(6)),
+                                          Flexible(
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(Icons.location_on_rounded, size: rs.scale(11), color: isDarkMode ? Colors.white54 : Colors.black45),
+                                                SizedBox(width: rs.width(2)),
+                                                Flexible(
+                                                  child: Text(
+                                                    'Rm $room',
                                                     style: GoogleFonts.inter(
-                                                      fontSize: rs.font(10),
-                                                      fontWeight: FontWeight.w700,
-                                                      color: statusPillColor,
+                                                      fontSize: rs.font(10.5),
+                                                      fontWeight: FontWeight.w500,
+                                                      color: isDarkMode ? Colors.white60 : Colors.black54,
                                                     ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
                                                   ),
-                                                ],
-                                              ),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ],
-                                      ),
-
-                                      SizedBox(height: rs.height(6)),
-
-                                      // Subject Full Name
-                                      Text(
-                                        subject.name,
-                                        style: GoogleFonts.inter(
-                                          fontSize: rs.font(14.5),
-                                          fontWeight: FontWeight.w700,
-                                          color: isDarkMode ? Colors.white : Colors.black87,
-                                          height: 1.2,
+                                        const Spacer(),
+                                        if (slot.isExtra) ...[
+                                          const ExtraClassBadge(),
+                                          SizedBox(width: rs.width(4)),
+                                        ],
+                                        if (slot.isExtra && !semesterEnded && !isLocked)
+                                          IconButton(
+                                            icon: const Icon(Icons.delete_outline_rounded),
+                                            tooltip: 'Remove extra class',
+                                            color: Colors.red.shade400,
+                                            visualDensity: VisualDensity.compact,
+                                            onPressed: () {
+                                              confirmAndRemoveExtraClass(
+                                                context: context,
+                                                subjectId: subject.id,
+                                                subjectName: subject.name,
+                                                date: targetDate,
+                                                slotKey: slotKey,
+                                              );
+                                            },
+                                          ),
+                                        if (!semesterEnded && !isLocked)
+                                          IconButton(
+                                            tooltip: isHoliday ? 'Unmark Holiday' : 'Mark Holiday',
+                                            icon: Icon(
+                                              isHoliday ? Icons.cancel_outlined : Icons.celebration_outlined,
+                                              size: rs.scale(16),
+                                              color: isHoliday ? Colors.grey : const Color(0xFFF59E0B),
+                                            ),
+                                            visualDensity: VisualDensity.compact,
+                                            onPressed: () {
+                                              HapticFeedback.selectionClick();
+                                              if (isHoliday) {
+                                                subjectProvider.unmarkAttendance(subject.id, targetDate, slotKey: slotKey);
+                                              } else {
+                                                subjectProvider.markAttendance(subject.id, targetDate, AttendanceStatus.cancelled, slotKey: slotKey);
+                                              }
+                                            },
+                                          ),
+                                        // Status Pill (Small Badge for Present / Absent / Holiday)
+                                        InkWell(
+                                          onTap: () {
+                                            HapticFeedback.selectionClick();
+                                            onModifyItem(subject, slot, slotKey, attendance);
+                                          },
+                                          borderRadius: BorderRadius.circular(rs.scale(8)),
+                                          child: Container(
+                                            padding: rs.insetsSymmetric(horizontal: 7.5, vertical: 2.5),
+                                            decoration: BoxDecoration(
+                                              color: statusPillColor.withValues(alpha: isDarkMode ? 0.20 : 0.14),
+                                              borderRadius: BorderRadius.circular(rs.scale(8)),
+                                              border: Border.all(
+                                                color: statusPillColor.withValues(alpha: isDarkMode ? 0.55 : 0.40),
+                                                width: 0.8,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                if (nodeIcon != null) ...[
+                                                  Icon(nodeIcon, size: rs.scale(10.5), color: statusPillColor),
+                                                  SizedBox(width: rs.width(3)),
+                                                ],
+                                                Text(
+                                                  statusLabel,
+                                                  style: GoogleFonts.inter(
+                                                    fontSize: rs.font(10),
+                                                    fontWeight: FontWeight.w700,
+                                                    color: statusPillColor,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
                                         ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
+                                      ],
+                                    ),
+
+                                    SizedBox(height: rs.height(6)),
+
+                                    // Subject Full Name
+                                    Text(
+                                      subject.name,
+                                      style: GoogleFonts.inter(
+                                        fontSize: rs.font(14.5),
+                                        fontWeight: FontWeight.w700,
+                                        color: isDarkMode ? Colors.white : Colors.black87,
+                                        height: 1.2,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+
+                                    if (isLocked && overrideDate != null)
+                                      Padding(
+                                        padding: EdgeInsets.only(top: rs.height(2)),
+                                        child: Text(
+                                          'Locked before ${overrideDate.day.toString().padLeft(2, '0')}/${overrideDate.month.toString().padLeft(2, '0')}/${overrideDate.year}',
+                                          style: TextStyle(
+                                            fontSize: rs.font(11),
+                                            color: Colors.orange.shade800,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
                                       ),
 
-                                      if (!isAttended && !isAbsent && !isHoliday) ...[
-                                        SizedBox(height: rs.height(8)),
+                                    if (!isAttended && !isAbsent && !isHoliday && !isLocked) ...[
+                                      SizedBox(height: rs.height(8)),
 
-                                        // Interactive Quick Attendance Action Row (unmarked only)
-                                        Row(
+                                      // Interactive Quick Attendance Action Row (unmarked only)
+                                      Row(
                                         children: [
                                           // Present Button
                                           Expanded(
@@ -4774,8 +4847,8 @@ class DayOverSummaryView extends StatelessWidget {
                                                   borderRadius: BorderRadius.circular(rs.scale(10)),
                                                   border: Border.all(
                                                     color: isAttended
-                                                        ? const Color(0xFF10B981).withValues(alpha: 0.6)
-                                                        : (isDarkMode ? Colors.white12 : Colors.black12),
+                                                        ? const Color(0xFF10B981).withValues(alpha: 0.50)
+                                                        : (isDarkMode ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08)),
                                                     width: 0.8,
                                                   ),
                                                 ),
@@ -4784,19 +4857,16 @@ class DayOverSummaryView extends StatelessWidget {
                                                   children: [
                                                     Icon(
                                                       Icons.check_rounded,
-                                                      size: rs.scale(12),
-                                                      color: isAttended ? const Color(0xFF10B981) : (isDarkMode ? Colors.white60 : Colors.black54),
+                                                      size: rs.scale(13),
+                                                      color: isAttended ? const Color(0xFF10B981) : (isDarkMode ? Colors.white54 : Colors.black45),
                                                     ),
                                                     SizedBox(width: rs.width(4)),
-                                                    Flexible(
-                                                      child: Text(
-                                                        'Present',
-                                                        style: GoogleFonts.inter(
-                                                          fontSize: rs.font(11),
-                                                          fontWeight: FontWeight.w700,
-                                                          color: isAttended ? const Color(0xFF10B981) : (isDarkMode ? Colors.white70 : Colors.black87),
-                                                        ),
-                                                        overflow: TextOverflow.ellipsis,
+                                                    Text(
+                                                      'Present',
+                                                      style: GoogleFonts.inter(
+                                                        fontSize: rs.font(11),
+                                                        fontWeight: FontWeight.w600,
+                                                        color: isAttended ? const Color(0xFF10B981) : (isDarkMode ? Colors.white70 : Colors.black87),
                                                       ),
                                                     ),
                                                   ],
@@ -4828,8 +4898,8 @@ class DayOverSummaryView extends StatelessWidget {
                                                   borderRadius: BorderRadius.circular(rs.scale(10)),
                                                   border: Border.all(
                                                     color: isAbsent
-                                                        ? const Color(0xFFEF4444).withValues(alpha: 0.6)
-                                                        : (isDarkMode ? Colors.white12 : Colors.black12),
+                                                        ? const Color(0xFFEF4444).withValues(alpha: 0.50)
+                                                        : (isDarkMode ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08)),
                                                     width: 0.8,
                                                   ),
                                                 ),
@@ -4838,8 +4908,8 @@ class DayOverSummaryView extends StatelessWidget {
                                                   children: [
                                                     Icon(
                                                       Icons.close_rounded,
-                                                      size: rs.scale(12),
-                                                      color: isAbsent ? const Color(0xFFEF4444) : (isDarkMode ? Colors.white60 : Colors.black54),
+                                                      size: rs.scale(13),
+                                                      color: isAbsent ? const Color(0xFFEF4444) : (isDarkMode ? Colors.white54 : Colors.black45),
                                                     ),
                                                     SizedBox(width: rs.width(4)),
                                                     Flexible(
@@ -4847,7 +4917,7 @@ class DayOverSummaryView extends StatelessWidget {
                                                         'Absent',
                                                         style: GoogleFonts.inter(
                                                           fontSize: rs.font(11),
-                                                          fontWeight: FontWeight.w700,
+                                                          fontWeight: FontWeight.w600,
                                                           color: isAbsent ? const Color(0xFFEF4444) : (isDarkMode ? Colors.white70 : Colors.black87),
                                                         ),
                                                         overflow: TextOverflow.ellipsis,
@@ -4873,34 +4943,86 @@ class DayOverSummaryView extends StatelessWidget {
                                             },
                                             borderRadius: BorderRadius.circular(rs.scale(10)),
                                             child: Container(
-                                              padding: EdgeInsets.all(rs.scale(5.5)),
+                                              padding: rs.insetsSymmetric(horizontal: 9, vertical: 6),
                                               decoration: BoxDecoration(
                                                 color: isHoliday
                                                     ? const Color(0xFFF59E0B).withValues(alpha: 0.20)
                                                     : (isDarkMode ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
                                                 borderRadius: BorderRadius.circular(rs.scale(10)),
                                                 border: Border.all(
-                                                  color: isHoliday ? const Color(0xFFF59E0B) : (isDarkMode ? Colors.white12 : Colors.black12),
+                                                  color: isHoliday
+                                                      ? const Color(0xFFF59E0B).withValues(alpha: 0.50)
+                                                      : (isDarkMode ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08)),
                                                   width: 0.8,
                                                 ),
                                               ),
-                                              child: Icon(
-                                                Icons.pause_rounded,
-                                                size: rs.scale(13),
-                                                color: isHoliday ? const Color(0xFFF59E0B) : (isDarkMode ? Colors.white54 : Colors.black45),
+                                              child: Center(
+                                                child: Icon(
+                                                  Icons.pause_rounded,
+                                                  size: rs.scale(13),
+                                                  color: isHoliday ? const Color(0xFFF59E0B) : (isDarkMode ? Colors.white54 : Colors.black45),
+                                                ),
                                               ),
                                             ),
                                           ),
                                         ],
                                       ),
                                     ],
-                                    ],
-                                  ),
+                                  ],
                                 ),
                               ),
                             ),
-                          ),
-                        ),
+                          );
+
+                          if (isLocked) {
+                            return cardContent;
+                          }
+
+                          return SwipeableCard(
+                            key: ValueKey('summary_timeline_${subject.id}_${slotKey}_$idx'),
+                            rs: rs,
+                            borderRadius: BorderRadius.circular(rs.scale(18)),
+                            swipeRightBackground: _buildScheduleSwipeBackground(
+                              action: rightSwipeAction,
+                              alignment: Alignment.centerLeft,
+                              rs: rs,
+                              isUnmarking: isUnmarkingRight,
+                            ),
+                            swipeLeftBackground: _buildScheduleSwipeBackground(
+                              action: leftSwipeAction,
+                              alignment: Alignment.centerRight,
+                              rs: rs,
+                              isUnmarking: isUnmarkingLeft,
+                            ),
+                            onSwipeRight: () => _handleScheduleSwipeAction(
+                              context: context,
+                              action: rightSwipeAction,
+                              isUnmarking: isUnmarkingRight,
+                              subject: subject,
+                              slotKey: slotKey,
+                              targetDate: targetDate,
+                              subjectProvider: subjectProvider,
+                              isLocked: isLocked,
+                              semesterEnded: semesterEnded,
+                              isFutureDate: isFutureDate,
+                            ),
+                            onSwipeLeft: () => _handleScheduleSwipeAction(
+                              context: context,
+                              action: leftSwipeAction,
+                              isUnmarking: isUnmarkingLeft,
+                              subject: subject,
+                              slotKey: slotKey,
+                              targetDate: targetDate,
+                              subjectProvider: subjectProvider,
+                              isLocked: isLocked,
+                              semesterEnded: semesterEnded,
+                              isFutureDate: isFutureDate,
+                            ),
+                            child: cardContent,
+                          );
+                        },
+                      ),
+                    ),
                   ),
                 ],
               ),

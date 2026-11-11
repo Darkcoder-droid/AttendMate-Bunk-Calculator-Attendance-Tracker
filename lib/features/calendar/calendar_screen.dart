@@ -15,6 +15,7 @@ import '../../features/subject/subject_provider.dart';
 import '../../services/database_service.dart';
 import '../../utils/responsive_scale.dart';
 import '../../widgets/day_cycle_background.dart';
+import '../home/add_extra_class_sheet.dart';
 import '../tutorial/tutorial_controller.dart';
 import '../tutorial/tutorial_overlay.dart';
 import 'calendar_utils.dart';
@@ -2027,13 +2028,70 @@ class _CalendarScreenState extends State<CalendarScreen>
                                                 color: isDark ? Colors.white54 : Colors.black54,
                                               ),
                                             ),
+                                            if (!Provider.of<SemesterProvider>(context).hasSemesterEnded) ...[
+                                              SizedBox(height: rs.height(14)),
+                                              FilledButton.icon(
+                                                style: FilledButton.styleFrom(
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(rs.scale(12)),
+                                                  ),
+                                                  padding: EdgeInsets.symmetric(
+                                                    vertical: rs.height(10),
+                                                    horizontal: rs.width(16),
+                                                  ),
+                                                ),
+                                                onPressed: () async {
+                                                  await showAddExtraClassSheet(
+                                                    context: context,
+                                                    date: pageDate,
+                                                  );
+                                                  setModalState(() {});
+                                                },
+                                                icon: const Icon(Icons.add_circle_outline, size: 18),
+                                                label: const Text(
+                                                  'Add Extra Class',
+                                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                                ),
+                                              ),
+                                            ],
                                           ],
                                         ),
                                       )
                                     : ListView.builder(
                                         physics: const BouncingScrollPhysics(),
-                                        itemCount: classesForDay.length,
+                                        itemCount: classesForDay.length + (!Provider.of<SemesterProvider>(context).hasSemesterEnded ? 1 : 0),
                                         itemBuilder: (context, classIndex) {
+                                          if (classIndex == classesForDay.length) {
+                                            return Padding(
+                                              padding: EdgeInsets.only(top: rs.height(4), bottom: rs.height(8)),
+                                              child: Center(
+                                                child: OutlinedButton.icon(
+                                                  style: OutlinedButton.styleFrom(
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(rs.scale(12)),
+                                                    ),
+                                                    padding: EdgeInsets.symmetric(
+                                                      vertical: rs.height(10),
+                                                      horizontal: rs.width(16),
+                                                    ),
+                                                  ),
+                                                  onPressed: () async {
+                                                    await showAddExtraClassSheet(
+                                                      context: context,
+                                                      date: pageDate,
+                                                    );
+                                                    setModalState(() {});
+                                                  },
+                                                  icon: const Icon(Icons.add_circle_outline, size: 18),
+                                                  label: const Text(
+                                                    'Add Extra Class',
+                                                    style: TextStyle(fontWeight: FontWeight.w600),
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          }
+
                                           final sub = classesForDay[classIndex];
                                           final slot = sub.schedule.first;
                                           final slotKey = slot.slotKey;
@@ -2212,16 +2270,47 @@ class _CalendarScreenState extends State<CalendarScreen>
                       overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: rs.height(2)),
-                    Text(
-                      room != null && room.isNotEmpty ? '$timeStr   Room $room' : timeStr,
-                      style: GoogleFonts.inter(
-                        fontSize: rs.font(11.5),
-                        color: isDark ? Colors.white54 : Colors.black54,
-                      ),
+                    Row(
+                      children: [
+                        if (timeSlot?.isExtra == true) ...[
+                          const ExtraClassBadge(),
+                          SizedBox(width: rs.width(6)),
+                        ],
+                        Flexible(
+                          child: Text(
+                            room != null && room.isNotEmpty ? '$timeStr   Room $room' : timeStr,
+                            style: GoogleFonts.inter(
+                              fontSize: rs.font(11.5),
+                              color: isDark ? Colors.white54 : Colors.black54,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
+
+              if (timeSlot?.isExtra == true && !isLocked)
+                IconButton(
+                  icon: const Icon(Icons.delete_outline_rounded),
+                  tooltip: 'Remove extra class',
+                  color: Colors.red.shade400,
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () async {
+                    final removed = await confirmAndRemoveExtraClass(
+                      context: context,
+                      subjectId: subject.id,
+                      subjectName: subject.name,
+                      date: date,
+                      slotKey: slotKey,
+                    );
+                    if (removed) {
+                      onRefresh();
+                    }
+                  },
+                ),
 
               if (isLocked)
                 Container(

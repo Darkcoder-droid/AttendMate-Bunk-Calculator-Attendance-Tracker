@@ -370,6 +370,7 @@ class _SemesterSharePreviewDialogState extends State<SemesterSharePreviewDialog>
           ),
         ),
       ),
+
     );
   }
 

@@ -68,6 +68,7 @@ class _MoreScreenState extends State<MoreScreen> {
   static const String _issuesUrl =
       'https://github.com/YTFL/AttendMate-Bunk-Calculator-Attendance-Tracker/issues';
   static final String _repoUrl = _issuesUrl.replaceFirst('/issues', '');
+  static const String _moreAppsUrl = 'https://ytfl.github.io/';
 
   final GlobalKey _locationManagerKey = GlobalKey();
   final GlobalKey _calendarSyncKey = GlobalKey();
@@ -97,13 +98,17 @@ class _MoreScreenState extends State<MoreScreen> {
 
   Future<DateTime?> _loadBundledReleaseDate() async {
     try {
-      final releaseNotes = await rootBundle.loadString('git_public/RELEASE_NOTES.md');
+      final releaseNotes = await rootBundle.loadString('RELEASE_NOTES.md');
       final lines = releaseNotes.replaceAll('\r\n', '\n').split('\n');
       for (final line in lines) {
         final trimmed = line.trim();
         if (trimmed.startsWith('**Release Date:**')) {
           final dateText = trimmed.replaceFirst('**Release Date:**', '').trim();
-          return DateFormat('MMMM d, y').parseStrict(dateText);
+          try {
+            return DateFormat('yyyy-MM-dd').parseStrict(dateText);
+          } catch (_) {
+            return DateFormat('MMMM d, y').parseStrict(dateText);
+          }
         }
       }
       return null;
@@ -672,8 +677,15 @@ class _MoreScreenState extends State<MoreScreen> {
       color: isDarkMode ? const Color(0xFF636366) : const Color(0xFF8E8E93),
     );
 
-    final ambientProvider = Provider.of<AmbientThemeProvider>(context);
-    final refreshRateProvider = Provider.of<RefreshRateProvider>(context);
+    AmbientThemeProvider? ambientProvider;
+    try {
+      ambientProvider = Provider.of<AmbientThemeProvider>(context);
+    } catch (_) {}
+
+    RefreshRateProvider? refreshRateProvider;
+    try {
+      refreshRateProvider = Provider.of<RefreshRateProvider>(context);
+    } catch (_) {}
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 140),
@@ -682,10 +694,14 @@ class _MoreScreenState extends State<MoreScreen> {
         _buildGroupCard(
           isDarkMode: isDarkMode,
           children: [
-            _buildAmbientThemeControl(context, ambientProvider, isDarkMode),
-            _buildTileDivider(isDarkMode),
-            _buildRefreshRateControl(context, refreshRateProvider, isDarkMode),
-            _buildTileDivider(isDarkMode),
+            if (ambientProvider != null) ...[
+              _buildAmbientThemeControl(context, ambientProvider, isDarkMode),
+              _buildTileDivider(isDarkMode),
+            ],
+            if (refreshRateProvider != null) ...[
+              _buildRefreshRateControl(context, refreshRateProvider, isDarkMode),
+              _buildTileDivider(isDarkMode),
+            ],
             ListTile(
               leading: _buildLeadingIcon(Icons.schedule_outlined, isDarkMode),
               title: Text(
@@ -1080,6 +1096,28 @@ class _MoreScreenState extends State<MoreScreen> {
             ),
             _buildTileDivider(isDarkMode),
             ListTile(
+              leading: _buildLeadingIcon(Icons.apps_rounded, isDarkMode),
+              title: Text(
+                'More apps by me',
+                style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+              ),
+              subtitle: const Text('Explore other apps and projects on ytfl.github.io'),
+              trailing: const Icon(Icons.open_in_new_rounded),
+              onTap: () async {
+                final result = await UrlLauncherUtils.launchExternalUrl(
+                  _moreAppsUrl,
+                  context: context,
+                );
+                if (!context.mounted) return;
+                if (result == LaunchResult.failed) {
+                  ScaffoldMessenger.of(context).showReplacingSnackBar(
+                    const SnackBar(content: Text('Could not open the website.')),
+                  );
+                }
+              },
+            ),
+            _buildTileDivider(isDarkMode),
+            ListTile(
               leading: _buildLeadingIcon(Icons.bug_report_outlined, isDarkMode),
               title: Text(
                 'Request feature / Report bug',
@@ -1307,7 +1345,7 @@ class _MoreScreenState extends State<MoreScreen> {
                   MaterialPageRoute(
                     builder: (context) => const MarkdownViewerScreen(
                       title: 'Privacy Policy',
-                      assetPath: 'git_public/privacy.md',
+                      assetPath: 'docs/privacy.md',
                     ),
                   ),
                 );
@@ -1331,7 +1369,7 @@ class _MoreScreenState extends State<MoreScreen> {
                   MaterialPageRoute(
                     builder: (context) => const MarkdownViewerScreen(
                       title: 'Terms of Service',
-                      assetPath: 'git_public/terms.md',
+                      assetPath: 'docs/terms.md',
                     ),
                   ),
                 );
@@ -1445,6 +1483,16 @@ class _MoreScreenState extends State<MoreScreen> {
                     ),
                     _buildTileDivider(isDarkMode),
                     ListTile(
+                      leading: _buildLeadingIcon(Icons.cleaning_services_outlined, isDarkMode, accentColor: Colors.red),
+                      title: Text(
+                        'Prune AttendMate Calendar Events',
+                        style: GoogleFonts.roboto(fontWeight: FontWeight.w500, fontSize: 14.5),
+                      ),
+                      subtitle: const Text('Deep scan and delete all AttendMate events across Google & Device calendars'),
+                      onTap: _pruneAllAttendMateCalendarEvents,
+                    ),
+                    _buildTileDivider(isDarkMode),
+                    ListTile(
                       leading: _buildLeadingIcon(Icons.delete_forever_outlined, isDarkMode, accentColor: Colors.red),
                       title: Text(
                         'Clear App Data',
@@ -1473,6 +1521,119 @@ class _MoreScreenState extends State<MoreScreen> {
       errorStackTrace:
           'TestStackTrace: line 42 at _testGitHubIssueHandler(more_screen.dart)',
     );
+  }
+
+  Future<void> _pruneAllAttendMateCalendarEvents() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.cleaning_services_rounded, color: Colors.red, size: 36),
+        title: const Text('Prune AttendMate Calendar Events'),
+        content: const Text(
+          'This will perform a deep scan across both Google Calendar and all writable Device Calendars strictly for events created by AttendMate ("Imported from AttendMate", "Created with AttendMate", or ending with "@attendmate.app") and permanently delete them.\\n\\n'
+          'Your personal calendar entries, work meetings, and non-AttendMate events will not be touched.\\n\\n'
+          'Use this to purge all ghost events, duplicates, or obsolete schedule entries.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Prune All Events'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 20),
+              Expanded(
+                child: Text('Scanning and pruning AttendMate events...'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    int googlePruned = 0;
+    int systemPruned = 0;
+    String? errorMsg;
+
+    try {
+      // 1. Prune Google Calendar events
+      try {
+        googlePruned = await CalendarService.pruneAllAttendMateEvents();
+      } catch (e) {
+        debugPrint('Google Calendar prune error: $e');
+        errorMsg = 'Google Calendar error: $e';
+      }
+
+      // 2. Prune System / Device Calendar events
+      try {
+        systemPruned = await SystemCalendarService.pruneAllAttendMateEvents();
+      } catch (e) {
+        debugPrint('System Calendar prune error: $e');
+        errorMsg = errorMsg != null
+            ? '\$errorMsg\\nDevice Calendar error: $e'
+            : 'Device Calendar error: $e';
+      }
+    } finally {
+      if (mounted) {
+        Navigator.pop(context); // Dismiss loading dialog
+      }
+    }
+
+    if (!mounted) return;
+
+    if (errorMsg != null && googlePruned == 0 && systemPruned == 0) {
+      SnackbarUtils.showErrorSnackBar(context, 'Pruning failed: \$errorMsg');
+    } else {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          icon: const Icon(Icons.check_circle_outline, color: Colors.green, size: 36),
+          title: const Text('Calendar Pruning Complete'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('• Google Calendar events pruned: \$googlePruned', style: const TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 6),
+              Text('• Device Calendar events pruned: \$systemPruned', style: const TextStyle(fontWeight: FontWeight.w600)),
+              if (errorMsg != null) ...[
+                const SizedBox(height: 12),
+                Text('Warnings / Issues:\\n\$errorMsg', style: const TextStyle(color: Colors.red, fontSize: 12)),
+              ],
+              const SizedBox(height: 16),
+              const Text(
+                'Note: For Google Calendar, deleted events are moved to your online Trash (Bin). Open Google Calendar on the web (calendar.google.com) > Settings > Trash > "Empty Trash" to immediately purge tombstones from external sync adapters.',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   Future<void> _simulateUpdateScreen() async {

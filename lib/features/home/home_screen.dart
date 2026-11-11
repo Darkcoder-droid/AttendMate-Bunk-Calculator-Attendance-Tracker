@@ -15,6 +15,7 @@ import '../../services/app_file_intent_listener.dart';
 import '../../services/backup_service.dart';
 import '../../services/database_service.dart';
 import '../../services/live_timetable_sync_service.dart';
+import '../../services/notification_service.dart';
 import '../../services/update_service.dart';
 import '../../utils/responsive_scale.dart';
 import '../../utils/snackbar_utils.dart';
@@ -249,6 +250,12 @@ class _HomeScreenState extends State<HomeScreen>
         attendanceProvider.reloadAttendance(showLoading: false);
       } catch (e) {
         debugPrint('Failed to reload database on app resume: $e');
+      }
+      try {
+        final subjectProvider = Provider.of<SubjectProvider>(context, listen: false);
+        NotificationService().scheduleForSubjects(subjectProvider.subjects);
+      } catch (e) {
+        debugPrint('Failed to refresh notifications on app resume: $e');
       }
       try {
         LiveTimetableSyncService().checkOnAppResume(context);

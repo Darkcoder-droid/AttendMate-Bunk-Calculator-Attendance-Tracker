@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../services/database_service.dart';
 import '../../utils/responsive_scale.dart';
@@ -34,10 +35,16 @@ class WhatIfCalculatorSheet extends StatefulWidget {
 class _RemainingClassesResult {
   final int remainingClasses;
   final int leaveMissedClasses;
+  final int futureAttendedClasses;
+  final int futureMissedClasses;
+  final int futureCancelledClasses;
 
   const _RemainingClassesResult({
     required this.remainingClasses,
     required this.leaveMissedClasses,
+    this.futureAttendedClasses = 0,
+    this.futureMissedClasses = 0,
+    this.futureCancelledClasses = 0,
   });
 }
 
@@ -48,6 +55,7 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
   bool _isMaxActive = false;
   DateTime? _selectedTargetDate;
   bool _considerPlannedLeave = false;
+  bool _considerFutureMarked = false;
   List<PlannedLeave> _plannedLeaves = [];
 
   final GlobalKey _bunkCalculatorCardKey = GlobalKey();
@@ -58,6 +66,7 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
     _selectedSubjectId = widget.initialSubjectId ?? 'all';
     _selectedTargetDate = widget.semester.endDate;
     _loadPlannedLeaves();
+    _loadConsiderFutureMarked();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -73,6 +82,29 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
       setState(() {
         _plannedLeaves = leaves;
       });
+    }
+  }
+
+  Future<void> _loadConsiderFutureMarked() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final val = prefs.getBool('bunk_calc_consider_future_marked') ?? false;
+      if (mounted) {
+        setState(() {
+          _considerFutureMarked = val;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading consider future marked pref: $e');
+    }
+  }
+
+  Future<void> _saveConsiderFutureMarkedPref(bool value) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('bunk_calc_consider_future_marked', value);
+    } catch (e) {
+      debugPrint('Error saving consider future marked pref: $e');
     }
   }
 
@@ -158,7 +190,13 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
     return baselineAttended + attendedPostOverride;
   }
 
-  _RemainingClassesResult _countClassesUpToDate(Subject subject, DateTime targetDate, bool considerLeave) {
+  _RemainingClassesResult _countClassesUpToDate(
+    Subject subject,
+    DateTime targetDate,
+    bool considerLeave,
+    bool considerFutureMarked,
+    List<Attendance> subjectRecords,
+  ) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final horizonDate = targetDate.isAfter(widget.semester.endDate) ? widget.semester.endDate : targetDate;
@@ -189,8 +227,24 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
           }).toList()
         : const <PlannedLeave>[];
 
+    // Pre-index explicit attendance records for this subject if considering future marked classes
+    final Map<String, AttendanceStatus> futureRecordLookup = {};
+    if (considerFutureMarked) {
+      for (final r in subjectRecords) {
+        final normDate = DateTime(r.date.year, r.date.month, r.date.day);
+        if (normDate.isBefore(startDay) || normDate.isAfter(horizonDate)) continue;
+        if (r.slotKey != null && r.slotKey!.isNotEmpty) {
+          futureRecordLookup['${normDate.year}-${normDate.month}-${normDate.day}_${r.slotKey}'] = r.status;
+        }
+        futureRecordLookup['${normDate.year}-${normDate.month}-${normDate.day}'] = r.status;
+      }
+    }
+
     int remaining = 0;
     int leaveMissed = 0;
+    int futureAttended = 0;
+    int futureMissed = 0;
+    int futureCancelled = 0;
 
     DateTime cur = startDay;
     while (!cur.isAfter(horizonDay)) {
@@ -201,13 +255,30 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
 
           if (slotStart.isAfter(horizonDate)) continue;
 
-          final isCoveredByLeave = activeLeaves.any((leave) =>
-            slotStart.isBefore(leave.endDate) && slotEnd.isAfter(leave.startDate));
+          AttendanceStatus? markedStatus;
+          if (considerFutureMarked) {
+            final dateKeyWithSlot = '${cur.year}-${cur.month}-${cur.day}_${slot.slotKey}';
+            final dateKeyNoSlot = '${cur.year}-${cur.month}-${cur.day}';
+            markedStatus = futureRecordLookup[dateKeyWithSlot] ?? futureRecordLookup[dateKeyNoSlot];
+          }
 
-          if (isCoveredByLeave) {
-            leaveMissed++;
+          if (markedStatus != null) {
+            if (markedStatus == AttendanceStatus.attended) {
+              futureAttended++;
+            } else if (markedStatus == AttendanceStatus.absent || markedStatus == AttendanceStatus.plannedAbsent) {
+              futureMissed++;
+            } else if (markedStatus == AttendanceStatus.cancelled) {
+              futureCancelled++;
+            }
           } else {
-            remaining++;
+            final isCoveredByLeave = activeLeaves.any((leave) =>
+              slotStart.isBefore(leave.endDate) && slotEnd.isAfter(leave.startDate));
+
+            if (isCoveredByLeave) {
+              leaveMissed++;
+            } else {
+              remaining++;
+            }
           }
         }
       }
@@ -217,6 +288,9 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
     return _RemainingClassesResult(
       remainingClasses: remaining,
       leaveMissedClasses: leaveMissed,
+      futureAttendedClasses: futureAttended,
+      futureMissedClasses: futureMissed,
+      futureCancelledClasses: futureCancelled,
     );
   }
 
@@ -282,6 +356,9 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
     int currentHeld = 0;
     int leaveMissedTotal = 0;
     int totalRemaining = 0;
+    int futureAttendedTotal = 0;
+    int futureMissedTotal = 0;
+    int futureCancelledTotal = 0;
 
     final targetHorizon = _selectedTargetDate ?? widget.semester.endDate;
     Subject? selectedSubject;
@@ -302,9 +379,18 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
           endDate: endDate,
         );
 
-        final res = _countClassesUpToDate(subject, targetHorizon, _considerPlannedLeave);
+        final res = _countClassesUpToDate(
+          subject,
+          targetHorizon,
+          _considerPlannedLeave,
+          _considerFutureMarked,
+          records,
+        );
         totalRemaining += res.remainingClasses;
         leaveMissedTotal += res.leaveMissedClasses;
+        futureAttendedTotal += res.futureAttendedClasses;
+        futureMissedTotal += res.futureMissedClasses;
+        futureCancelledTotal += res.futureCancelledClasses;
       }
     } else {
       selectedSubject = widget.subjects.firstWhere(
@@ -325,9 +411,18 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
         endDate: endDate,
       );
 
-      final res = _countClassesUpToDate(selectedSubject, targetHorizon, _considerPlannedLeave);
+      final res = _countClassesUpToDate(
+        selectedSubject,
+        targetHorizon,
+        _considerPlannedLeave,
+        _considerFutureMarked,
+        records,
+      );
       totalRemaining = res.remainingClasses;
       leaveMissedTotal = res.leaveMissedClasses;
+      futureAttendedTotal = res.futureAttendedClasses;
+      futureMissedTotal = res.futureMissedClasses;
+      futureCancelledTotal = res.futureCancelledClasses;
     }
 
     final double targetPercentage = selectedSubject != null
@@ -336,10 +431,11 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
     final double targetRatio = targetPercentage / 100.0;
 
     // Target breakdown calculations up to selected horizon
-    final int effectiveCurrentHeld = currentHeld + leaveMissedTotal;
+    final int effectiveCurrentAttended = currentAttended + futureAttendedTotal;
+    final int effectiveCurrentHeld = currentHeld + futureAttendedTotal + futureMissedTotal + leaveMissedTotal;
     final int endHorizonTotalHeld = effectiveCurrentHeld + totalRemaining;
     final int targetAttendedNeeded = (targetRatio * endHorizonTotalHeld).ceil();
-    final int mustAttend = (targetAttendedNeeded - currentAttended).clamp(0, totalRemaining);
+    final int mustAttend = (targetAttendedNeeded - effectiveCurrentAttended).clamp(0, totalRemaining);
     final int canBunk = (totalRemaining - mustAttend).clamp(0, totalRemaining);
 
     // Auto-adjust values if MAX is active or if total simulated exceeds total remaining
@@ -354,10 +450,10 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
     final bool canIncrementMore = (_attendNext + _bunkNext) < totalRemaining;
 
     // Simulated totals
-    final int simulatedAttended = currentAttended + _attendNext;
+    final int simulatedAttended = effectiveCurrentAttended + _attendNext;
     final int simulatedHeld = effectiveCurrentHeld + _attendNext + _bunkNext;
 
-    final double currentRatio = effectiveCurrentHeld > 0 ? (currentAttended / effectiveCurrentHeld) * 100 : 100.0;
+    final double currentRatio = effectiveCurrentHeld > 0 ? (effectiveCurrentAttended / effectiveCurrentHeld) * 100 : 100.0;
     final double simulatedRatio = simulatedHeld > 0 ? (simulatedAttended / simulatedHeld) * 100 : 100.0;
     final double delta = simulatedRatio - currentRatio;
 
@@ -908,7 +1004,7 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
                             },
                             borderRadius: BorderRadius.circular(rs.scale(12)),
                             child: Container(
-                              padding: EdgeInsets.symmetric(horizontal: rs.width(10), vertical: rs.height(7)),
+                              padding: EdgeInsets.symmetric(horizontal: rs.width(8), vertical: rs.height(7)),
                               decoration: BoxDecoration(
                                 color: _considerPlannedLeave
                                     ? theme.colorScheme.primary.withValues(alpha: 0.12)
@@ -926,15 +1022,15 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
                                 children: [
                                   Icon(
                                     _considerPlannedLeave ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
-                                    size: rs.scale(16),
+                                    size: rs.scale(15),
                                     color: _considerPlannedLeave ? theme.colorScheme.primary : (isDarkMode ? Colors.white54 : Colors.black45),
                                   ),
-                                  SizedBox(width: rs.width(6)),
+                                  SizedBox(width: rs.width(4)),
                                   Expanded(
                                     child: Text(
-                                      'Include Planned Leaves',
+                                      'Leaves',
                                       style: GoogleFonts.inter(
-                                        fontSize: rs.font(11.5),
+                                        fontSize: rs.font(11),
                                         fontWeight: FontWeight.w600,
                                         color: _considerPlannedLeave
                                             ? (isDarkMode ? Colors.white : const Color(0xFF1C1C1E))
@@ -948,7 +1044,60 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
                             ),
                           ),
                         ),
-                        SizedBox(width: rs.width(8)),
+                        SizedBox(width: rs.width(6)),
+                        // Future Marked Toggle Chip
+                        Expanded(
+                          child: InkWell(
+                            onTap: () {
+                              final nextVal = !_considerFutureMarked;
+                              setState(() {
+                                _considerFutureMarked = nextVal;
+                              });
+                              _saveConsiderFutureMarkedPref(nextVal);
+                            },
+                            borderRadius: BorderRadius.circular(rs.scale(12)),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(horizontal: rs.width(8), vertical: rs.height(7)),
+                              decoration: BoxDecoration(
+                                color: _considerFutureMarked
+                                    ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                                    : (isDarkMode ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03)),
+                                borderRadius: BorderRadius.circular(rs.scale(12)),
+                                border: Border.all(
+                                  color: _considerFutureMarked
+                                      ? theme.colorScheme.primary.withValues(alpha: 0.35)
+                                      : Colors.transparent,
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _considerFutureMarked ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                                    size: rs.scale(15),
+                                    color: _considerFutureMarked ? theme.colorScheme.primary : (isDarkMode ? Colors.white54 : Colors.black45),
+                                  ),
+                                  SizedBox(width: rs.width(4)),
+                                  Expanded(
+                                    child: Text(
+                                      'Pre-Marked',
+                                      style: GoogleFonts.inter(
+                                        fontSize: rs.font(11),
+                                        fontWeight: FontWeight.w600,
+                                        color: _considerFutureMarked
+                                            ? (isDarkMode ? Colors.white : const Color(0xFF1C1C1E))
+                                            : (isDarkMode ? Colors.white60 : Colors.black54),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: rs.width(6)),
                         // MAX Simulation Quick Button
                         Material(
                           color: Colors.transparent,
@@ -1168,6 +1317,18 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
                           ),
                         ),
                       ),
+                    if (_considerFutureMarked && (futureAttendedTotal + futureMissedTotal + futureCancelledTotal) > 0)
+                      Padding(
+                        padding: EdgeInsets.only(top: rs.height(4), left: rs.width(4)),
+                        child: Text(
+                          '• ${_buildFutureMarkedSummary(futureAttendedTotal, futureMissedTotal, futureCancelledTotal)}',
+                          style: GoogleFonts.inter(
+                            fontSize: rs.font(10.5),
+                            fontWeight: FontWeight.w500,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
 
                     SizedBox(height: rs.height(14)),
 
@@ -1352,5 +1513,14 @@ class _WhatIfCalculatorSheetState extends State<WhatIfCalculatorSheet> {
         ],
       ),
     );
+  }
+  String _buildFutureMarkedSummary(int present, int absent, int cancelled) {
+    final total = present + absent + cancelled;
+    final parts = <String>[];
+    if (present > 0) parts.add('$present present');
+    if (absent > 0) parts.add('$absent absent');
+    if (cancelled > 0) parts.add('$cancelled holiday${cancelled == 1 ? '' : 's'}');
+    final details = parts.isNotEmpty ? ' (${parts.join(', ')})' : '';
+    return 'Includes $total pre-marked class${total == 1 ? '' : 'es'}$details';
   }
 }
